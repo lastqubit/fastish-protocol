@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.33;
+
+import {EventEmitter} from "../Emitter.sol";
+
+string constant ABI = "event Endpoint(uint indexed host, uint id, uint gas, string abi, bytes params)";
+string constant TYPE = "endpoint";
+
+// abi contains address signer for signed params
+
+abstract contract EndpointEvent is EventEmitter {
+    event Endpoint(
+        uint indexed host,
+        uint id,
+        uint gas,
+        string abi,
+        string params
+    );
+
+    constructor() {
+        emit EventDefinition(true, address(this), block.number, TYPE, ABI);
+    }
+}
