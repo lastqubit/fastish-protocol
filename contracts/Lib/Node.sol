@@ -14,7 +14,7 @@ abstract contract Node is Host, Authorize, Unauthorize, Relocate, GetTrusted {
 
     constructor(address rush, address discovery, string memory name) {
         admin = rush == address(0) ? address(this) : rush;
-        IDiscovery(discovery).node(name);
+        IDiscovery(discovery).announce(name);
     }
 
     function getTrusted(address addr) external view override returns (bool) {
