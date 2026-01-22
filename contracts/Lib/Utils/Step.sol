@@ -16,6 +16,8 @@ bytes32 constant MASK4 = 0xFFFFFFFF000000000000000000000000000000000000000000000
 
 function encodeStep() {}
 
+
+
 library Step {
     function toKey(string memory p) internal pure returns (bytes4) {
         return bytes4(keccak256(bytes(p)));

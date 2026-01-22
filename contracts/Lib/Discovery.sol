@@ -10,6 +10,6 @@ interface IDiscovery {
 
 contract Discovery is DiscoverEvent, IDiscovery {
     function announce(string calldata name) external {
-        emit Discover(Id.node(msg.sender), tx.origin, block.number, name);
+        emit Discover(Id.host(msg.sender), tx.origin, block.number, name);
     }
 }
