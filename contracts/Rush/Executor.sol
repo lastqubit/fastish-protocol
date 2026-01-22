@@ -20,10 +20,10 @@ abstract contract Executor is Ownable, Node, Endpoints, Validator {
 
     // check eid... use eid open flag
     function auth(bytes32 head, bytes calldata step) private returns (uint) {
-        if(head == 0) {
+        if (head == 0) {
             // must be open
         }
-            // open utilize step to resolve account
+        // open utilize step to resolve account
         // head utilize -> accept step resolve/finalize
         return uint(bytes32(step));
     }
@@ -46,12 +46,26 @@ abstract contract Executor is Ownable, Node, Endpoints, Validator {
         assembly {
             let s := step.length
             c := mload(0x40)
-            mstore(0x40, add(c, add(s, 0x84)))
-            mstore(c, add(s, 0x44))
-            mstore(add(c, 0x20), selector)
+
+            mstore(0x40, add(c, and(add(add(0x84, s), 0x1f), not(0x1f))))
+
+            mstore(c, add(0x64, s))
+
+            // Store account first
             mstore(add(c, 0x24), account)
+
+            // Write selector bytes
+            let ptr := add(c, 0x20)
+            mstore8(ptr, byte(0, selector))
+            mstore8(add(ptr, 1), byte(1, selector))
+            mstore8(add(ptr, 2), byte(2, selector))
+            mstore8(add(ptr, 3), byte(3, selector))
+
+            // Store offset
             mstore(add(c, 0x44), 0x40)
-            calldatacopy(add(c, 0x64), sub(step.offset, 0x20), add(s, 0x20))
+
+            // Copy step length AND data in one operation
+            calldatacopy(add(c, 0x64), step.offset, add(s, 0x20))
         }
     }
 

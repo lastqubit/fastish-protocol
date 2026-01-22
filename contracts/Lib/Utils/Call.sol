@@ -7,49 +7,29 @@ struct Value {
     uint amount;
 }
 
-// Failed call endpoint instead of selector...
-error FailedCall(bytes4 selector, address addr, uint size);
+function encodeCall(bytes4 selector, uint account, bytes calldata step) pure returns (bytes memory c) {
+    assembly {
+        let s := step.length
+        c := mload(0x40)
 
-function toSelector(uint head) pure returns (bytes4) {
-    bytes4 selector = bytes4(uint32(head));
-    if (selector == 0) {
-        revert();
+        mstore(0x40, add(c, and(add(add(0x84, s), 0x1f), not(0x1f))))
+
+        mstore(c, add(0x64, s))
+
+        // Store account first
+        mstore(add(c, 0x24), account)
+
+        // Write selector bytes
+        let ptr := add(c, 0x20)
+        mstore8(ptr, byte(0, selector))
+        mstore8(add(ptr, 1), byte(1, selector))
+        mstore8(add(ptr, 2), byte(2, selector))
+        mstore8(add(ptr, 3), byte(3, selector))
+
+        // Store offset
+        mstore(add(c, 0x44), 0x40)
+
+        // Copy step length AND data in one operation
+        calldatacopy(add(c, 0x64), step.offset, add(s, 0x20))
     }
-    return selector;
 }
-
-/* function _call(
-    address payable addr,
-    uint value,
-    bytes memory data
-) pure returns (bytes memory out) {
-    bool success;
-    (success, out) = addr.call{value: value}(data);
-    if (!success) {
-        revert FailedCall(bytes4(data), addr, data.length);
-    }
-    return out;
-} */
-
-// @dev expects last encoded value of body to be empty bytes array(placeholder for step).
-function encodeCall(
-    uint head,
-    bytes memory body,
-    bytes calldata step
-) pure returns (bytes memory) {
-    uint o = body.length + 4 - 32;
-    bytes memory call = bytes.concat(toSelector(head), body, step);
-    //call.store32no(step.length + 32, step.length);
-}
-
-/* function callNext(
-    address addr,
-    uint head,
-    bytes memory body,
-    bytes calldata step,
-    Value memory total
-) pure returns (bytes32, bytes memory) {
-    uint v = uint96(bytes12(step[32:44]));
-    bytes memory call = encodeCall(head, body, step);
-    return abi.decode(callTo(addr, v, total, call), (uint, bytes));
-} */

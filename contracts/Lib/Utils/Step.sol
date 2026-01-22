@@ -74,34 +74,35 @@ library Step {
 
     // @dev find key and return data given step is blocks(bytes4 len, bytes4 key, bytes data).
     // blocks starts at offset 64. param(step, 0, 64) -> request param.
-    function param(bytes calldata step, bytes4 key, uint offset) internal pure returns (bytes calldata) {
+    function param(bytes calldata step, bytes4 target, uint offset) internal pure returns (bytes calldata result) {
         assembly {
-            let stepLen := step.length
-            let stepOffset := step.offset
+            let start := step.offset
+            let end := step.length
+            result.offset := 0
+            result.length := 0
+
             for {
 
-            } lt(offset, stepLen) {
+            } lt(add(offset, 8), end) {
 
             } {
-                if or(gt(add(offset, 8), stepLen), iszero(calldataload(add(stepOffset, offset)))) {
-                    return(0, 0)
+                let len := shr(224, calldataload(add(start, offset)))
+                let key := shr(224, calldataload(add(start, add(offset, 4))))
+
+                // Break if length is invalid OR block extends past bounds
+                if or(lt(len, 8), gt(add(offset, len), end)) {
+                    break
                 }
 
-                let blockLen := shr(224, calldataload(add(stepOffset, offset)))
-                if gt(add(offset, blockLen), stepLen) {
-                    return(0, 0)
+                // Check if this is the target we're looking for
+                if or(iszero(target), eq(key, target)) {
+                    result.offset := add(start, add(offset, 8))
+                    result.length := sub(len, 8)
+                    break
                 }
 
-                if or(iszero(key), eq(and(calldataload(add(stepOffset, add(offset, 4))), MASK4), key)) {
-                    let dataOffset := add(stepOffset, add(offset, 8))
-                    let dataLen := sub(blockLen, 8)
-                    mstore(0x40, add(dataOffset, dataLen))
-                    return(dataOffset, dataLen)
-                }
-
-                offset := add(offset, blockLen)
+                offset := add(offset, len)
             }
-            return(0, 0)
         }
     }
 
