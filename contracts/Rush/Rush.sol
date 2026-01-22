@@ -16,10 +16,11 @@ contract Rush is Executor {
     ) Node(address(0), discovery, "admin") Ownable(Addr.or(owner, msg.sender)) {}
 
     function inject(bytes[] calldata steps) external payable override onlyOwner returns (uint) {
-        return pipe(Id.account(admin), 0, "", steps, Value(msg.value)); // make admin uint
+        return pipe(admin, 0, "", steps, Value(msg.value)); // make admin uint
     }
 
     // add bounty to step instead of fee.
+    // account not allowed to change thru pipeline. must be local account
     function execute(bytes[] calldata steps, bytes calldata signed) external payable override returns (uint) {
         return pipe(validate(steps, signed), 0, "", steps, Value(msg.value));
     }

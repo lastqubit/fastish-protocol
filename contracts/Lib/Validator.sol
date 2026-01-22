@@ -7,6 +7,8 @@ import {Crypto} from "./Crypto.sol";
 import {DateNonces} from "./Nonce.sol";
 import {Data} from "./Utils/Data.sol";
 
+// 40 bits is plenty for deadline,
+
 abstract contract Validator is Crypto, DateNonces {
     using Data for bytes;
 

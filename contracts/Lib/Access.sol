@@ -2,9 +2,16 @@
 pragma solidity ^0.8.33;
 
 import {AccessEvent} from "./Events/Node/Access.sol";
+import {Id} from "./Utils/Id.sol";
 
 abstract contract AccessControl is AccessEvent {
-    address internal immutable admin;
+    address internal immutable cmdr;
+    uint internal immutable admin;
+
+    constructor(address commander) {
+        cmdr = commander == address(0) ? address(this) : commander;
+        admin = Id.account(cmdr);
+    }
 
     mapping(address => bool) internal authorized;
 
@@ -26,9 +33,10 @@ abstract contract AccessControl is AccessEvent {
         _;
     }
 
-    function access(address addr, bool allow) internal returns (address) {
+    function access(uint host, bool allow) internal returns (address) {
+        address addr = Id.hostAddr(host, true);
         authorized[addr] = allow;
-        emit Access(0, addr, allow); /////// hostId
+        emit Access(host, addr, allow); /////// hostId
         return addr;
     }
 
@@ -40,17 +48,12 @@ abstract contract AccessControl is AccessEvent {
     }
 
     function isAuthorized(address addr) internal view returns (bool) {
-        if (addr == address(0)) return false;
-        return authorized[addr];
+        return addr != address(0) && authorized[addr];
     }
 
     function isTrusted(address addr) internal view virtual returns (bool) {
         if (addr == address(0)) return false;
-        return addr == admin || addr == address(this) || authorized[addr];
-    }
-
-    function ensureAdmin(address addr) internal view returns (address) {
-        return auth(addr, addr == admin);
+        return addr == cmdr || addr == address(this) || authorized[addr];
     }
 
     function ensureAuthorized(address addr) internal view returns (address) {

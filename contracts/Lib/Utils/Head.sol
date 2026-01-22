@@ -27,7 +27,7 @@ library Head {
         return head;
     }
 
-    // Use this insted of Id.node
+    // Use this insted of Id.host
 /*     function node(address addr) internal view returns (uint) {
         uint n = uint(uint160(addr));
         n |= uint(chainId()) << 160;

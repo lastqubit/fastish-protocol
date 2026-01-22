@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 import {Command} from "../Base.sol";
 
 string constant ABI = "function unauthorize(uint account, bytes step) external payable returns (bytes32, bytes)";
-string constant REQ = "unauthorize(address[] blacklist)";
+string constant REQ = "unauthorize(uint[] hosts)";
 bytes4 constant SELECTOR = IUnauthorize.unauthorize.selector;
 
 interface IUnauthorize {
@@ -20,9 +20,9 @@ abstract contract Unauthorize is IUnauthorize, Command {
         uint account,
         bytes calldata step
     ) external payable onlyAdmin(account) returns (bytes32, bytes memory) {
-        address[] memory list = abi.decode(getRequest(step), (address[]));
-        for (uint i = 0; i < list.length; i++) {
-            access(list[i], false);
+        uint[] memory hosts = abi.decode(getRequest(step), (uint[]));
+        for (uint i = 0; i < hosts.length; i++) {
+            access(hosts[i], false);
         }
         return done();
     }
