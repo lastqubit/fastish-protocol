@@ -17,32 +17,6 @@ bytes32 constant MASK4 = 0xFFFFFFFF000000000000000000000000000000000000000000000
 
 function encodeStep() {}
 
-function toCall(bytes4 selector, uint account, bytes calldata step) pure returns (bytes memory c) {
-    assembly {
-        let s := step.length
-        c := mload(0x40)
-        mstore(0x40, add(c, add(s, 0x84)))
-        mstore(c, add(s, 0x44))
-        mstore(add(c, 0x20), selector)
-        mstore(add(c, 0x24), account)
-        mstore(add(c, 0x44), 0x40)
-        calldatacopy(add(c, 0x64), sub(step.offset, 0x20), add(s, 0x20))
-    }
-}
-
-function toCall(bytes4 selector, bytes memory body, bytes calldata step) pure returns (bytes memory c) {
-    assembly {
-        let s := step.length
-        let b := mload(body)
-        c := mload(0x40)
-        mstore(0x40, add(add(c, b), add(s, 0x44)))
-        mstore(c, add(add(b, s), 4))
-        mstore(add(c, 0x20), selector)
-        mcopy(add(c, 0x24), add(body, 0x20), sub(b, 0x20))
-        calldatacopy(add(c, add(b, 4)), sub(step.offset, 0x20), add(s, 0x20))
-    }
-}
-
 library Step {
     function toKey(string memory p) internal pure returns (bytes4) {
         return bytes4(keccak256(bytes(p)));
@@ -77,36 +51,34 @@ library Step {
     function param(bytes calldata step, bytes4 target, uint offset) internal pure returns (bytes calldata result) {
         assembly {
             let start := step.offset
-            let end := step.length
+            let dataLen := step.length
             result.offset := 0
             result.length := 0
 
-            for {
+            for {} iszero(gt(add(offset, 8), dataLen)) {} {
+                let currentPos := add(start, offset)
+                let len := and(shr(224, calldataload(currentPos)), 0xffffffff)
+                let key := and(shr(224, calldataload(add(currentPos, 4))), 0xffffffff)
 
-            } lt(add(offset, 8), end) {
-
-            } {
-                let len := shr(224, calldataload(add(start, offset)))
-                let key := shr(224, calldataload(add(start, add(offset, 4))))
-
-                // Break if length is invalid OR block extends past bounds
-                if or(lt(len, 8), gt(add(offset, len), end)) {
+                // Validate length and check for overflow/bounds
+                let newOffset := add(offset, len)
+                if or(lt(len, 8), or(lt(newOffset, offset), gt(newOffset, dataLen))) {
                     break
                 }
 
                 // Check if this is the target we're looking for
                 if or(iszero(target), eq(key, target)) {
-                    result.offset := add(start, add(offset, 8))
+                    result.offset := add(currentPos, 8)
                     result.length := sub(len, 8)
                     break
                 }
 
-                offset := add(offset, len)
+                offset := newOffset
             }
         }
     }
 
-    // @dev expects body to be encoded params with the last being an placeholder(empty bytes array).
+    /*     // @dev expects body to be encoded params with the last being an placeholder(empty bytes array).
     function inject(bytes calldata step, bytes memory body) internal pure returns (bytes memory result) {
         assembly {
             let bodyLen := mload(body)
@@ -137,5 +109,5 @@ library Step {
             mcopy(add(result, 0x20), add(body, 0x20), sub(b, 0x20))
             calldatacopy(add(result, b), sub(step.offset, 0x20), add(s, 0x20))
         }
-    }
+    } */
 }

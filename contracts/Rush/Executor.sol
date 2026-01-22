@@ -119,7 +119,7 @@ abstract contract Executor is Ownable, Node, Endpoints, Validator {
         bytes4 selector;
         selector.encodeCall(account, step);
         selector.encodeCall(args, step);
-        args = open ? abi.encode(account, step) : step.inject(args);
+        //args = open ? abi.encode(account, step) : step.inject(args);
         // check eid for open flag to encoded (account, step)
     }
 

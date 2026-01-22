@@ -45,8 +45,8 @@ library Call {
         assembly {
             let s := step.length
             let argsLen := mload(args)
-            let size := add(add(4, argsLen), s)
             let argsToCopy := sub(argsLen, 0x20)
+            let size := add(add(4, argsLen), s)
 
             result := mload(0x40)
 

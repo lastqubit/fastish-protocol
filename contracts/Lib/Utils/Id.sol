@@ -6,6 +6,7 @@ pragma solidity ^0.8.33;
 // Change node to host ???
 
 library Id {
+    uint16 internal constant ID = uint16(bytes2(0x0101));
     uint32 internal constant VALUE = uint32(bytes4(0x01010100));
     uint32 internal constant ACCOUNT = uint32(bytes4(0x01010200));
     uint32 internal constant NODE = uint32(bytes4(0x01010300));
@@ -15,14 +16,9 @@ library Id {
     uint32 internal constant TOKEN = ASSET | 1;
 
     error ZeroId();
-    error BadId(uint id);
+    error InvalidId();
 
-    function build(
-        address addr,
-        uint32 selector,
-        uint32 chain,
-        uint32 desc
-    ) private pure returns (uint) {
+    function build(address addr, uint32 selector, uint32 chain, uint32 desc) private pure returns (uint) {
         uint id = uint(uint160(addr));
         id |= uint(selector) << 160;
         id |= uint(chain) << 192;
@@ -32,17 +28,20 @@ library Id {
 
     function chainId() internal view returns (uint32) {
         if (block.chainid > type(uint32).max) {
-            revert();
+            revert InvalidId();
         }
         return uint32(block.chainid);
     }
 
-    function value() internal view returns (uint) {
-        return build(address(0), 0, chainId(), VALUE);
+    function ensure(uint id) internal pure returns (uint) {
+        if (id == 0) {
+            revert ZeroId();
+        }
+        return id;
     }
 
-    function token(address addr) internal view returns (uint) {
-        return build(addr, 0, chainId(), TOKEN);
+    function value() internal view returns (uint) {
+        return build(address(0), 0, chainId(), VALUE);
     }
 
     function account(address addr) internal view returns (uint) {
@@ -53,41 +52,46 @@ library Id {
         return build(addr, 0, chainId(), NODE);
     }
 
-    // add open ??
-    function endpoint(
-        address addr,
-        bytes4 selector
-    ) internal view returns (uint) {
+    function endpoint(address addr, bytes4 selector) internal view returns (uint) {
         return build(addr, uint32(selector), chainId(), ENDPOINT);
     }
 
-    function ensure(uint id) internal pure returns (uint) {
-        if (id == 0) {
-            revert ZeroId();
+    function token(address addr) internal view returns (uint) {
+        return build(addr, 0, chainId(), TOKEN);
+    }
+
+    function anyAddr(uint id) internal pure returns (address) {
+        if (uint16(id >> 240) != ID) {
+            revert InvalidId();
         }
-        return id;
-    }
-
-    // MUST BE LOCAL
-    // (a >> 160) == (b >> 160);
-    function accountAddr(uint id) internal pure returns (address) {
         return address(uint160(id));
     }
 
-    function localAccount(uint id) internal pure returns (address) {
+    function accountAddr(uint id, bool onlyLocal) internal view returns (address) {
+        if (uint32(id >> 224) != ACCOUNT || (onlyLocal && uint32(id >> 192) != block.chainid)) {
+            revert InvalidId();
+        }
         return address(uint160(id));
     }
 
-    function localNode(uint id) internal pure returns (address) {
+    function nodeAddr(uint id, bool onlyLocal) internal view returns (address) {
+        if (uint32(id >> 224) != NODE || (onlyLocal && uint32(id >> 192) != block.chainid)) {
+            revert InvalidId();
+        }
         return address(uint160(id));
     }
 
-    ////////////
-    function localAddr(uint id) internal pure returns (address) {
-        address addr = address(uint160(id));
-        /*         if (addr != create(addr)) {
-            revert(); ////
-        } */
-        return addr;
+    function endpointAddr(uint id, bool onlyLocal) internal view returns (address) {
+        if (uint32(id >> 224) != ENDPOINT || (onlyLocal && uint32(id >> 192) != block.chainid)) {
+            revert InvalidId();
+        }
+        return address(uint160(id));
+    }
+
+    function tokenAddr(uint id, bool onlyLocal) internal view returns (address) {
+        if (uint32(id >> 224) != TOKEN || (onlyLocal && uint32(id >> 192) != block.chainid)) {
+            revert InvalidId();
+        }
+        return address(uint160(id));
     }
 }
