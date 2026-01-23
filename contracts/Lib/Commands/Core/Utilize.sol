@@ -17,7 +17,7 @@ interface IUtilize {
 }
 
 abstract contract Utilize is IUtilize, Command {
-    uint internal immutable utilizeId = toEid(false, SELECTOR);
+    uint internal immutable utilizeId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, utilizeId, 0, ABI, params);

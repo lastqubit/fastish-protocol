@@ -11,7 +11,7 @@ interface ISet {
 }
 
 abstract contract Set is ISet, Command {
-    uint internal immutable setId = toEid(false, SELECTOR);
+    uint internal immutable setId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, setId, 0, ABI, params);

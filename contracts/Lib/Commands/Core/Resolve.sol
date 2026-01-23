@@ -26,7 +26,7 @@ function encodeResolve(
 }
 
 abstract contract Resolve is IResolve, Command {
-    uint internal immutable resolveId = toEid(false, SELECTOR);
+    uint internal immutable resolveId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, resolveId, 0, ABI, params);

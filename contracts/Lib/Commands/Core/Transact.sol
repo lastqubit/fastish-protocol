@@ -15,7 +15,7 @@ interface ITransact {
 }
 
 abstract contract Transact is ITransact, Command {
-    uint internal immutable transactId = toEid(false, SELECTOR);
+    uint internal immutable transactId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, transactId, 0, ABI, params);

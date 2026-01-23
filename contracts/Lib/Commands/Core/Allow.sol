@@ -14,7 +14,7 @@ interface IAllow {
 }
 
 abstract contract Allow is IAllow, Command {
-    uint internal immutable allowEid = toEid(true, SELECTOR);
+    uint internal immutable allowEid = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, allowEid, 0, ABI, params);

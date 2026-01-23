@@ -17,7 +17,7 @@ interface ITransform {
 }
 
 abstract contract Transform is ITransform, Command {
-    uint internal immutable transformId = toEid(false, SELECTOR);
+    uint internal immutable transformId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, transformId, 0, ABI, params);

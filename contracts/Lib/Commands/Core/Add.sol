@@ -14,7 +14,7 @@ interface IAdd {
 }
 
 abstract contract Add is IAdd, Command {
-    uint internal immutable addId = toEid(false, SELECTOR);
+    uint internal immutable addId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, addId, 0, ABI, params);

@@ -11,7 +11,7 @@ interface IAct {
 }
 
 abstract contract Act is IAct, Command {
-    uint internal immutable actId = toEid(false, SELECTOR);
+    uint internal immutable actId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, actId, 0, ABI, params);

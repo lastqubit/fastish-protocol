@@ -11,7 +11,7 @@ interface IInitiate {
 }
 
 abstract contract Initiate is IInitiate, Command {
-    uint internal immutable initiateId = toEid(false, SELECTOR);
+    uint internal immutable initiateId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, initiateId, 0, ABI, params);

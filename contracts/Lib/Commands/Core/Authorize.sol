@@ -13,7 +13,7 @@ interface IAuthorize {
 
 abstract contract Authorize is IAuthorize, Command {
     constructor() {
-        emit Endpoint(hostId, toEid(true, SELECTOR), 0, ABI, REQ);
+        emit Endpoint(hostId, toEid(SELECTOR), 0, ABI, REQ);
     }
 
     function authorize(

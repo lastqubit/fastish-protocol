@@ -14,7 +14,7 @@ interface IRemove {
 }
 
 abstract contract Remove is IRemove, Command {
-    uint internal immutable removeId = toEid(false, SELECTOR);
+    uint internal immutable removeId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, removeId, 0, ABI, params);

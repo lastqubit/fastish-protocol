@@ -11,7 +11,7 @@ interface ICreate {
 }
 
 abstract contract Create is ICreate, Command {
-    uint internal immutable createId = toEid(false, SELECTOR);
+    uint internal immutable createId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, createId, 0, ABI, params);

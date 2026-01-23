@@ -17,7 +17,7 @@ interface IResume {
 
 abstract contract Resume is IResume, Command {
     constructor() {
-        emit Endpoint(hostId, toEid(false, SELECTOR), 0, ABI, "");
+        emit Endpoint(hostId, toEid(SELECTOR), 0, ABI, "");
     }
 
     function resume(

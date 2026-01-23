@@ -12,10 +12,6 @@ abstract contract Host is AccessControl, EndpointEvent {
     // add error bytes??
     error FailedCall(bytes4 selector, address addr, uint size);
 
-    function toEid(bool entry, bytes4 selector) internal view returns (uint) {
-        return Id.endpoint(address(this), selector);
-    }
-
     function toEid(bytes4 selector) internal view returns (uint) {
         return Id.endpoint(address(this), selector);
     }

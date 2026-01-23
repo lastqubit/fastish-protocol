@@ -11,7 +11,7 @@ interface IExecute {
 }
 
 abstract contract Execute is IExecute, Command {
-    uint internal immutable executeId = toEid(false, SELECTOR);
+    uint internal immutable executeId = toEid(SELECTOR);
 
     constructor() {
         emit Endpoint(hostId, executeId, 0, ABI, "");

@@ -11,7 +11,7 @@ interface IDeny {
 }
 
 abstract contract Deny is IDeny, Command {
-    uint internal immutable denyEid = toEid(true, SELECTOR);
+    uint internal immutable denyEid = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, denyEid, 0, ABI, params);

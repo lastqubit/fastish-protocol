@@ -14,7 +14,7 @@ interface IUpdate {
 }
 
 abstract contract Update is IUpdate, Command {
-    uint internal immutable updateId = toEid(false, SELECTOR);
+    uint internal immutable updateId = toEid(SELECTOR);
 
     constructor(string memory params) {
         emit Endpoint(hostId, updateId, 0, ABI, params);
