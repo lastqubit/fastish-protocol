@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.33;
 
-// Event for used nonce ???
-
 abstract contract Nonces {
     mapping(uint account => mapping(uint192 key => uint64)) private nonces;
 
@@ -31,9 +29,13 @@ abstract contract Nonces {
     }
 }
 
-abstract contract DateNonces is Nonces {
+abstract contract DeadlineNonces is Nonces {
+    error ExpiredDeadline();
+
     function useDeadlineNonce(uint from, uint192 timestamp) internal {
-        // check deadline...
+        if (timestamp < block.timestamp) {
+            revert ExpiredDeadline();
+        }
         useNonce(from, timestamp, 0);
     }
 }
