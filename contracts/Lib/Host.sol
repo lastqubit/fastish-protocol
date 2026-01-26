@@ -30,30 +30,3 @@ abstract contract Host is AccessControl, AccessEvent, EndpointEvent {
         }
     }
 }
-
-/* abstract contract CallTo is AccessControl {
-    error FailedCall(bytes4 selector, address addr, uint size);
-
-    // @dev no checks, use callTo instead.
-    function callTo(
-        address addr,
-        uint value,
-        bytes memory data
-    ) internal returns (bytes memory) {
-        (bool s, bytes memory out) = payable(addr).call{value: value}(data);
-        if (s == false) {
-            revert FailedCall(bytes4(data), addr, data.length);
-        }
-        return out;
-    }
-
-    function callTo(
-        address addr,
-        uint value,
-        Value memory total,
-        bytes memory data
-    ) internal returns (bytes memory) {
-        return callTo(ensureTrusted(addr), useValue(total, value), data);
-    }
-}
- */
