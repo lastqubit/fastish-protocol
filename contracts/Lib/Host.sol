@@ -7,7 +7,6 @@ import {EndpointEvent} from "./Events/Node/Endpoint.sol";
 import {toValueId, toHostId, toEndpointId} from "./Utils.sol";
 
 abstract contract Host is AccessControl, AccessEvent, EndpointEvent {
-    uint public immutable block0 = block.number;
     uint public immutable hostId = toHostId(address(this));
     uint public immutable valueId = toValueId();
 
