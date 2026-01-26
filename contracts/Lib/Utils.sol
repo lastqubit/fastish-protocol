@@ -116,6 +116,13 @@ function hostAddr(uint id, bool onlyLocal) view returns (address) {
     return address(uint160(id));
 }
 
+function ensureHostId(uint id, address addr) view returns (uint) {
+    if (id != toHostId(addr)) {
+        revert InvalidId();
+    }
+    return id;
+}
+
 function endpointAddr(uint id, bool onlyLocal) view returns (address) {
     if (uint32(id >> 224) != ENDPOINT || (onlyLocal && isLocal(id))) {
         revert InvalidId();
