@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.33;
 
-import {AccessEvent} from "./Events/Node/Access.sol";
-import {addrOr, toHostId, toAccountId} from "./Utils.sol";
+import {addrOr, toAccountId} from "./Utils.sol";
 
-abstract contract AccessControl is AccessEvent {
+abstract contract AccessControl {
     address internal immutable cmdr;
     uint internal immutable admin;
-    uint internal immutable hostId;
 
     mapping(address => bool) internal authorized;
 
@@ -16,11 +14,10 @@ abstract contract AccessControl is AccessEvent {
     constructor(address commander) {
         cmdr = addrOr(commander, address(this));
         admin = toAccountId(cmdr);
-        hostId = toHostId(address(this));
     }
 
     modifier onlyAdmin(uint account) {
-        // CHECK ACCOUNT
+        ensureAdmin(account);
         ensureTrusted(msg.sender);
         _;
     }
@@ -35,12 +32,7 @@ abstract contract AccessControl is AccessEvent {
         _;
     }
 
-    function access(address addr, bool allow) internal {
-        authorized[addr] = allow;
-        emit Access(hostId, addr, allow);
-    }
-
-    function auth(address addr, bool allow) internal pure returns (address) {
+    function auth(address addr, bool allow) private pure returns (address) {
         if (allow == false) {
             revert Unauthorized(addr);
         }
@@ -54,6 +46,12 @@ abstract contract AccessControl is AccessEvent {
     function isTrusted(address addr) internal view virtual returns (bool) {
         if (addr == address(0)) return false;
         return addr == cmdr || addr == address(this) || authorized[addr];
+    }
+
+    function ensureAdmin(uint account) internal view {
+        if (account != admin) {
+            revert Unauthorized(msg.sender);
+        }
     }
 
     function ensureAuthorized(address addr) internal view returns (address) {
