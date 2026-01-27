@@ -5,7 +5,7 @@ import {Crypto} from "./Crypto.sol";
 import {DeadlineNonces} from "./Nonce.sol";
 
 // signed -> signer(20):deadline(8):sig(65)
-// param -> data:eid(32):deadline(8):sig(65)
+// param -> data:eid(32):deadline(8):sig(65) // signer should be part of data
 // 40 bits is plenty for deadline,
 
 abstract contract Validator is DeadlineNonces, Crypto {
