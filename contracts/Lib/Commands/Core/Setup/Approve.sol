@@ -11,10 +11,10 @@ interface IApprove {
 }
 
 abstract contract Approve is IApprove, Command {
-    uint internal immutable approveEid = toEid(SELECTOR);
+    uint internal immutable approveId = toEid(SELECTOR);
 
     constructor(string memory params) {
-        emit Endpoint(hostId, approveEid, 0, ABI, params);
+        emit Endpoint(hostId, approveId, 0, ABI, params);
     }
 
     function approve(uint account, bytes calldata step) external payable virtual returns (bytes4, bytes memory);

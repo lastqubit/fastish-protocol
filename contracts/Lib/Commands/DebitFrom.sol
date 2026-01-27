@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.33;
 
-import {Initiate} from "./Core/Setup/Initiate.sol";
+import {Setup} from "./Core/Setup/Setup.sol";
 
 string constant REQ = "debitFrom(uint use, uint min, uint max, uint bounty)";
 
@@ -13,7 +13,7 @@ struct DebitRequest {
 }
 
 // virtual fee function ??
-abstract contract DebitFrom is Initiate(REQ) {
+abstract contract DebitFrom is Setup(REQ) {
     function toDebitRequest(bytes calldata step) private pure returns (DebitRequest memory i) {
         (i.use, i.min, i.max, i.bounty) = abi.decode(getRequest(step), (uint, uint, uint, uint));
     }
@@ -33,7 +33,7 @@ abstract contract DebitFrom is Initiate(REQ) {
         return debitFrom(abi.decode(args, (uint)), step); ////
     }
 
-    function initiate(
+    function setup(
         uint account,
         bytes calldata step
     ) external payable override onlyTrusted returns (bytes4, bytes memory) {

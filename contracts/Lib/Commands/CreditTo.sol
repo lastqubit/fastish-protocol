@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.33;
 
-import {Sink} from "./Core/Operate/Sink.sol";
+import {Resolve} from "./Core/Operate/Resolve.sol";
 import {OpInput, decodeOperate} from "./Core/Operate/Operate.sol";
 import {ensureAmount, ensureAccount} from "../Utils.sol";
 
 string constant REQ = "creditTo(uint to)";
 
-abstract contract CreditTo is Sink(REQ) {
+abstract contract CreditTo is Resolve(REQ) {
     function resolveTo(uint account, bytes calldata req) private pure returns (uint) {
         if (req.length == 0) return account;
         return ensureAccount(abi.decode(req, (uint)));
@@ -26,7 +26,7 @@ abstract contract CreditTo is Sink(REQ) {
         return creditTo(i.account, i.id, i.amount, step);
     }
 
-    function sink(
+    function resolve(
         uint account,
         uint id,
         uint amount,

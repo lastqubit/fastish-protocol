@@ -7,15 +7,13 @@ import {SELECTOR as ALLOW} from "../Commands/Core/Setup/Allow.sol";
 import {SELECTOR as AUTHORIZE} from "../Commands/Core/Admin/Authorize.sol";
 import {SELECTOR as CREATE} from "../Commands/Core/Setup/Create.sol";
 import {SELECTOR as DENY} from "../Commands/Core/Setup/Deny.sol";
-import {SELECTOR as INITIATE} from "../Commands/Core/Setup/Initiate.sol";
 import {SELECTOR as RELOCATE} from "../Commands/Core/Admin/Relocate.sol";
 import {SELECTOR as REMOVE} from "../Commands/Core/Setup/Remove.sol";
 import {SELECTOR as SET} from "../Commands/Core/Setup/Set.sol";
 import {SELECTOR as TRANSFER} from "../Commands/Core/Setup/Transfer.sol";
 import {SELECTOR as UNAUTHORIZE} from "../Commands/Core/Admin/Unauthorize.sol";
 import {SELECTOR as UPDATE} from "../Commands/Core/Setup/Update.sol";
-import {SELECTOR as RELAY} from "../Commands/Core/Setup/Relay.sol";
-import {SELECTOR as SINK} from "../Commands/Core/Operate/Sink.sol";
+import {SELECTOR as RESOLVE} from "../Commands/Core/Operate/Resolve.sol";
 import {SELECTOR as TRANSFORM} from "../Commands/Core/Operate/Transform.sol";
 
 function isSetup(bytes4 s) pure returns (bool) {
@@ -25,8 +23,6 @@ function isSetup(bytes4 s) pure returns (bool) {
         s == ALLOW ||
         s == CREATE ||
         s == DENY ||
-        s == INITIATE ||
-        s == RELAY ||
         s == REMOVE ||
         s == SET ||
         s == TRANSFER ||
@@ -38,7 +34,7 @@ function isAdmin(bytes4 s) pure returns (bool) {
 }
 
 function isOperate(bytes4 s) pure returns (bool) {
-    return s == OPERATE || s == SINK || s == TRANSFORM;
+    return s == OPERATE || s == RESOLVE || s == TRANSFORM;
 }
 
 function isProcess(bytes4 s) pure returns (bool) {

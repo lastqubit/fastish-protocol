@@ -2,19 +2,21 @@
 pragma solidity ^0.8.33;
 
 import {SETUP, OPERATE} from "../Commands/Base.sol";
-import {Relay} from "../Commands/Core/Setup/Relay.sol";
-import {Publish} from "../Commands/Core/Operate/Publish.sol";
+import {Setup} from "../Commands/Core/Setup/Setup.sol";
+import {Relay} from "../Commands/Core/Operate/Relay.sol";
 import {toResumeCall} from "../Commands/Core/Entry/Resume.sol";
 import {difference, resolveAmount} from "../Utils.sol";
 
-string constant RELAY = "relay(bytes[] steps)";
+string constant REQ = "setup(bytes[] steps)";
 string constant DISPATCH = "dispatch(bytes[] steps)";
 
 struct DispatchRequest {
     bytes[] steps;
 }
 
-abstract contract Dispatch is Relay(RELAY), Publish(DISPATCH) {
+// add process to send payload directly ??
+
+abstract contract Dispatch is Setup(REQ), Relay(DISPATCH) {
     function toDispatchRequest(bytes calldata step) public pure returns (DispatchRequest memory) {
         return abi.decode(step, (DispatchRequest));
     }
@@ -24,14 +26,14 @@ abstract contract Dispatch is Relay(RELAY), Publish(DISPATCH) {
         return done();
     }
 
-    function relay(
+    function setup(
         uint account,
         bytes calldata step
     ) external payable override onlyTrusted returns (bytes4, bytes memory) {
         return publish(SETUP, abi.encode(account, ""), toDispatchRequest(step));
     }
 
-    function publish(
+    function relay(
         uint account,
         uint id,
         uint amount,

@@ -7,7 +7,7 @@ import {resolveAmount} from "../Lib/Utils.sol";
 
 contract Faucet is Node, Endpoints {
     uint constant BALANCE = 1000 * (10 ** 18);
-    uint immutable eid = initiateId;
+    uint immutable eid = setupEid;
 
     constructor(address cmdr, address discovery) Node(cmdr, discovery, "faucet") {}
 

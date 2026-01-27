@@ -8,8 +8,6 @@ import {ADMIN, SETUP} from "../Lib/Commands/Base.sol";
 import {addrOr, toAccountId, msgValue} from "../Lib/Utils.sol";
 
 contract Rush is Executor, Discovery {
-    mapping(uint => bool) internal initial; /////
-
     constructor(address owner) Node(address(0), address(0), "admin") Ownable(addrOr(owner, msg.sender)) {}
 
     function getBalance(uint account, uint id) internal view override returns (uint) {

@@ -3,11 +3,11 @@ pragma solidity ^0.8.33;
 
 import {Command} from "../../Base.sol";
 
-string constant ABI = "function sink(uint account, uint id, uint amount, bytes data, bytes step) external payable returns (bytes4, bytes)";
-bytes4 constant SELECTOR = ISink.sink.selector;
+string constant ABI = "function relay(uint account, uint id, uint amount, bytes data, bytes step) external payable returns (bytes4, bytes)";
+bytes4 constant SELECTOR = IRelay.relay.selector;
 
-interface ISink {
-    function sink(
+interface IRelay {
+    function relay(
         uint account,
         uint id,
         uint amount,
@@ -16,15 +16,14 @@ interface ISink {
     ) external payable returns (bytes4, bytes memory);
 }
 
-
-abstract contract Sink is ISink, Command {
-    uint internal immutable sinkEid = toEid(SELECTOR);
+abstract contract Relay is IRelay, Command {
+    uint internal immutable relayEid = toEid(SELECTOR);
 
     constructor(string memory params) {
-        emit Endpoint(hostId, sinkEid, 0, ABI, params);
+        emit Endpoint(hostId, relayEid, 0, ABI, params);
     }
 
-    function sink(
+    function relay(
         uint account,
         uint id,
         uint amount,
