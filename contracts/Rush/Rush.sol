@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 import {Executor, Ownable} from "./Executor.sol";
 import {Node} from "../Lib/Node.sol";
 import {Discovery} from "../Lib/Snippets/Discovery.sol";
-import {ADMIN, SETUP} from "../Lib/Commands/Base.sol";
+import {ADMIN, SETUP} from "../Lib/Commands/Core/Base.sol";
 import {addrOr, toAccountId, msgValue} from "../Lib/Utils.sol";
 
 contract Rush is Executor, Discovery {
@@ -12,6 +12,15 @@ contract Rush is Executor, Discovery {
 
     function getBalance(uint account, uint id) internal view override returns (uint) {
         return balances[account][id];
+    }
+
+    function validate(bytes[] calldata steps, bytes calldata signed) internal view returns (address) {
+        if (signed.length == 0) {
+            return msg.sender;
+        }
+        uint64 deadline;
+        bytes memory data = abi.encode(steps, executeId, deadline);
+        return validateRecover(data, signed);
     }
 
     function inject(bytes[] calldata steps) external payable override onlyOwner returns (uint) {

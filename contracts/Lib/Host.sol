@@ -21,7 +21,7 @@ abstract contract Host is AccessControl, AccessEvent, EndpointEvent {
         emit Access(hostId, addr, allow);
     }
 
-    function callTo(address addr, uint value, bytes memory data) internal returns (bytes memory out) {
+    function callAddr(address addr, uint value, bytes memory data) internal returns (bytes memory out) {
         bool success;
         (success, out) = payable(ensureTrusted(addr)).call{value: value}(data);
         if (success == false) {

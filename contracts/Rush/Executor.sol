@@ -6,126 +6,76 @@ import "hardhat/console.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Node} from "../Lib/Node.sol";
 import {Validator} from "../Lib/Validation/Validator.sol";
-import {Value} from "../Lib/Utils.sol";
-import {isOperate, isSetup} from "../Lib/Snippets/Commander.sol";
+import {Value, endpointAddr} from "../Lib/Utils.sol";
+import {canAdvance} from "../Lib/Snippets/Commander.sol";
 import {Endpoints} from "./Endpoints.sol";
 
 abstract contract Executor is Ownable, Node, Endpoints, Validator {
-    error BadPipe();
-    error InvalidBody();
-
-    // check eid... use eid open flag
-    function auth(bytes4 head, bytes calldata step) private returns (uint) {
-        // open utilize step to resolve account
-        // head utilize -> accept step resolve/finalize
-        return uint(bytes32(step));
-    }
+    error PipelineAdvanceError();
 
     // only allow input from guardians... not from owner.
     // validate max steps
     // validate factors on dst endpoint...
     // validator id can be endpoint id ??.. seperate validator for each endpoint
     // signed must include signer address as 32 bytes.. cross chain
-    function validate(bytes[] calldata steps, bytes calldata signed) internal view returns (address) {
-        if (signed.length == 0) {
-            return msg.sender;
-        }
-        uint64 deadline;
-        bytes memory data = abi.encode(steps, executeId, deadline);
-        return validateRecover(data, signed);
+
+
+    function ensureOperate(bytes4 head) internal pure {
+        /*     if (isOperate(head) == false) {
+        revert PipelineAdvanceError();
+    } */
     }
 
-    function encodeCall(
-        bytes4 selector,
-        bytes memory args,
-        bytes calldata step
-    ) private pure returns (bytes memory result) {
-        assembly {
-            let s := step.length
-            let argsLen := mload(args)
-            let argsToCopy := sub(argsLen, 0x20)
-            let size := add(add(4, argsLen), s)
-
-            result := mload(0x40)
-
-            mstore(0x40, add(result, and(add(add(0x20, size), 0x1f), not(0x1f))))
-            mstore(result, size)
-
-            let ptr := add(result, 0x20)
-            mstore8(ptr, byte(0, selector))
-            mstore8(add(ptr, 1), byte(1, selector))
-            mstore8(add(ptr, 2), byte(2, selector))
-            mstore8(add(ptr, 3), byte(3, selector))
-
-            // Copy args except last 32 bytes (the zero length) using mcopy
-            mcopy(add(result, 0x24), add(args, 0x20), argsToCopy)
-
-            // Copy step length and data at the position where the zero was
-            let stepPos := add(add(result, 0x24), argsToCopy)
-            calldatacopy(stepPos, step.offset, add(s, 0x20))
+    function ensureAdvanceable(bytes4 head, bytes calldata step) internal pure returns (uint, bytes4) {
+        bytes4 selector = bytes4(step);
+        if (canAdvance(head, selector) == false) {
+            revert PipelineAdvanceError();
         }
+        return (uint(bytes32(step)), selector);
     }
 
-    /*     function callTo(
-        uint eid,
-        uint head,
-        bytes memory args,
-        bytes calldata step,
-        Value memory total
-    ) internal returns (bytes4, bytes memory) {
-        uint v = uint96(bytes12(step[32:44]));
-        address addr = address(uint160(eid));
-        bytes memory call; // = encodeCall(head, args, step);
-        return abi.decode(callTo(addr, v, total, call), (uint, bytes));
-    } */
-
-    /*     function toCall(
-        uint eid,
-        bytes memory args,
-        bytes calldata step
-    ) private pure returns (bytes memory call) {
-        console.log("EID %s", eid);
-        uint32 selector = uint32(eid >> 216);
-        console.log("SELECT %s", selector);
-        call = bytes.concat(bytes4(selector), args, step);
-        call.store32no(step.length + 32, step.length);
-    } */
-
-    /*     function call(
+    // @dev args must end with step placeholder(empty bytes array)!
+    function callAddr(
         address addr,
-        uint value,
-        Value memory total,
-        bytes memory data
-    ) private returns (bytes4, bytes memory) {
-        return abi.decode(callTo(addr, value, total, data), (uint, bytes));
-    } */
-
-    function callTo(uint eid, bytes memory call, Value memory value) private returns (bytes4, bytes memory) {
-        bytes4 selector;
-        value.use = 0;
-        // check eid for open flag to encoded (account, step)
-    }
-
-    function next(
         bytes4 selector,
         bytes memory args,
         bytes calldata step,
         Value memory value
     ) private returns (bytes4, bytes memory) {
-        uint eid;
-        if (eid == setupEid) return debitFrom(args, step);
-        if (eid == resolveId) return creditTo(args, step);
-        bytes memory call = encodeCall(selector, args, step);
-        return callTo(eid, call, value);
+        require(args.length > 32);
+        uint v = 0;
+        assembly {
+            mstore(add(add(args, 32), sub(mload(args), 32)), step.length)
+        }
+        return abi.decode(callAddr(addr, v, bytes.concat(selector, args, step)), (bytes4, bytes));
     }
 
-    function pipe(bytes4 head, bytes memory args, bytes[] calldata steps, Value memory v) internal returns (uint) {
-        for (uint i = 0; i < steps.length; i++) {
-            // auth not return eid auth(head, steps[i])
-            (head, args) = next(0, args, steps[i], v);
+    function next(
+        bytes4 head,
+        bytes memory args,
+        bytes calldata step,
+        Value memory value
+    ) private returns (bytes4, bytes memory) {
+        (uint eid, bytes4 selector) = ensureAdvanceable(head, step);
+        if (eid == setupId) return debitFrom(args, step);
+        if (eid == resolveId) return creditTo(args, step);
+        if (eid == transactId) return settle(args, step);
+        address addr = endpointAddr(eid, true);
+        return callAddr(addr, selector, args, step, value);
+    }
+
+    function pipe(
+        bytes4 head,
+        bytes memory args,
+        bytes[] calldata steps,
+        Value memory value
+    ) internal returns (uint count) {
+        uint len = steps.length;
+        for (uint i = 0; i < len; i++) {
+            (head, args) = next(head, args, steps[i], value);
             if (head == 0) return i + 1;
         }
-        creditTo(args, msg.data[0:0]); // ensure head is next..
-        return steps.length + 1;
+        creditTo(head, args);
+        return len + 1;
     }
 }
