@@ -5,33 +5,25 @@ import "hardhat/console.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Node} from "../Lib/Node.sol";
-import {Validator} from "../Lib/Validation/Validator.sol";
 import {Value, endpointAddr} from "../Lib/Utils.sol";
 import {canAdvance} from "../Lib/Snippets/Commander.sol";
 import {Endpoints} from "./Endpoints.sol";
 
-abstract contract Executor is Ownable, Node, Endpoints, Validator {
+abstract contract Executor is Ownable, Node, Endpoints {
     error PipelineAdvanceError();
 
-    // only allow input from guardians... not from owner.
-    // validate max steps
-    // validate factors on dst endpoint...
-    // validator id can be endpoint id ??.. seperate validator for each endpoint
-    // signed must include signer address as 32 bytes.. cross chain
-
-
-    function ensureOperate(bytes4 head) internal pure {
-        /*     if (isOperate(head) == false) {
-        revert PipelineAdvanceError();
-    } */
-    }
-
-    function ensureAdvanceable(bytes4 head, bytes calldata step) internal pure returns (uint, bytes4) {
+    function ensureAdvanceable(bytes4 head, bytes calldata step) private pure returns (uint, bytes4) {
         bytes4 selector = bytes4(step);
         if (canAdvance(head, selector) == false) {
             revert PipelineAdvanceError();
         }
         return (uint(bytes32(step)), selector);
+    }
+
+    function ensureOperate(bytes4 head) private pure {
+        /*     if (isOperate(head) == false) {
+        revert PipelineAdvanceError();
+    } */
     }
 
     // @dev args must end with step placeholder(empty bytes array)!

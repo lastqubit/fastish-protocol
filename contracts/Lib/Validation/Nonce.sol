@@ -32,10 +32,10 @@ abstract contract Nonces {
 abstract contract DeadlineNonces is Nonces {
     error ExpiredDeadline();
 
-    function useDeadlineNonce(uint account, uint192 timestamp) internal {
-        if (timestamp < block.timestamp) {
+    function useDeadlineNonce(uint account, uint192 deadline) internal {
+        if (deadline < block.timestamp) {
             revert ExpiredDeadline();
         }
-        useNonce(account, timestamp, 0);
+        useNonce(account, deadline, 0);
     }
 }
