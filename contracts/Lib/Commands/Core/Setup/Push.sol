@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 import {Command} from "../Base.sol";
 
 string constant ABI = "function push(uint account, bytes step) external payable returns (bytes4, bytes)";
-bytes4 constant SELECTOR = IPush.push.selector;
+bytes4 constant PUSH = IPush.push.selector;
 
 /* Push-based operations:
 
@@ -17,7 +17,7 @@ interface IPush {
 }
 
 abstract contract Push is IPush, Command {
-    uint internal immutable pushId = toEid(SELECTOR);
+    uint internal immutable pushId = toEid(PUSH);
 
     constructor(string memory params) {
         emit Endpoint(hostId, pushId, 0, ABI, params);

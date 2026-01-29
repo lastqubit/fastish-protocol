@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 import {Command} from "../Base.sol";
 
 string constant ABI = "function allow(uint account, bytes step) external payable returns (bytes4, bytes)";
-bytes4 constant SELECTOR = IAllow.allow.selector;
+bytes4 constant ALLOW = IAllow.allow.selector;
 
 interface IAllow {
     function allow(
@@ -14,7 +14,7 @@ interface IAllow {
 }
 
 abstract contract Allow is IAllow, Command {
-    uint internal immutable allowEid = toEid(SELECTOR);
+    uint internal immutable allowEid = toEid(ALLOW);
 
     constructor(string memory params) {
         emit Endpoint(hostId, allowEid, 0, ABI, params);

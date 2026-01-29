@@ -7,14 +7,20 @@ import {AUTHORIZE} from "../Commands/Core/Admin/Authorize.sol";
 import {UNAUTHORIZE} from "../Commands/Core/Admin/Unauthorize.sol";
 import {RELOCATE} from "../Commands/Core/Admin/Relocate.sol";
 
-import {SELECTOR as ADD} from "../Commands/Core/Setup/Add.sol";
-import {SELECTOR as ALLOW} from "../Commands/Core/Setup/Allow.sol";
-import {SELECTOR as CREATE} from "../Commands/Core/Setup/Create.sol";
-import {SELECTOR as DENY} from "../Commands/Core/Setup/Deny.sol";
-import {SELECTOR as REMOVE} from "../Commands/Core/Setup/Remove.sol";
-import {SELECTOR as SET} from "../Commands/Core/Setup/Set.sol";
-import {SELECTOR as TRANSFER} from "../Commands/Core/Setup/Transfer.sol";
-import {SELECTOR as UPDATE} from "../Commands/Core/Setup/Update.sol";
+import {ADD} from "../Commands/Core/Setup/Add.sol";
+import {ALLOW} from "../Commands/Core/Setup/Allow.sol";
+import {APPROVE} from "../Commands/Core/Setup/Approve.sol";
+import {COLLECT} from "../Commands/Core/Setup/Collect.sol";
+import {CREATE} from "../Commands/Core/Setup/Create.sol";
+import {DENY} from "../Commands/Core/Setup/Deny.sol";
+import {EXECUTE} from "../Commands/Core/Setup/Execute.sol";
+import {INVOKE} from "../Commands/Core/Setup/Invoke.sol";
+import {PULL} from "../Commands/Core/Setup/Pull.sol";
+import {PUSH} from "../Commands/Core/Setup/Push.sol";
+import {REMOVE} from "../Commands/Core/Setup/Remove.sol";
+import {SET} from "../Commands/Core/Setup/Set.sol";
+import {TRANSFER} from "../Commands/Core/Setup/Transfer.sol";
+import {UPDATE} from "../Commands/Core/Setup/Update.sol";
 
 import {OPERATE} from "../Commands/Core/Operate/Operate.sol";
 import {RELAY} from "../Commands/Core/Operate/Relay.sol";
@@ -26,8 +32,14 @@ function isSetup(bytes4 s) pure returns (bool) {
         s == SETUP ||
         s == ADD ||
         s == ALLOW ||
+        s == APPROVE ||
+        s == COLLECT ||
         s == CREATE ||
         s == DENY ||
+        s == EXECUTE ||
+        s == INVOKE ||
+        s == PULL ||
+        s == PUSH ||
         s == REMOVE ||
         s == SET ||
         s == TRANSFER ||

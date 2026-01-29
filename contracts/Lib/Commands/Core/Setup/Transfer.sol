@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 import {Command} from "../Base.sol";
 
 string constant ABI = "function transfer(uint account, bytes step) external payable returns (bytes4, bytes)";
-bytes4 constant SELECTOR = ITransfer.transfer.selector;
+bytes4 constant TRANSFER = ITransfer.transfer.selector;
 
 interface ITransfer {
     function transfer(
@@ -14,7 +14,7 @@ interface ITransfer {
 }
 
 abstract contract Transfer is ITransfer, Command {
-    uint internal immutable actId = toEid(SELECTOR);
+    uint internal immutable actId = toEid(TRANSFER);
 
     constructor(string memory params) {
         emit Endpoint(hostId, actId, 0, ABI, params);

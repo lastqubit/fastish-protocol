@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 import {Command} from "../Base.sol";
 
 string constant ABI = "function add(uint account, bytes step) external payable returns (bytes4, bytes)";
-bytes4 constant SELECTOR = IAdd.add.selector;
+bytes4 constant ADD = IAdd.add.selector;
 
 interface IAdd {
     function add(
@@ -14,7 +14,7 @@ interface IAdd {
 }
 
 abstract contract Add is IAdd, Command {
-    uint internal immutable addId = toEid(SELECTOR);
+    uint internal immutable addId = toEid(ADD);
 
     constructor(string memory params) {
         emit Endpoint(hostId, addId, 0, ABI, params);
