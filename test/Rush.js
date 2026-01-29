@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { network } from "hardhat";
-import { AbiCoder, concat, zeroPadValue, toBeHex, Interface, Contract, id } from "ethers";
+import { AbiCoder, FunctionFragment, Interface, Contract } from "ethers";
+import { encodeBlock, encodeStep, encodeCall } from "../rush/evm/encode.js";
 
 const { ethers } = await network.connect();
 const coder = AbiCoder.defaultAbiCoder();
@@ -40,25 +41,14 @@ async function toEndpointId(addr, selector) {
     return buildId(addr, selectorUint, chainId, ENDPOINT);
 }
 
-// --- Step encoding helpers ---
+// --- Query helper ---
 
-function encodeBlock(key, data) {
-    const keyHex = key.slice(2).padStart(8, "0");
-    const dataHex = data.startsWith("0x") ? data.slice(2) : data;
-    const len = dataHex.length / 2;
-    const lenHex = len.toString(16).padStart(8, "0");
-    return "0x" + keyHex + lenHex + dataHex;
-}
-
-function encodeRequest(data) {
-    return encodeBlock("0x00000000", data);
-}
-
-function encodeStep(endpointId, value = 0n, ...blocks) {
-    const eidHex = zeroPadValue(toBeHex(endpointId), 32);
-    const valHex = zeroPadValue(toBeHex(value), 32);
-    if (blocks.length === 0) return concat([eidHex, valHex]);
-    return concat([eidHex, valHex, ...blocks]);
+async function query(addr, signature, args = {}) {
+    const data = encodeCall(signature, args);
+    const result = await ethers.provider.call({ to: addr, data });
+    const { outputs } = FunctionFragment.from(signature);
+    const decoded = coder.decode(outputs, result);
+    return decoded.length === 1 ? decoded[0] : decoded;
 }
 
 // --- Event helpers ---
@@ -86,10 +76,6 @@ async function getEndpointEvents(contract) {
 
 function findEndpoint(endpoints, fnName) {
     return endpoints.find((e) => e.abi.includes(`function ${fnName}(`));
-}
-
-function getSelector(signature) {
-    return id(signature).slice(0, 10);
 }
 
 // --- Test Suite ---
@@ -168,7 +154,8 @@ describe("Rush Protocol", function () {
     describe("Access Control", function () {
         it("Faucet should not be trusted by Rush before authorization", async function () {
             const faucetHostId = await faucet.hostId();
-            expect(await rush.isTrusted(faucetHostId)).to.equal(false);
+            const trusted = await query(rushAddr, "function isTrusted(uint caller) external view returns (bool)", { caller: faucetHostId });
+            expect(trusted).to.equal(false);
         });
 
         it("Non-owner should not be able to call inject", async function () {
@@ -213,8 +200,7 @@ describe("Rush Protocol", function () {
             const authorizeEid = authorizeEp.id;
 
             // The request for authorize: abi.encode(uint[] hosts)
-            const hostsEncoded = coder.encode(["uint256[]"], [[faucetHostId]]);
-            const requestBlock = encodeRequest(hostsEncoded);
+            const requestBlock = encodeBlock("authorize(uint256[] hosts)", { hosts: [faucetHostId] });
 
             // Build the authorize step
             const step = encodeStep(authorizeEid, 0n, requestBlock);
@@ -241,7 +227,8 @@ describe("Rush Protocol", function () {
 
         it("Faucet should be trusted by Rush after authorization", async function () {
             const faucetHostId = await faucet.hostId();
-            expect(await rush.isTrusted(faucetHostId)).to.equal(true);
+            const trusted = await query(rushAddr, "function isTrusted(uint caller) external view returns (bool)", { caller: faucetHostId });
+            expect(trusted).to.equal(true);
         });
     });
 
@@ -259,12 +246,9 @@ describe("Rush Protocol", function () {
             const tokenId = buildId(BigInt(dummyTokenAddr), chainId, 0x01010500n, 0n);
 
             // Step 1: DebitFrom on Faucet
-            // Request: debitFrom(uint use, uint min, uint max, uint bounty)
-            const debitRequest = coder.encode(
-                ["uint256", "uint256", "uint256", "uint256"],
-                [tokenId, 100n, 500n, 0n]
-            );
-            const debitBlock = encodeRequest(debitRequest);
+            const debitBlock = encodeBlock("debitFrom(uint256 use, uint256 min, uint256 max, uint256 bounty)", {
+                use: tokenId, min: 100n, max: 500n, bounty: 0n,
+            });
             const debitStep = encodeStep(faucetSetupEid, 0n, debitBlock);
 
             // Step 2: CreditTo on Rush (credit to self)
@@ -294,7 +278,7 @@ describe("Rush Protocol", function () {
 
             // Check user's balance on Rush
             const userAccountId = toAccountId(user.address);
-            const balances = await rush.getBalances(userAccountId, [tokenId]);
+            const balances = await query(rushAddr, "function getBalances(uint account, uint[] ids) external view returns (uint[])", { account: userAccountId, ids: [tokenId] });
             expect(balances[0]).to.equal(500n); // Faucet balance is 1000e18, max is 500
         });
 
@@ -306,11 +290,9 @@ describe("Rush Protocol", function () {
             const dummyTokenAddr = "0x0000000000000000000000000000000000000002";
             const tokenId = buildId(BigInt(dummyTokenAddr), chainId, 0x01010500n, 0n);
 
-            const debitRequest = coder.encode(
-                ["uint256", "uint256", "uint256", "uint256"],
-                [tokenId, 50n, 200n, 0n]
-            );
-            const debitBlock = encodeRequest(debitRequest);
+            const debitBlock = encodeBlock("debitFrom(uint256 use, uint256 min, uint256 max, uint256 bounty)", {
+                use: tokenId, min: 50n, max: 200n, bounty: 0n,
+            });
             const debitStep = encodeStep(faucetSetupEid, 0n, debitBlock);
 
             const futureDeadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
@@ -325,7 +307,7 @@ describe("Rush Protocol", function () {
             await tx.wait();
 
             const userAccountId = toAccountId(user.address);
-            const balances = await rush.getBalances(userAccountId, [tokenId]);
+            const balances = await query(rushAddr, "function getBalances(uint account, uint[] ids) external view returns (uint[])", { account: userAccountId, ids: [tokenId] });
             expect(balances[0]).to.equal(200n);
         });
     });
@@ -339,17 +321,14 @@ describe("Rush Protocol", function () {
             const tokenId = buildId(BigInt(dummyTokenAddr), chainId, 0x01010500n, 0n);
 
             // Debit step
-            const debitRequest = coder.encode(
-                ["uint256", "uint256", "uint256", "uint256"],
-                [tokenId, 100n, 300n, 0n]
-            );
-            const debitBlock = encodeRequest(debitRequest);
+            const debitBlock = encodeBlock("debitFrom(uint256 use, uint256 min, uint256 max, uint256 bounty)", {
+                use: tokenId, min: 100n, max: 300n, bounty: 0n,
+            });
             const debitStep = encodeStep(faucetSetupEp.id, 0n, debitBlock);
 
             // Credit step with redirection to 'other' account
             const otherAccountId = toAccountId(other.address);
-            const creditRequest = coder.encode(["uint256"], [otherAccountId]);
-            const creditBlock = encodeRequest(creditRequest);
+            const creditBlock = encodeBlock("creditTo(uint256 to)", { to: otherAccountId });
             const creditStep = encodeStep(rushResolveEp.id, 0n, creditBlock);
 
             const futureDeadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
@@ -362,7 +341,7 @@ describe("Rush Protocol", function () {
             await tx.wait();
 
             // Funds should be in 'other' account, not 'user'
-            const balances = await rush.getBalances(otherAccountId, [tokenId]);
+            const balances = await query(rushAddr, "function getBalances(uint account, uint[] ids) external view returns (uint[])", { account: otherAccountId, ids: [tokenId] });
             expect(balances[0]).to.equal(300n);
         });
     });
@@ -392,7 +371,7 @@ describe("Rush Protocol", function () {
             const tokenId = buildId(BigInt(dummyTokenAddr), chainId, 0x01010500n, 0n);
 
             // User should have balance from the earlier debit-credit test
-            const balances = await rush.getBalances(userAccountId, [tokenId]);
+            const balances = await query(rushAddr, "function getBalances(uint account, uint[] ids) external view returns (uint[])", { account: userAccountId, ids: [tokenId] });
             expect(balances[0]).to.be.greaterThan(0n);
         });
 
@@ -405,7 +384,7 @@ describe("Rush Protocol", function () {
                 0n
             );
 
-            const balances = await rush.getBalances(randomAccountId, [unknownTokenId]);
+            const balances = await query(rushAddr, "function getBalances(uint account, uint[] ids) external view returns (uint[])", { account: randomAccountId, ids: [unknownTokenId] });
             expect(balances[0]).to.equal(0n);
         });
     });
@@ -416,15 +395,15 @@ describe("Rush Protocol", function () {
             const unauthorizeEp = findEndpoint(rushEndpoints, "unauthorize");
             const unauthorizeEid = unauthorizeEp.id;
 
-            const hostsEncoded = coder.encode(["uint256[]"], [[faucetHostId]]);
-            const requestBlock = encodeRequest(hostsEncoded);
+            const requestBlock = encodeBlock("unauthorize(uint256[] hosts)", { hosts: [faucetHostId] });
             const step = encodeStep(unauthorizeEid, 0n, requestBlock);
 
             const tx = await rush.connect(owner).inject([step]);
             await tx.wait();
 
             // Faucet should no longer be trusted
-            expect(await rush.isTrusted(faucetHostId)).to.equal(false);
+            const trusted = await query(rushAddr, "function isTrusted(uint caller) external view returns (bool)", { caller: faucetHostId });
+            expect(trusted).to.equal(false);
         });
 
         it("Pipeline with Faucet should fail after unauthorization", async function () {
@@ -432,11 +411,9 @@ describe("Rush Protocol", function () {
             const dummyTokenAddr = "0x0000000000000000000000000000000000000001";
             const tokenId = buildId(BigInt(dummyTokenAddr), chainId, 0x01010500n, 0n);
 
-            const debitRequest = coder.encode(
-                ["uint256", "uint256", "uint256", "uint256"],
-                [tokenId, 100n, 500n, 0n]
-            );
-            const debitBlock = encodeRequest(debitRequest);
+            const debitBlock = encodeBlock("debitFrom(uint256 use, uint256 min, uint256 max, uint256 bounty)", {
+                use: tokenId, min: 100n, max: 500n, bounty: 0n,
+            });
             const debitStep = encodeStep(faucetSetupEp.id, 0n, debitBlock);
 
             const futureDeadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
@@ -450,12 +427,12 @@ describe("Rush Protocol", function () {
         it("Should re-authorize Faucet for subsequent tests", async function () {
             const faucetHostId = await faucet.hostId();
             const authorizeEp = findEndpoint(rushEndpoints, "authorize");
-            const hostsEncoded = coder.encode(["uint256[]"], [[faucetHostId]]);
-            const requestBlock = encodeRequest(hostsEncoded);
+            const requestBlock = encodeBlock("authorize(uint256[] hosts)", { hosts: [faucetHostId] });
             const step = encodeStep(authorizeEp.id, 0n, requestBlock);
 
             await rush.connect(owner).inject([step]);
-            expect(await rush.isTrusted(faucetHostId)).to.equal(true);
+            const trusted = await query(rushAddr, "function isTrusted(uint caller) external view returns (bool)", { caller: faucetHostId });
+            expect(trusted).to.equal(true);
         });
     });
 });
