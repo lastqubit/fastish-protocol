@@ -13,7 +13,7 @@ abstract contract Settle is Transact("") {
         uint,
         Tx[] calldata txs,
         bytes calldata
-    ) external payable override returns (bytes4, bytes memory) {
+    ) external payable override onlyTrusted returns (bytes4, bytes memory) {
         for (uint i = 0; i < txs.length; i++) {
             settle(txs[i].from, txs[i].to, txs[i].id, txs[i].amount);
         }
