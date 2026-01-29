@@ -8,13 +8,13 @@ import {Relocate} from "./Commands/Core/Admin/Relocate.sol";
 import {IsTrusted} from "./Queries/IsTrusted.sol";
 
 interface INodeDiscovery {
-    function announce(uint id, uint block0, string calldata name) external;
+    function announce(uint id, uint block0, string calldata namespace) external;
 }
 
 abstract contract Node is Host, Authorize, Unauthorize, Relocate, IsTrusted {
-    constructor(address cmdr, address discovery, string memory name) AccessControl(cmdr) {
+    constructor(address cmdr, address discovery, string memory namespace) AccessControl(cmdr) {
         if (discovery == address(0)) return;
-        INodeDiscovery(discovery).announce(hostId, block.number, name);
+        INodeDiscovery(discovery).announce(hostId, block.number, namespace);
     }
 
     receive() external payable {}

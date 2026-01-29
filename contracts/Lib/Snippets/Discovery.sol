@@ -6,7 +6,7 @@ import {INodeDiscovery} from "../Node.sol";
 import {ensureHost} from "../Utils.sol";
 
 abstract contract Discovery is AnnouncedEvent, INodeDiscovery {
-    function announce(uint id, uint block0, string calldata name) external {
-        emit Announced(ensureHost(id, msg.sender), tx.origin, block0, name);
+    function announce(uint id, uint block0, string calldata namespace) external {
+        emit Announced(ensureHost(id, msg.sender), tx.origin, block0, namespace);
     }
 }
