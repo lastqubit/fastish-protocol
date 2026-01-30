@@ -1,7 +1,7 @@
 import { Contract } from "ethers";
 
 const INJECT = "function inject(bytes[] steps) external payable returns(uint count)";
-const EXECUTE = "function pipe(bytes[] steps, bytes signed) external payable returns(uint count)";
+const EXECUTE = "function pipe(uint192 deadline, bytes[] steps, bytes signed) external payable returns(uint count)";
 
     // rush javascript -> pipe() factor() sign(steps).. or pipe.sign()
 export function createRush(addr, provider) {
@@ -11,8 +11,8 @@ export function createRush(addr, provider) {
         return contract.inject(steps, { value: 0n });
     }
 
-    async function pipe(steps = [], signed = "0x") {
-        return contract.pipe(steps, signed, { value: 0n });
+    async function pipe(deadline, steps = [], signed = "0x") {
+        return contract.pipe(deadline, steps, signed, { value: 0n });
     }
 
     return { inject, pipe };
