@@ -18,26 +18,26 @@ function ensureMax(value, max) {
     return val;
 }
 
-function max32(value) {
+export function max32(value) {
     return ensureMax(value, MAX32);
 }
 
-function max64(value) {
+export function max64(value) {
     return ensureMax(value, MAX64);
 }
 
-function max96(value) {
+export function max96(value) {
     return ensureMax(value, MAX96);
 }
 
-function max128(value) {
+export function max128(value) {
     return ensureMax(value, MAX128);
 }
 
-function max160(value) {
+export function max160(value) {
     return ensureMax(value, MAX160);
 }
 
-function max256(value) {
+export function max256(value) {
     return ensureMax(value, MAX256);
 }
