@@ -9,6 +9,6 @@ abstract contract TokenEmitter is EventEmitter {
     event Token(uint indexed node, uint id, bool supported);
 
     constructor() {
-        emit EventDesc(ABI);
+        emit EventSignature(ABI);
     }
 }

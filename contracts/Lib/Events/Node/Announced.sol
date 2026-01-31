@@ -9,6 +9,6 @@ abstract contract AnnouncedEvent is EventEmitter {
     event Announced(uint indexed node, address indexed origin, uint block0, string namespace);
 
     constructor() {
-        emit EventDesc(ABI);
+        emit EventSignature(ABI);
     }
 }

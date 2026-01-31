@@ -9,6 +9,6 @@ abstract contract EndpointEvent is EventEmitter {
     event Endpoint(uint indexed node, uint id, uint gas, string abi, string params);
 
     constructor() {
-        emit EventDesc(ABI);
+        emit EventSignature(ABI);
     }
 }

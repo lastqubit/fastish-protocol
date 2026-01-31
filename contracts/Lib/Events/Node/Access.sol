@@ -9,6 +9,6 @@ abstract contract AccessEvent is EventEmitter {
     event Access(uint indexed node, address caller, bool trusted);
 
     constructor() {
-        emit EventDesc(ABI);
+        emit EventSignature(ABI);
     }
 }

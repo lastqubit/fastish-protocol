@@ -9,6 +9,6 @@ abstract contract CollectEvent is EventEmitter {
     event Collect(uint indexed account, uint indexed eid, uint id, uint amount);
 
     constructor() {
-        emit EventDesc(ABI);
+        emit EventSignature(ABI);
     }
 }

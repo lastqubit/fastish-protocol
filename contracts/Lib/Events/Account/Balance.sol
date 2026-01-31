@@ -15,6 +15,6 @@ abstract contract BalanceEvent is EventEmitter {
     );
 
     constructor() {
-        emit EventDesc(ABI);
+        emit EventSignature(ABI);
     }
 }
