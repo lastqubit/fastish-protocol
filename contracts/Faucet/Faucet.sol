@@ -9,7 +9,7 @@ contract Faucet is Host, Endpoints {
     uint constant BALANCE = 1000 * (10 ** 18);
     uint immutable eid = setupId;
 
-    constructor(address cmdr, address discovery) Host(cmdr, discovery, "faucet") {}
+    constructor(address cmdr, address discovery) Host(cmdr, discovery, 1, "faucet") {}
 
     function debitFrom(uint account, uint id, uint min, uint max) internal override returns (uint) {
         uint amount = resolveAmount(BALANCE, min, max);

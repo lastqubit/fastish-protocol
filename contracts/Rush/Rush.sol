@@ -9,7 +9,9 @@ import {ADMIN, SETUP} from "../Lib/Commands/Core/Base.sol";
 import {addrOr, toAccountId, ensureNotExpired, msgValue} from "../Lib/Utils.sol";
 
 contract Rush is Executor, Validator, Discovery {
-    constructor(address owner) Host(address(0), address(0), "admin") Ownable(addrOr(owner, msg.sender)) {}
+    constructor(address owner) Host(address(0), address(0), 1, "rush") Ownable(addrOr(owner, msg.sender)) {
+        emit Deployed(nodeId, owner, block.number, 1, "rush");
+    }
 
     modifier notExpired(uint192 deadline) {
         ensureNotExpired(deadline);
