@@ -16,6 +16,6 @@ abstract contract SwapEvent is EventEmitter {
     );
 
     constructor() {
-        emit EventSignature(ABI);
+        emit Signature(ABI);
     }
 }

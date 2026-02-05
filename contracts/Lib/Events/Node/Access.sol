@@ -3,12 +3,12 @@ pragma solidity ^0.8.33;
 
 import {EventEmitter} from "../Emitter.sol";
 
-string constant ABI = "event Access(uint indexed node, address caller, bool trusted)";
+string constant ABI = "event Access(uint indexed host, address caller, bool trusted)";
 
 abstract contract AccessEvent is EventEmitter {
-    event Access(uint indexed node, address caller, bool trusted);
+    event Access(uint indexed host, address caller, bool trusted);
 
     constructor() {
-        emit EventSignature(ABI);
+        emit Signature(ABI);
     }
 }

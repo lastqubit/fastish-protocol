@@ -9,6 +9,6 @@ abstract contract DepositEvent is EventEmitter {
     event Deposit(uint indexed account, uint indexed eid, uint id, uint amount);
 
     constructor() {
-        emit EventSignature(ABI);
+        emit Signature(ABI);
     }
 }

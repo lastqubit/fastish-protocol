@@ -14,6 +14,6 @@ abstract contract WithdrawalEvent is EventEmitter {
     );
 
     constructor() {
-        emit EventSignature(ABI);
+        emit Signature(ABI);
     }
 }
