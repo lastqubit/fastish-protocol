@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.33;
+
+import {CommandBase, CommandContext, SETUP} from "../Base.sol";
+import {ALLOCATION, ALLOCATION_KEY, BlockRef} from "../../blocks/Schema.sol";
+import {Blocks} from "../../blocks/Readers.sol";
+import {ensureAssetRef} from "../../utils/Assets.sol";
+import {toCommandId} from "../../utils/Ids.sol";
+
+using Blocks for BlockRef;
+
+bytes32 constant NAME = "setAllocations";
+
+abstract contract SetAllocations is CommandBase {
+    uint internal immutable setAllocationsId = toCommandId(NAME, address(this));
+
+    constructor() {
+        emit Command(host, NAME, ALLOCATION, setAllocationsId, SETUP, SETUP);
+    }
+
+    function setAllocation(uint host, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+
+    function setAllocations(
+        CommandContext calldata c
+    ) external payable onlyAdmin(c.account) onlyCommand(setAllocationsId, c.target) returns (bytes memory) {
+        uint i = 0;
+        while (i < c.request.length) {
+            BlockRef memory ref = Blocks.from(c.request, i);
+            if (ref.key != ALLOCATION_KEY) break;
+            (uint host, bytes32 asset, bytes32 meta, uint amount) = ref.unpackAllocation(c.request);
+            setAllocation(host, asset, meta, amount);
+            i = ref.end;
+        }
+        return done(0, i);
+    }
+}
