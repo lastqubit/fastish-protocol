@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
 import {BALANCES, CommandBase, CommandContext, CUSTODIES, NoOperation, PIPE, SETUP, TRANSACTIONS} from "./commands/Base.sol";

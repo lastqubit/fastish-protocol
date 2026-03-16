@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
 import {ALLOCATION_KEY, AMOUNT_KEY, ASSET_KEY, AUTH_KEY, BALANCE_KEY, CUSTODY_KEY, BlockRef, BOUNTY_KEY, DataRef, FUNDING_KEY, MAXIMUM_KEY, MemRef, MINIMUM_KEY, NODE_KEY, RECIPIENT_KEY, ROUTE_KEY, STEP_KEY, TX_KEY, AssetAmount, HostAmount, Tx} from "./Schema.sol";

@@ -1,11 +1,22 @@
 {
-  "name": "rush-lib",
+  "name": "rush",
   "version": "0.1.0",
-  "private": true,
+  "description": "Solidity contracts and protocol building blocks for Rush hosts and commands.",
+  "private": false,
+  "license": "MIT",
   "type": "module",
+  "files": [
+    "contracts/**/*.sol",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "prepublishOnly": "npm test"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-mocha": "^3.0.13",

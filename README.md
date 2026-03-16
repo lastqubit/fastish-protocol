@@ -1,6 +1,6 @@
-# rush-lib
+# rush
 
-`rush-lib` is the Solidity library used to build hosts and commands for the Rush protocol.
+`rush` is the Solidity library used to build hosts and commands for the Rush protocol.
 
 It contains the reusable contracts, utilities, and encoding helpers that Rush applications compose on top of. If you are building a Rush host, a command contract, or a small protocol extension that needs to speak Rush's id, asset, and block formats, this repo is the shared foundation.
 
@@ -28,10 +28,10 @@ Most consumers should start from the barrel files in `contracts/`:
 Extend `Host` when you want a Rush host contract with admin command support and optional discovery registration.
 
 ```solidity
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {Host} from "./contracts/Core.sol";
+import {Host} from "rush/contracts/Core.sol";
 
 contract ExampleHost is Host {
     constructor(address commander, address discovery)
@@ -51,10 +51,10 @@ contract ExampleHost is Host {
 Extend `CommandBase` when you want a Rush command contract that runs inside the protocol's trusted call model.
 
 ```solidity
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {CommandBase} from "./contracts/Commands.sol";
+import {CommandBase} from "rush/contracts/Commands.sol";
 
 contract ExampleCommand is CommandBase {
     constructor(address commander) AccessControl(commander) {}
@@ -82,13 +82,21 @@ contract ExampleCommand is CommandBase {
 ## Install And Compile
 
 ```bash
-npm install
+npm install rush
 npm run compile
 ```
 
+The stable import surface for consumers is:
+
+- `rush/contracts/Core.sol`
+- `rush/contracts/Commands.sol`
+- `rush/contracts/Blocks.sol`
+- `rush/contracts/Utils.sol`
+- `rush/contracts/Events.sol`
+
 ## When To Use This Repo
 
-Use `rush-lib` if you want to:
+Use `rush` if you want to:
 
 - create a new Rush host
 - implement a new Rush command
