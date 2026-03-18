@@ -44,6 +44,10 @@ string constant MAXIMUM = "maximum(bytes32 asset, bytes32 meta, uint amount)";
 bytes4 constant MAXIMUM_KEY = bytes4(keccak256("maximum(bytes32 asset, bytes32 meta, uint amount)"));
 string constant ROUTE = "route(bytes data)";
 bytes4 constant ROUTE_KEY = bytes4(keccak256("route(bytes data)"));
+string constant RATE = "rate(uint value)";
+bytes4 constant RATE_KEY = bytes4(keccak256("rate(uint value)"));
+string constant PARTY = "party(bytes32 account)";
+bytes4 constant PARTY_KEY = bytes4(keccak256("party(bytes32 account)"));
 string constant RECIPIENT = "recipient(bytes32 account)";
 bytes4 constant RECIPIENT_KEY = bytes4(keccak256("recipient(bytes32 account)"));
 string constant TX = "tx(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
@@ -64,13 +68,20 @@ string constant ALLOCATION = "allocation(uint host, bytes32 asset, bytes32 meta,
 bytes4 constant ALLOCATION_KEY = bytes4(keccak256("allocation(uint host, bytes32 asset, bytes32 meta, uint amount)"));
 string constant BOUNTY = "bounty(uint amount, bytes32 relayer)";
 bytes4 constant BOUNTY_KEY = bytes4(keccak256("bounty(uint amount, bytes32 relayer)"));
-string constant SEED = "seed(bytes data)";
-bytes4 constant SEED_KEY = bytes4(keccak256("seed(bytes data)"));
+
+uint constant AUTH_PROOF_LEN = 85;
+uint constant AUTH_TOTAL_LEN = 161;
 
 struct AssetAmount {
     bytes32 asset;
     bytes32 meta;
     uint amount;
+}
+
+struct Listing {
+    uint host;
+    bytes32 asset;
+    bytes32 meta;
 }
 
 struct HostAmount {
