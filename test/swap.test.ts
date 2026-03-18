@@ -8,10 +8,10 @@ import {
   pad32,
 } from "./helpers/blocks.js";
 
-describe("SwapExactInAsset32", () => {
+describe("SwapExactIn", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let userAccount: string;
-  const swapMethod = "swapExactInAsset32((uint256,bytes32,bytes,bytes))";
+  const swapMethod = "swapExactIn((uint256,bytes32,bytes,bytes))";
 
   before(async () => {
     const signer = await getSigner(0);

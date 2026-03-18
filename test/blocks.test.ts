@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "ethers";
 import { deploy } from "./helpers/setup.js";
+import "./helpers/matchers.js";
 import {
   AMOUNT_KEY, BALANCE_KEY, CUSTODY_KEY, RECIPIENT_KEY, NODE_KEY,
   FUNDING_KEY, ASSET_KEY, ALLOCATION_KEY, TX_KEY, BOUNTY_KEY,

@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "ethers";
 import { deploy, getSigner } from "./helpers/setup.js";
 import {
-  encodeAmountBlock, encodeBalanceBlock, encodeCustodyBlock,
+  encodeAmountBlock, encodeAmountBlockWithNode, encodeAmountBlockWithRecipient, encodeBalanceBlock, encodeCustodyBlock,
   encodeRecipientBlock, encodeNodeBlock, encodeTxBlock, encodeStepBlock,
   concat
 } from "./helpers/blocks.js";
@@ -155,12 +155,9 @@ describe("Commands", () => {
     const asset = ethers.zeroPadValue("0x20", 32);
     const meta  = ethers.ZeroHash;
 
-    it("emits TransferCalled for AMOUNT + RECIPIENT in request", async () => {
+    it("emits TransferCalled for AMOUNT with RECIPIENT child", async () => {
       const to = ethers.zeroPadValue("0xbeef", 32);
-      const request = concat(
-        encodeAmountBlock(asset, meta, 200n),
-        encodeRecipientBlock(to)
-      );
+      const request = encodeAmountBlockWithRecipient(asset, meta, 200n, to);
       const tx = await callAs(0, "transfer", ctx({ request }));
       await expect(tx).to.emit(host, "TransferCalled")
         .withArgs(userAccount, to, asset, meta, 200n);
@@ -173,10 +170,10 @@ describe("Commands", () => {
         .to.be.revertedWithCustomError(host, "NoOperation");
     });
 
-    it("reverts ZeroRecipient when the request omits RECIPIENT", async () => {
+    it("reverts MalformedBlocks when AMOUNT has no RECIPIENT child", async () => {
       const request = encodeAmountBlock(asset, meta, 1n);
       await expect(callAs(0, "transfer", ctx({ request })))
-        .to.be.revertedWithCustomError(host, "ZeroRecipient");
+        .to.be.revertedWithCustomError(host, "MalformedBlocks");
     });
   });
 
@@ -298,10 +295,7 @@ describe("Commands", () => {
       const asset = ethers.zeroPadValue("0x70", 32);
       const meta  = ethers.ZeroHash;
       const hostId = 654321n;
-      const request = concat(
-        encodeAmountBlock(asset, meta, 700n),
-        encodeNodeBlock(hostId)
-      );
+      const request = encodeAmountBlockWithNode(asset, meta, 700n, hostId);
       const tx = await callAs(0, "provision", ctx({ request }));
       await expect(tx).to.emit(host, "ProvisionCalled")
         .withArgs(hostId, userAccount, asset, meta, 700n);
@@ -310,10 +304,7 @@ describe("Commands", () => {
     it("returns CUSTODY blocks", async () => {
       const asset = ethers.zeroPadValue("0x70", 32);
       const hostId = 654321n;
-      const request = concat(
-        encodeAmountBlock(asset, ethers.ZeroHash, 700n),
-        encodeNodeBlock(hostId)
-      );
+      const request = encodeAmountBlockWithNode(asset, ethers.ZeroHash, 700n, hostId);
       const result: string = await host.provision.staticCall(ctx({ request }));
       expect(result).to.equal(encodeCustodyBlock(hostId, asset, ethers.ZeroHash, 700n));
     });

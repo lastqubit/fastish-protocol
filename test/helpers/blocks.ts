@@ -56,6 +56,14 @@ export function encodeAmountBlock(asset: string, meta: string, amount: bigint): 
   return block(AMOUNT_KEY, ethers.concat([pad32(asset), pad32(meta), pad32(amount)]));
 }
 
+export function encodeAmountBlockWithNode(asset: string, meta: string, amount: bigint, nodeId: bigint): string {
+  return blockWithChildren(AMOUNT_KEY, ethers.concat([pad32(asset), pad32(meta), pad32(amount)]), encodeNodeBlock(nodeId));
+}
+
+export function encodeAmountBlockWithRecipient(asset: string, meta: string, amount: bigint, recipient: string): string {
+  return blockWithChildren(AMOUNT_KEY, ethers.concat([pad32(asset), pad32(meta), pad32(amount)]), encodeRecipientBlock(recipient));
+}
+
 export function encodeBalanceBlock(asset: string, meta: string, amount: bigint): string {
   return block(BALANCE_KEY, ethers.concat([pad32(asset), pad32(meta), pad32(amount)]));
 }

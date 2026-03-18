@@ -14,7 +14,7 @@ import {Pipe} from "../commands/Pipe.sol";
 import {AllowAssets} from "../commands/admin/AllowAssets.sol";
 import {DenyAssets} from "../commands/admin/DenyAssets.sol";
 import {SetAllocations} from "../commands/admin/SetAllocations.sol";
-import {DataRef, Tx} from "../blocks/Schema.sol";
+import {HostAmount, Tx} from "../blocks/Schema.sol";
 
 contract TestHost is
     Host,
@@ -46,12 +46,12 @@ contract TestHost is
 
     uint public stepCount;
 
-    constructor(address cmdr, address discovery)
-        Host(cmdr, discovery, 1, "test")
-        Deposit("")
+    constructor(address rush)
+        Host(rush, 1, "test")
+        Deposit()
     {}
 
-    function deposit(bytes32 account, bytes32 asset, bytes32 meta, uint amount, DataRef memory)
+    function deposit(bytes32 account, bytes32 asset, bytes32 meta, uint amount)
         internal override
     {
         emit DepositCalled(account, asset, meta, amount);
@@ -95,8 +95,10 @@ contract TestHost is
 
     function provision(uint host_, bytes32 account, bytes32 asset, bytes32 meta, uint amount)
         internal override
+        returns (HostAmount memory)
     {
         emit ProvisionCalled(host_, account, asset, meta, amount);
+        return HostAmount(host_, asset, meta, amount);
     }
 
     function allowAsset(bytes32 asset, bytes32 meta) internal override {

@@ -58,7 +58,7 @@ describe("Validator", () => {
       .to.be.revertedWithCustomError(validator, "InvalidSigner");
   });
 
-  it("reverts NonceUsed on second use of same nonce", async () => {
+  it("reverts InvalidNonce on second use of same nonce", async () => {
     const signer = await getSigner(0);
     const hash = ethers.id("nonce reuse test");
     const proof = await makeProof(signer, hash);
@@ -66,7 +66,7 @@ describe("Validator", () => {
     await validator.testVerify(hash, 1n, proof);
     // Second call with same nonce and hash reverts
     await expect(validator.testVerify(hash, 1n, proof))
-      .to.be.revertedWithCustomError(validator, "NonceUsed");
+      .to.be.revertedWithCustomError(validator, "InvalidNonce");
   });
 
   it("accepts different nonces for the same account", async () => {
@@ -83,7 +83,7 @@ describe("Validator", () => {
     const proof2 = await makeProof(signer, ethers.id("payload two"));
     await validator.testVerify(ethers.id("payload one"), 12n, proof1);
     await expect(validator.testVerify(ethers.id("payload two"), 12n, proof2))
-      .to.be.revertedWithCustomError(validator, "NonceUsed");
+      .to.be.revertedWithCustomError(validator, "InvalidNonce");
   });
 
   it("same nonce for different accounts do not conflict", async () => {
