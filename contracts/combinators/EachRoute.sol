@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {CommandBase} from "../commands/Base.sol";
-import {DataRef, ROUTE_KEY} from "../blocks/Schema.sol";
-import {Data} from "../blocks/Readers.sol";
+import {ROUTE_KEY} from "../Schema.sol";
+import {Data, DataRef} from "../Blocks.sol";
 
-// Iterates sibling route blocks until the first non-route block, e.g. `ROUTE; ROUTE; ROUTE`.
-abstract contract EachRoute is CommandBase {
+abstract contract EachRoute {
     function eachRoute(DataRef memory rawRoute) internal virtual;
 
-    function forEachRoute(bytes calldata blocks, uint i) internal {
+    function forEachRoute(bytes calldata blocks, uint i) internal returns (uint) {
         while (i < blocks.length) {
             (DataRef memory ref, uint next) = Data.from(blocks, i);
-            if (ref.key != ROUTE_KEY) break;
+            if (ref.key != ROUTE_KEY) return i;
             eachRoute(ref);
             i = next;
         }
-        // return next?
+        return i;
     }
 }

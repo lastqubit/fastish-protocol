@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import {CommandBase, CommandContext, SETUP} from "../Base.sol";
-import {ALLOCATION, ALLOCATION_KEY, BlockRef} from "../../blocks/Schema.sol";
+import {ALLOCATION, ALLOCATION_KEY, BlockRef, HostAmount} from "../../blocks/Schema.sol";
 import {Blocks} from "../../blocks/Readers.sol";
 import {ensureAssetRef} from "../../utils/Assets.sol";
 import {toCommandId} from "../../utils/Ids.sol";
@@ -27,8 +27,8 @@ abstract contract SetAllocations is CommandBase {
         while (i < c.request.length) {
             BlockRef memory ref = Blocks.from(c.request, i);
             if (ref.key != ALLOCATION_KEY) break;
-            (uint host, bytes32 asset, bytes32 meta, uint amount) = ref.unpackAllocation(c.request);
-            setAllocation(host, asset, meta, amount);
+            HostAmount memory v = ref.toAllocationValue(c.request);
+            setAllocation(v.host, v.asset, v.meta, v.amount);
             i = ref.end;
         }
         return done(0, i);

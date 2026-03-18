@@ -8,7 +8,7 @@ abstract contract Validator {
 
     error InvalidProof();
     error InvalidSigner();
-    error NonceUsed();
+    error InvalidNonce();
 
     mapping(address account => mapping(uint192 key => uint64)) internal nonces;
 
@@ -24,7 +24,7 @@ abstract contract Validator {
         address signer = recover(hash, proof[20:]);
 
         if (account == address(0) || signer != account) revert InvalidSigner();
-        if (nonces[account][nonce]++ != 0) revert NonceUsed();
+        if (nonces[account][nonce]++ != 0) revert InvalidNonce();
 
         return account;
     }

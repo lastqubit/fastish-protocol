@@ -24,11 +24,10 @@ abstract contract DebitFrom is CommandBase {
 
     function debitFrom(bytes32 from, bytes calldata request) internal virtual returns (bytes memory) {
         uint i = 0;
-        (Writer memory writer, uint next) = Writers.allocBalancesFrom(request, i, AMOUNT_KEY);
+        (Writer memory writer, uint end) = Writers.allocBalancesFrom(request, i, AMOUNT_KEY);
 
-        while (i < next) {
-            BlockRef memory ref = Blocks.from(request, i);
-            if (!ref.isAmount()) break;
+        while (i < end) {
+            BlockRef memory ref = Blocks.amountFrom(request, i);
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount(request);
             debitFrom(from, asset, meta, amount);
             writer.appendBalance(asset, meta, amount);

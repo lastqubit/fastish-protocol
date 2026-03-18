@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {CommandBase} from "../commands/Base.sol";
-import {BlockRef, CUSTODY_KEY, DataRef, HostAmount, ROUTE_KEY, Writer} from "../blocks/Schema.sol";
-import {Blocks, Data} from "../blocks/Readers.sol";
-import {Writers} from "../blocks/Writers.sol";
+import {CUSTODY_KEY, HostAmount, ROUTE_KEY} from "../Schema.sol";
+import {Blocks, BlockRef, Data, DataRef, Writers, Writer} from "../Blocks.sol";
 
 using Blocks for BlockRef;
 using Data for DataRef;
 using Writers for Writer;
 
-abstract contract MapCustody is CommandBase {
-    function mapCustody(bytes32 account, HostAmount memory custody) internal virtual returns (bool keep, HostAmount memory out);
+abstract contract MapCustody {
+    function mapCustody(bytes32 account, HostAmount memory custody) internal virtual returns (HostAmount memory out);
 
     function mapCustodies(bytes calldata state, uint i, bytes32 account) internal returns (bytes memory) {
-        (Writer memory writer, uint next) = Writers.allocCustodiesFrom(state, i, CUSTODY_KEY);
+        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(state, i, CUSTODY_KEY);
 
-        while (i < next) {
+        while (i < end) {
             BlockRef memory ref = Blocks.custodyFrom(state, i);
             HostAmount memory custody = ref.toCustodyValue(state);
-            (bool keep, HostAmount memory out) = mapCustody(account, custody);
-            if (keep) writer.appendCustody(out);
+            HostAmount memory out = mapCustody(account, custody);
+            if (out.amount > 0) writer.appendCustody(out);
             i = ref.end;
         }
 
@@ -28,12 +26,12 @@ abstract contract MapCustody is CommandBase {
     }
 }
 
-abstract contract MapCustodyWithRequestRoute is CommandBase {
+abstract contract MapCustodyWithRequestRoute {
     function mapCustodyWithRequestRoute(
         bytes32 account,
         HostAmount memory custody,
         DataRef memory rawRoute
-    ) internal virtual returns (bool keep, HostAmount memory out);
+    ) internal virtual returns (HostAmount memory out);
 
     function mapCustodiesWithRequestRoutes(
         bytes calldata state,
@@ -42,15 +40,15 @@ abstract contract MapCustodyWithRequestRoute is CommandBase {
         uint q,
         bytes32 account
     ) internal returns (bytes memory) {
-        (Writer memory writer, uint next) = Writers.allocCustodiesFrom(state, i, CUSTODY_KEY);
+        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(state, i, CUSTODY_KEY);
 
-        while (i < next) {
+        while (i < end) {
+            DataRef memory route;
+            (route, q) = Data.routeFrom(request, q);
             BlockRef memory ref = Blocks.custodyFrom(state, i);
-            DataRef memory rawRoute;
-            (rawRoute, q) = Data.routeFrom(request, q);
             HostAmount memory custody = ref.toCustodyValue(state);
-            (bool keep, HostAmount memory out) = mapCustodyWithRequestRoute(account, custody, rawRoute);
-            if (keep) writer.appendCustody(out);
+            HostAmount memory out = mapCustodyWithRequestRoute(account, custody, route);
+            if (out.amount > 0) writer.appendCustody(out);
             i = ref.end;
         }
 

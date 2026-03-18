@@ -8,9 +8,9 @@ import {Relocate} from "../commands/admin/Relocate.sol";
 import {IHostDiscovery} from "../discovery/IHostDiscovery.sol";
 
 abstract contract Host is Authorize, Unauthorize, Relocate {
-    constructor(address cmdr, address discovery, uint8 version, string memory namespace) AccessControl(cmdr) {
-        if (discovery == address(0)) return;
-        IHostDiscovery(discovery).announceHost(host, block.number, version, namespace);
+    constructor(address rush, uint8 version, string memory namespace) AccessControl(rush) {
+        if (rush == address(0) || rush == address(this)) return;
+        IHostDiscovery(rush).announceHost(host, block.number, version, namespace);
     }
 
     receive() external payable {}

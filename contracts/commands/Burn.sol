@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.33;
+
+import {CommandBase, CommandContext, BALANCES, SETUP} from "./Base.sol";
+import {Blocks, BlockRef} from "../Blocks.sol";
+import {toCommandId} from "../Utils.sol";
+
+using Blocks for BlockRef;
+
+bytes32 constant NAME = "burn";
+
+abstract contract Burn is CommandBase {
+    uint internal immutable burnId = toCommandId(NAME, address(this));
+
+    constructor(string memory route) {
+        emit Command(host, NAME, route, burnId, BALANCES, SETUP);
+    }
+
+    function burn(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual returns (uint);
+
+    function burn(CommandContext calldata c) external payable onlyCommand(burnId, c.target) returns (bytes memory) {
+        uint i = 0;
+        while (i < c.state.length) {
+            BlockRef memory ref = Blocks.from(c.state, i);
+            if (!ref.isBalance()) break;
+            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance(c.state);
+            burn(c.account, asset, meta, amount);
+            i = ref.end;
+        }
+
+        return done(0, i);
+    }
+}

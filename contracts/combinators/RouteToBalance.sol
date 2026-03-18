@@ -1,29 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {CommandBase} from "../commands/Base.sol";
-import {AssetAmount, DataRef, ROUTE_KEY, Writer} from "../blocks/Schema.sol";
-import {Data} from "../blocks/Readers.sol";
-import {Writers} from "../blocks/Writers.sol";
+import {ROUTE_KEY} from "../Schema.sol";
+import {Data, DataRef, Writers, Writer} from "../Blocks.sol";
 
 using Writers for Writer;
 
-abstract contract RouteToBalance is CommandBase {
+abstract contract RouteToBalance {
     function routeToBalance(
         bytes32 account,
         DataRef memory rawRoute
-    ) internal virtual returns (AssetAmount memory value);
+    ) internal virtual returns (bytes32 asset, bytes32 meta, uint amount);
 
     function routesToBalances(bytes calldata blocks, uint i, bytes32 account) internal returns (bytes memory) {
-        (Writer memory writer, uint next) = Writers.allocBalancesFrom(blocks, i, ROUTE_KEY);
+        (Writer memory writer, uint end) = Writers.allocBalancesFrom(blocks, i, ROUTE_KEY);
 
-        while (i < next) {
-            DataRef memory ref;
-            (ref, i) = Data.routeFrom(blocks, i);
-            AssetAmount memory value = routeToBalance(account, ref);
-            writer.appendBalance(value);
+        while (i < end) {
+            DataRef memory route;
+            (route, i) = Data.routeFrom(blocks, i);
+            (bytes32 asset, bytes32 meta, uint amount) = routeToBalance(account, route);
+            if (amount > 0) writer.appendBalance(asset, meta, amount);
         }
 
-        return writer.done();
+        return writer.finish();
     }
 }
