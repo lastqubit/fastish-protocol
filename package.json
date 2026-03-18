@@ -1,5 +1,5 @@
 {
-  "name": "rush",
+  "name": "@rush/contracts",
   "version": "0.1.0",
   "description": "Solidity contracts and protocol building blocks for Rush hosts and commands.",
   "private": false,
