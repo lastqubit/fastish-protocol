@@ -2,6 +2,7 @@
 pragma solidity ^0.8.33;
 
 import {Blocks} from "./Readers.sol";
+import {InvalidBlock, MalformedBlocks} from "./Errors.sol";
 import {
     AssetAmount,
     BALANCE_KEY,
@@ -11,7 +12,6 @@ import {
     Tx,
     Writer
 } from "./Schema.sol";
-import {InvalidBlock, MalformedBlocks} from "./Readers.sol";
 
 error WriterOverflow();
 error IncompleteWriter();
@@ -55,6 +55,19 @@ library Writers {
         (count, next) = Blocks.count(blocks, i, source);
         if (count == 0) revert InvalidBlock();
         len = count * BALANCE_BLOCK_LEN;
+        writer = Writer({i: 0, end: len, dst: new bytes(len)});
+    }
+
+    function allocPairedBalancesFrom(
+        bytes calldata blocks,
+        uint i,
+        bytes4 source
+    ) internal pure returns (Writer memory writer, uint next) {
+        uint count;
+        uint len;
+        (count, next) = Blocks.count(blocks, i, source);
+        if (count == 0) revert InvalidBlock();
+        len = count * 2 * BALANCE_BLOCK_LEN;
         writer = Writer({i: 0, end: len, dst: new bytes(len)});
     }
 

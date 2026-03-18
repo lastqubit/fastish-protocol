@@ -23,6 +23,7 @@ import {
     HostAmount,
     LISTING,
     LISTING_KEY,
+    Listing,
     MAXIMUM,
     MAXIMUM_KEY,
     MINIMUM,
@@ -30,12 +31,14 @@ import {
     MemRef,
     NODE,
     NODE_KEY,
+    PARTY,
+    PARTY_KEY,
+    RATE,
+    RATE_KEY,
     RECIPIENT,
     RECIPIENT_KEY,
     ROUTE,
     ROUTE_KEY,
-    SEED,
-    SEED_KEY,
     STEP,
     STEP_KEY,
     TX,
@@ -44,18 +47,10 @@ import {
     Writer,
     AssetAmount
 } from "./blocks/Schema.sol";
-import {
-    AUTH_HEAD_LEN,
-    AUTH_PROOF_LEN,
-    AUTH_TOTAL_LEN,
-    Blocks,
-    Data,
-    InvalidBlock,
-    MalformedBlocks,
-    Mem,
-    ZeroNode,
-    ZeroRecipient
-} from "./blocks/Readers.sol";
+import {Blocks} from "./blocks/Readers.sol";
+import {Data} from "./blocks/Data.sol";
+import {Mem} from "./blocks/Mem.sol";
+import {InvalidBlock, MalformedBlocks, ZeroNode, ZeroRecipient} from "./blocks/Errors.sol";
 import {
     BALANCE_BLOCK_LEN,
     CUSTODY_BLOCK_LEN,

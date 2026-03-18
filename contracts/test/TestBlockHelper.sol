@@ -2,7 +2,9 @@
 pragma solidity ^0.8.33;
 
 import {AssetAmount, HostAmount, Tx, BlockRef, MemRef, Writer, BALANCE_KEY, CUSTODY_KEY, TX_KEY, AMOUNT_KEY, BOUNTY_KEY, RECIPIENT_KEY, NODE_KEY, FUNDING_KEY, ASSET_KEY, ALLOCATION_KEY, STEP_KEY} from "../blocks/Schema.sol";
-import {Blocks, Mem, MalformedBlocks, InvalidBlock, ZeroRecipient, ZeroNode} from "../blocks/Readers.sol";
+import {Blocks} from "../blocks/Readers.sol";
+import {Mem} from "../blocks/Mem.sol";
+import {InvalidBlock, MalformedBlocks, ZeroRecipient, ZeroNode} from "../blocks/Errors.sol";
 import {Writers, BALANCE_BLOCK_LEN, CUSTODY_BLOCK_LEN, TX_BLOCK_LEN} from "../blocks/Writers.sol";
 
 using Blocks for BlockRef;
@@ -83,7 +85,8 @@ contract TestBlockHelper {
         external pure returns (uint host_, bytes32 asset, bytes32 meta, uint amount)
     {
         BlockRef memory ref = Blocks.custodyFrom(source, i);
-        return ref.unpackCustody(source);
+        HostAmount memory v = ref.toCustodyValue(source);
+        return (v.host, v.asset, v.meta, v.amount);
     }
 
     function testUnpackRecipient(bytes calldata source, uint i)
@@ -103,22 +106,23 @@ contract TestBlockHelper {
     function testUnpackFunding(bytes calldata source, uint i)
         external pure returns (uint host_, uint amount)
     {
-        BlockRef memory ref = Blocks.ensureFunding(source, i);
+        BlockRef memory ref = Blocks.from(source, i);
         return ref.unpackFunding(source);
     }
 
     function testUnpackAsset(bytes calldata source, uint i)
         external pure returns (bytes32 asset, bytes32 meta)
     {
-        BlockRef memory ref = Blocks.ensureAsset(source, i);
+        BlockRef memory ref = Blocks.from(source, i);
         return ref.unpackAsset(source);
     }
 
     function testUnpackAllocation(bytes calldata source, uint i)
         external pure returns (uint host_, bytes32 asset, bytes32 meta, uint amount)
     {
-        BlockRef memory ref = Blocks.ensureAllocation(source, i);
-        return ref.unpackAllocation(source);
+        BlockRef memory ref = Blocks.from(source, i);
+        HostAmount memory v = ref.toAllocationValue(source);
+        return (v.host, v.asset, v.meta, v.amount);
     }
 
     function testToTxValue(bytes calldata source, uint i)
