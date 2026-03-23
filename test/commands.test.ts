@@ -2,7 +2,8 @@ import { expect } from "chai";
 import { ethers } from "ethers";
 import { deploy, getSigner } from "./helpers/setup.js";
 import {
-  encodeAmountBlock, encodeAmountBlockWithNode, encodeAmountBlockWithRecipient, encodeBalanceBlock, encodeCustodyBlock,
+  encodeAmountBlock, encodeAmountBlockWithNode, encodeAmountBlockWithRecipient,
+  encodeBalanceBlock, encodeCustodyBlock,
   encodeRecipientBlock, encodeNodeBlock, encodeTxBlock, encodeStepBlock,
   concat
 } from "./helpers/blocks.js";
@@ -112,6 +113,12 @@ describe("Commands", () => {
         callAs(0, "deposit", ctx({ request: "0x" }))
       ).to.be.revertedWithCustomError(host, "EmptyRequest");
     });
+
+    it("reverts MalformedBlocks for request with only 4 garbage bytes", async () => {
+      await expect(
+        callAs(0, "deposit", ctx({ request: "0xdeadbeef" }))
+      ).to.be.revertedWithCustomError(host, "MalformedBlocks");
+    });
   });
 
   // ── Withdraw ──────────────────────────────────────────────────────────────
@@ -147,6 +154,29 @@ describe("Commands", () => {
       await expect(callAs(0, "withdraw", ctx({ state, request: zeroRecipient })))
         .to.be.revertedWithCustomError(host, "ZeroRecipient");
     });
+
+    it("emits WithdrawCalled for each BALANCE block in a batch state", async () => {
+      const asset1 = ethers.zeroPadValue("0x11", 32);
+      const asset2 = ethers.zeroPadValue("0x12", 32);
+      const asset3 = ethers.zeroPadValue("0x13", 32);
+      const meta   = ethers.ZeroHash;
+      const state = concat(
+        encodeBalanceBlock(asset1, meta, 10n),
+        encodeBalanceBlock(asset2, meta, 20n),
+        encodeBalanceBlock(asset3, meta, 30n),
+      );
+      const tx = await callAs(0, "withdraw", ctx({ state }));
+      await expect(tx).to.emit(host, "WithdrawCalled").withArgs(userAccount, asset1, meta, 10n);
+      await expect(tx).to.emit(host, "WithdrawCalled").withArgs(userAccount, asset2, meta, 20n);
+      await expect(tx).to.emit(host, "WithdrawCalled").withArgs(userAccount, asset3, meta, 30n);
+    });
+
+    it("reverts MalformedBlocks for state with a truncated BALANCE block", async () => {
+      const full = encodeBalanceBlock(asset, meta, 100n);
+      const truncated = ethers.hexlify(ethers.getBytes(full).slice(0, -1));
+      await expect(callAs(0, "withdraw", ctx({ state: truncated })))
+        .to.be.revertedWithCustomError(host, "MalformedBlocks");
+    });
   });
 
   // ── Transfer ──────────────────────────────────────────────────────────────
@@ -174,6 +204,21 @@ describe("Commands", () => {
       const request = encodeAmountBlock(asset, meta, 1n);
       await expect(callAs(0, "transfer", ctx({ request })))
         .to.be.revertedWithCustomError(host, "MalformedBlocks");
+    });
+
+    it("emits TransferCalled for each AMOUNT+RECIPIENT pair in a batch", async () => {
+      const asset1 = ethers.zeroPadValue("0x21", 32);
+      const asset2 = ethers.zeroPadValue("0x22", 32);
+      const meta   = ethers.ZeroHash;
+      const to1    = ethers.zeroPadValue("0xbeef", 32);
+      const to2    = ethers.zeroPadValue("0xcafe", 32);
+      const request = concat(
+        encodeAmountBlockWithRecipient(asset1, meta, 100n, to1),
+        encodeAmountBlockWithRecipient(asset2, meta, 200n, to2),
+      );
+      const tx = await callAs(0, "transfer", ctx({ request }));
+      await expect(tx).to.emit(host, "TransferCalled").withArgs(userAccount, to1, asset1, meta, 100n);
+      await expect(tx).to.emit(host, "TransferCalled").withArgs(userAccount, to2, asset2, meta, 200n);
     });
   });
 
@@ -227,6 +272,37 @@ describe("Commands", () => {
       await expect(callAs(0, "debitAccountToBalance", ctx()))
         .to.be.revertedWithCustomError(host, "EmptyRequest");
     });
+
+    it("processes multiple AMOUNT blocks and emits DebitFromCalled for each", async () => {
+      const asset1 = ethers.zeroPadValue("0x41", 32);
+      const asset2 = ethers.zeroPadValue("0x42", 32);
+      const asset3 = ethers.zeroPadValue("0x43", 32);
+      const meta   = ethers.ZeroHash;
+      const request = concat(
+        encodeAmountBlock(asset1, meta, 100n),
+        encodeAmountBlock(asset2, meta, 200n),
+        encodeAmountBlock(asset3, meta, 300n),
+      );
+      const tx = await callAs(0, "debitAccountToBalance", ctx({ request }));
+      await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset1, meta, 100n, 100n);
+      await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset2, meta, 200n, 200n);
+      await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset3, meta, 300n, 300n);
+    });
+
+    it("returns one BALANCE block per AMOUNT block in a batch", async () => {
+      const asset1 = ethers.zeroPadValue("0x44", 32);
+      const asset2 = ethers.zeroPadValue("0x45", 32);
+      const meta   = ethers.ZeroHash;
+      const request = concat(
+        encodeAmountBlock(asset1, meta, 100n),
+        encodeAmountBlock(asset2, meta, 200n),
+      );
+      const result: string = await host.debitAccountToBalance.staticCall(ctx({ request }));
+      expect(result).to.equal(concat(
+        encodeBalanceBlock(asset1, meta, 100n),
+        encodeBalanceBlock(asset2, meta, 200n),
+      ));
+    });
   });
 
   // ── Settle ────────────────────────────────────────────────────────────────
@@ -246,6 +322,24 @@ describe("Commands", () => {
     it("reverts NoOperation for empty state", async () => {
       await expect(callAs(0, "settle", ctx()))
         .to.be.revertedWithCustomError(host, "NoOperation");
+    });
+
+    it("emits SettleCalled for each TX block in a batch state", async () => {
+      const from1 = ethers.zeroPadValue("0xa1", 32);
+      const from2 = ethers.zeroPadValue("0xa2", 32);
+      const from3 = ethers.zeroPadValue("0xa3", 32);
+      const to_   = ethers.zeroPadValue("0xbb", 32);
+      const asset = ethers.zeroPadValue("0x50", 32);
+      const meta  = ethers.ZeroHash;
+      const state = concat(
+        encodeTxBlock(from1, to_, asset, meta, 100n),
+        encodeTxBlock(from2, to_, asset, meta, 200n),
+        encodeTxBlock(from3, to_, asset, meta, 300n),
+      );
+      const tx = await callAs(0, "settle", ctx({ state }));
+      await expect(tx).to.emit(host, "SettleCalled").withArgs(from1, to_, asset, meta, 100n);
+      await expect(tx).to.emit(host, "SettleCalled").withArgs(from2, to_, asset, meta, 200n);
+      await expect(tx).to.emit(host, "SettleCalled").withArgs(from3, to_, asset, meta, 300n);
     });
   });
 
@@ -286,6 +380,51 @@ describe("Commands", () => {
       await expect(callAs(0, "fund", ctx({ state })))
         .to.be.revertedWithCustomError(host, "ZeroNode");
     });
+
+    it("emits FundCalled for each BALANCE block in a batch state", async () => {
+      const asset1 = ethers.zeroPadValue("0x61", 32);
+      const asset2 = ethers.zeroPadValue("0x62", 32);
+      const asset3 = ethers.zeroPadValue("0x63", 32);
+      const meta   = ethers.ZeroHash;
+      const hostId = 999n;
+      const state = concat(
+        encodeBalanceBlock(asset1, meta, 10n),
+        encodeBalanceBlock(asset2, meta, 20n),
+        encodeBalanceBlock(asset3, meta, 30n),
+      );
+      const request = encodeNodeBlock(hostId);
+      const tx = await callAs(0, "fund", ctx({ state, request }));
+      await expect(tx).to.emit(host, "FundCalled").withArgs(hostId, userAccount, asset1, meta, 10n);
+      await expect(tx).to.emit(host, "FundCalled").withArgs(hostId, userAccount, asset2, meta, 20n);
+      await expect(tx).to.emit(host, "FundCalled").withArgs(hostId, userAccount, asset3, meta, 30n);
+    });
+
+    it("returns one CUSTODY block per BALANCE block in a batch state", async () => {
+      const asset1 = ethers.zeroPadValue("0x64", 32);
+      const asset2 = ethers.zeroPadValue("0x65", 32);
+      const meta   = ethers.ZeroHash;
+      const hostId = 999n;
+      const state = concat(
+        encodeBalanceBlock(asset1, meta, 10n),
+        encodeBalanceBlock(asset2, meta, 20n),
+      );
+      const result: string = await host.fund.staticCall(ctx({ state, request: encodeNodeBlock(hostId) }));
+      expect(result).to.equal(concat(
+        encodeCustodyBlock(hostId, asset1, meta, 10n),
+        encodeCustodyBlock(hostId, asset2, meta, 20n),
+      ));
+    });
+
+    it("reverts MalformedBlocks when second BALANCE block in state is truncated", async () => {
+      const asset1 = ethers.zeroPadValue("0x66", 32);
+      const asset2 = ethers.zeroPadValue("0x67", 32);
+      const meta   = ethers.ZeroHash;
+      const b1 = encodeBalanceBlock(asset1, meta, 10n);
+      const b2 = encodeBalanceBlock(asset2, meta, 20n);
+      const truncatedState = ethers.hexlify(ethers.getBytes(concat(b1, b2)).slice(0, -1));
+      await expect(callAs(0, "fund", ctx({ state: truncatedState, request: encodeNodeBlock(123n) })))
+        .to.be.revertedWithCustomError(host, "MalformedBlocks");
+    });
   });
 
   // ── Provision ─────────────────────────────────────────────────────────────
@@ -314,6 +453,38 @@ describe("Commands", () => {
       const request = encodeNodeBlock(hostId);
       await expect(callAs(0, "provision", ctx({ request })))
         .to.be.revertedWithCustomError(host, "EmptyRequest");
+    });
+
+    it("emits ProvisionCalled for each AMOUNT+NODE pair in a batch", async () => {
+      const asset1 = ethers.zeroPadValue("0x71", 32);
+      const asset2 = ethers.zeroPadValue("0x72", 32);
+      const meta   = ethers.ZeroHash;
+      const host1  = 111n;
+      const host2  = 222n;
+      const request = concat(
+        encodeAmountBlockWithNode(asset1, meta, 100n, host1),
+        encodeAmountBlockWithNode(asset2, meta, 200n, host2),
+      );
+      const tx = await callAs(0, "provision", ctx({ request }));
+      await expect(tx).to.emit(host, "ProvisionCalled").withArgs(host1, userAccount, asset1, meta, 100n);
+      await expect(tx).to.emit(host, "ProvisionCalled").withArgs(host2, userAccount, asset2, meta, 200n);
+    });
+
+    it("returns one CUSTODY block per AMOUNT+NODE pair in a batch", async () => {
+      const asset1 = ethers.zeroPadValue("0x73", 32);
+      const asset2 = ethers.zeroPadValue("0x74", 32);
+      const meta   = ethers.ZeroHash;
+      const host1  = 333n;
+      const host2  = 444n;
+      const request = concat(
+        encodeAmountBlockWithNode(asset1, meta, 100n, host1),
+        encodeAmountBlockWithNode(asset2, meta, 200n, host2),
+      );
+      const result: string = await host.provision.staticCall(ctx({ request }));
+      expect(result).to.equal(concat(
+        encodeCustodyBlock(host1, asset1, meta, 100n),
+        encodeCustodyBlock(host2, asset2, meta, 200n),
+      ));
     });
   });
 

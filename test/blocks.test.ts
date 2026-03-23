@@ -142,6 +142,48 @@ describe("Blocks", () => {
         .to.be.revertedWithCustomError(helper, "InvalidBlock");
     });
 
+    it("unpackCustody reverts InvalidBlock for BALANCE block", async () => {
+      const data = encodeBalanceBlock(asset, meta, amount);
+      await expect(helper.testUnpackCustody(data, 0n))
+        .to.be.revertedWithCustomError(helper, "InvalidBlock");
+    });
+
+    it("unpackRecipient reverts InvalidBlock for AMOUNT block", async () => {
+      const data = encodeAmountBlock(asset, meta, amount);
+      await expect(helper.testUnpackRecipient(data, 0n))
+        .to.be.revertedWithCustomError(helper, "InvalidBlock");
+    });
+
+    it("unpackNode reverts InvalidBlock for BALANCE block", async () => {
+      const data = encodeBalanceBlock(asset, meta, amount);
+      await expect(helper.testUnpackNode(data, 0n))
+        .to.be.revertedWithCustomError(helper, "InvalidBlock");
+    });
+
+    it("unpackFunding reverts InvalidBlock for AMOUNT block", async () => {
+      const data = encodeAmountBlock(asset, meta, amount);
+      await expect(helper.testUnpackFunding(data, 0n))
+        .to.be.revertedWithCustomError(helper, "InvalidBlock");
+    });
+
+    it("unpackAsset reverts InvalidBlock for BALANCE block", async () => {
+      const data = encodeBalanceBlock(asset, meta, amount);
+      await expect(helper.testUnpackAsset(data, 0n))
+        .to.be.revertedWithCustomError(helper, "InvalidBlock");
+    });
+
+    it("unpackAllocation reverts InvalidBlock for AMOUNT block", async () => {
+      const data = encodeAmountBlock(asset, meta, amount);
+      await expect(helper.testUnpackAllocation(data, 0n))
+        .to.be.revertedWithCustomError(helper, "InvalidBlock");
+    });
+
+    it("toTxValue reverts InvalidBlock for BALANCE block", async () => {
+      const data = encodeBalanceBlock(asset, meta, amount);
+      await expect(helper.testToTxValue(data, 0n))
+        .to.be.revertedWithCustomError(helper, "InvalidBlock");
+    });
+
     it("unpackBalance extracts from BALANCE block", async () => {
       const data = encodeBalanceBlock(asset, meta, amount);
       const [a, m, v] = await helper.testUnpackBalance(data, 0n);
@@ -310,6 +352,43 @@ describe("Blocks", () => {
       const [count] = await helper.testCountBlocks("0x", 0n, AMOUNT_KEY);
       expect(count).to.equal(0n);
     });
+
+    it("from reverts MalformedBlocks for 4-byte source (header too short)", async () => {
+      await expect(helper.testParseBlock("0xdeadbeef", 0n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+    });
+
+    it("from reverts MalformedBlocks for 8-byte source (header incomplete)", async () => {
+      await expect(helper.testParseBlock("0x0000000100000060", 0n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+    });
+
+    it("from reverts MalformedBlocks when selfLen > totalLen in parsed block", async () => {
+      const data = encodeAmountBlock(asset, meta, amount);
+      const bytes_ = ethers.getBytes(data);
+      // bytes [4..7] = selfLen; set to 200 while totalLen stays 96 → selfLen > totalLen
+      bytes_[4] = 0x00; bytes_[5] = 0x00; bytes_[6] = 0x00; bytes_[7] = 0xC8;
+      await expect(helper.testParseBlock(ethers.hexlify(bytes_), 0n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+    });
+
+    it("from reverts MalformedBlocks when totalLen exceeds source length", async () => {
+      const data = encodeAmountBlock(asset, meta, amount);
+      const bytes_ = ethers.getBytes(data);
+      // bytes [8..11] = totalLen; set to 9999 so ref.end = 12 + 9999 > source.length
+      bytes_[8] = 0x00; bytes_[9] = 0x00; bytes_[10] = 0x27; bytes_[11] = 0x0F;
+      await expect(helper.testParseBlock(ethers.hexlify(bytes_), 0n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+    });
+
+    it("from reverts MalformedBlocks when second block in sequence has truncated payload", async () => {
+      const b1 = encodeAmountBlock(asset, meta, 1n);
+      const b2 = encodeAmountBlock(asset, meta, 2n);
+      const truncated = ethers.hexlify(ethers.getBytes(concat(b1, b2)).slice(0, -1));
+      const b1End = BigInt(ethers.getBytes(b1).length);
+      await expect(helper.testParseBlock(truncated, b1End))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+    });
   });
 
   // ── Mem library ───────────────────────────────────────────────────────────
@@ -356,6 +435,20 @@ describe("Blocks", () => {
       const combined = concat(b1, b2);
       const [count] = await helper.testMemCount(combined, 0n, BALANCE_KEY);
       expect(count).to.equal(2n);
+    });
+
+    it("from reverts MalformedBlocks for 4-byte memory source", async () => {
+      await expect(helper.testMemParseBalance("0xdeadbeef", 0n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+    });
+
+    it("from reverts MalformedBlocks when Mem totalLen exceeds source", async () => {
+      const data = encodeBalanceBlock(asset, meta, amount);
+      const bytes_ = ethers.getBytes(data);
+      // bytes [8..11] = totalLen; set to 9999 so ref.end > source.length
+      bytes_[8] = 0x00; bytes_[9] = 0x00; bytes_[10] = 0x27; bytes_[11] = 0x0F;
+      await expect(helper.testMemParseBalance(ethers.hexlify(bytes_), 0n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
   });
 });

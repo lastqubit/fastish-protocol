@@ -63,16 +63,29 @@ contract ExampleHost is Host {
 
 ### Build a Command
 
-Extend `CommandBase` when you want a Rush command contract that runs inside the protocol's trusted call model.
+Extend `CommandBase` when you want a Rush command mixin that runs inside the protocol's trusted call model. Commands are abstract contracts mixed into a host or composed as a standalone module.
 
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {CommandBase} from "rush/contracts/Commands.sol";
+import {CommandBase, CommandContext} from "rush/contracts/Commands.sol";
 
-contract ExampleCommand is CommandBase {
-    constructor(address commander) AccessControl(commander) {}
+string constant NAME = "myCommand";
+string constant ROUTE = "route(uint foo, uint bar)";
+
+abstract contract ExampleCommand is CommandBase {
+    uint internal immutable myCommandId = commandId(NAME);
+
+    constructor() {
+        emit Command(host, NAME, ROUTE, myCommandId, 0, 0);
+    }
+
+    function myCommand(
+        CommandContext calldata c
+    ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
+        return "";
+    }
 }
 ```
 
@@ -88,7 +101,7 @@ contract ExampleCommand is CommandBase {
 
 - `contracts/core`: host, access control, balances, and validation primitives
 - `contracts/commands`: standard command building blocks and admin commands
-- `contracts/combinators`: reusable command composition helpers
+- `contracts/peer`: peer protocol surfaces for inter-host asset flows
 - `contracts/blocks`: request/response block encoding and decoding
 - `contracts/utils`: shared protocol encoding helpers
 - `contracts/events`: protocol event contracts and emitters
@@ -97,7 +110,7 @@ contract ExampleCommand is CommandBase {
 ## Install And Compile
 
 ```bash
-npm install rush
+npm install @rush/contracts
 npm run compile
 ```
 

@@ -63,31 +63,31 @@ If `rush` is a contract, the host announces itself there during deployment. If y
 
 The easiest way to integrate is to inherit a built-in command module and implement its hook.
 
-This example adds `DebitFrom`, which turns `AMOUNT` blocks in `request` into `BALANCE` blocks in the response:
+This example adds `DebitAccountToBalance`, which turns `AMOUNT` blocks in `request` into `BALANCE` blocks in the response:
 
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
 import {Host} from "rush/contracts/Core.sol";
-import {DebitFrom} from "rush/contracts/Commands.sol";
+import {DebitAccountToBalance} from "rush/contracts/Commands.sol";
+import {ensureAssetRef} from "rush/contracts/Utils.sol";
 
-contract ExampleHost is Host, DebitFrom {
+contract ExampleHost is Host, DebitAccountToBalance {
     mapping(bytes32 account => mapping(bytes32 assetRef => uint amount)) internal balances;
 
     constructor(address rush)
         Host(rush, 1, "example")
     {}
 
-    function debitFrom(
+    function debitAccount(
         bytes32 account,
         bytes32 asset,
         bytes32 meta,
         uint amount
-    ) internal override returns (uint) {
-        bytes32 assetRef = keccak256(bytes.concat(asset, meta));
-        balances[account][assetRef] -= amount;
-        return amount;
+    ) internal override {
+        bytes32 ref = ensureAssetRef(asset, meta);
+        balances[account][ref] -= amount;
     }
 }
 ```
@@ -106,14 +106,14 @@ The built-in commands are easiest to use when you know which blocks they expect.
 
 - `deposit`: reads `AMOUNT` blocks, returns `BALANCE`
 - `transfer`: reads `AMOUNT` plus `RECIPIENT`
-- `debitFrom`: reads `AMOUNT`, returns `BALANCE`
+- `debitAccountToBalance`: reads `AMOUNT`, returns `BALANCE`
 - `provision`: reads `AMOUNT` plus `NODE`, returns `CUSTODY`
 - `pipe`: reads `STEP` blocks and runs them in order
 
 ### Commands That Read `state`
 
 - `withdraw`: reads `BALANCE`, optionally reads `RECIPIENT` from `request`
-- `creditTo`: reads `BALANCE`, optionally reads `RECIPIENT` from `request`
+- `creditBalanceToAccount`: reads `BALANCE`, optionally reads `RECIPIENT` from `request`
 - `settle`: reads `TX`
 - `fund`: reads `BALANCE` from `state` and `NODE` from `request`
 
@@ -238,10 +238,10 @@ If you are only consuming built-in commands, you often will not need to touch wr
 
 Imagine you want a host that keeps internal balances and lets Rush debit them.
 
-1. Deploy a host that inherits `Host` and `DebitFrom`.
+1. Deploy a host that inherits `Host` and `DebitAccountToBalance`.
 2. Store balances in your own mapping.
-3. Implement `debitFrom(account, asset, meta, amount)`.
-4. Send `debitFrom` a request containing one or more `AMOUNT` blocks.
+3. Implement `debitAccount(account, asset, meta, amount)`.
+4. Send `debitAccountToBalance` a request containing one or more `AMOUNT` blocks.
 5. Rush returns `BALANCE` blocks representing the debited amounts.
 
 That is already a valid and useful integration.
@@ -250,9 +250,9 @@ That is already a valid and useful integration.
 
 If you want to learn by example, these are the best files to read next:
 
-- `examples/Host.sol`: smallest host
-- `examples/HostWithCommand.sol`: host plus a built-in command hook
-- `examples/RouteCommand.sol`: custom command id and command event
+- `examples/1-Host.sol`: smallest host
+- `examples/2-Basic.sol`: host plus a built-in command hook
+- `examples/3-Command.sol`: custom command id and command event
 - `examples/MapBalance.sol`: transforming returned balance state
 - `test/commands.test.ts`: concrete request and response examples
 - `test/helpers/blocks.ts`: block encoders you can reuse in off-chain tooling
@@ -268,7 +268,7 @@ If you want to learn by example, these are the best files to read next:
 ## Recommended Learning Order
 
 1. Deploy a plain `Host`.
-2. Add one built-in command such as `DebitFrom` or `Deposit`.
+2. Add one built-in command such as `DebitAccountToBalance` or `Deposit`.
 3. Use the TypeScript block helpers to build requests.
 4. Only then add a custom command with a route block.
 
