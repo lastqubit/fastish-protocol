@@ -16,7 +16,7 @@ describe("Commands", () => {
   before(async () => {
     const signer = await getSigner(0);
     commander = await signer.getAddress();
-    host = await deploy("TestHost", commander, ethers.ZeroAddress);
+    host = await deploy("TestHost", commander);
     adminAccount = await host.getAdminAccount();
 
     // Build a user account (unspecified prefix + address)

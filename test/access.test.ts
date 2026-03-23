@@ -14,7 +14,7 @@ describe("Access Control", () => {
     commander = await signers[0].getAddress();
     stranger  = await signers[1].getAddress();
 
-    host = await deploy("TestHost", commander, ethers.ZeroAddress);
+    host = await deploy("TestHost", commander);
     hostAddress = await host.getAddress();
   });
 
@@ -102,7 +102,7 @@ describe("Access Control", () => {
   });
 
   it("falls back to the host address when commander is zero", async () => {
-    const selfManaged = await deploy("TestHost", ethers.ZeroAddress, ethers.ZeroAddress);
+    const selfManaged = await deploy("TestHost", ethers.ZeroAddress);
     const selfManagedAddress = await selfManaged.getAddress();
     expect(await selfManaged.getCommander()).to.equal(selfManagedAddress);
 

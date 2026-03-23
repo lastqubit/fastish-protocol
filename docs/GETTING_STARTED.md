@@ -45,20 +45,19 @@ pragma solidity ^0.8.33;
 import {Host} from "rush/contracts/Core.sol";
 
 contract ExampleHost is Host {
-    constructor(address commander, address discovery)
-        Host(commander, discovery, 1, "example")
+    constructor(address rush)
+        Host(rush, 1, "example")
     {}
 }
 ```
 
 What the constructor arguments mean:
 
-- `commander`: the trusted Rush runtime allowed to call commands
-- `discovery`: optional discovery contract; use `address(0)` if you do not want registration
+- `rush`: the trusted Rush runtime allowed to call commands
 - `1`: your host version
 - `"example"`: your host namespace
 
-If `discovery` is not zero, the host announces itself during deployment.
+If `rush` is a contract, the host announces itself there during deployment. If you pass `address(0)`, the host becomes self-managed and does not auto-register.
 
 ## Step 2: Reuse A Built-In Command
 
@@ -76,8 +75,8 @@ import {DebitFrom} from "rush/contracts/Commands.sol";
 contract ExampleHost is Host, DebitFrom {
     mapping(bytes32 account => mapping(bytes32 assetRef => uint amount)) internal balances;
 
-    constructor(address commander, address discovery)
-        Host(commander, discovery, 1, "example")
+    constructor(address rush)
+        Host(rush, 1, "example")
     {}
 
     function debitFrom(
@@ -171,8 +170,8 @@ string constant ROUTE = "route(uint foo, uint bar)";
 contract ExampleHost is Host {
     uint immutable myCommandId = toCommandId(NAME, address(this));
 
-    constructor(address commander, address discovery)
-        Host(commander, discovery, 1, "example")
+    constructor(address rush)
+        Host(rush, 1, "example")
     {
         emit Command(host, NAME, ROUTE, myCommandId, 0, 0);
     }

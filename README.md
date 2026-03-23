@@ -47,11 +47,13 @@ pragma solidity ^0.8.33;
 import {Host} from "rush/contracts/Core.sol";
 
 contract ExampleHost is Host {
-    constructor(address commander, address discovery)
-        Host(commander, discovery, 1, "example")
+    constructor(address rush)
+        Host(rush, 1, "example")
     {}
 }
 ```
+
+`rush` is the trusted Rush runtime. If it is a contract, the host also announces itself there during deployment. Use `address(0)` for a self-managed host that does not auto-register.
 
 `Host` already layers in the standard admin command flows used by Rush hosts:
 
@@ -90,7 +92,7 @@ contract ExampleCommand is CommandBase {
 - `contracts/blocks`: request/response block encoding and decoding
 - `contracts/utils`: shared protocol encoding helpers
 - `contracts/events`: protocol event contracts and emitters
-- `contracts/discovery`: host discovery interfaces and implementation
+- `contracts/interfaces`: discovery interfaces and shared external protocol surfaces
 
 ## Install And Compile
 

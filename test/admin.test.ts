@@ -14,7 +14,7 @@ describe("Admin Commands", () => {
   before(async () => {
     const signer = await getSigner(0);
     commander = await signer.getAddress();
-    host = await deploy("TestHost", commander, ethers.ZeroAddress);
+    host = await deploy("TestHost", commander);
     adminAccount = await host.getAdminAccount();
   });
 
@@ -114,12 +114,10 @@ describe("Admin Commands", () => {
       await expect(tx).to.emit(host, "AllowAssetCalled").withArgs(a2, m);
     });
 
-    it("allows non-admin accounts in the command context", async () => {
-      const user = ethers.zeroPadValue("0x03", 32);
-      const asset = ethers.zeroPadValue("0x01", 32);
-      await expect(callAs(0, "allowAssets", userCtx(user, encodeAssetBlock(asset, ethers.ZeroHash))))
-        .to.emit(host, "AllowAssetCalled")
-        .withArgs(asset, ethers.ZeroHash);
+    it("reverts NotAdmin for non-admin account", async () => {
+      const fakeAdmin = ethers.zeroPadValue("0x03", 32);
+      await expect(callAs(0, "allowAssets", userCtx(fakeAdmin, encodeAssetBlock(ethers.zeroPadValue("0x01", 32), ethers.ZeroHash))))
+        .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
     it("reverts NoOperation for empty request", async () => {
@@ -139,12 +137,10 @@ describe("Admin Commands", () => {
         .withArgs(asset, meta);
     });
 
-    it("allows non-admin accounts in the command context", async () => {
-      const user = ethers.zeroPadValue("0x04", 32);
-      const asset = ethers.zeroPadValue("0x01", 32);
-      await expect(callAs(0, "denyAssets", userCtx(user, encodeAssetBlock(asset, ethers.ZeroHash))))
-        .to.emit(host, "DenyAssetCalled")
-        .withArgs(asset, ethers.ZeroHash);
+    it("reverts NotAdmin for non-admin", async () => {
+      const fakeAdmin = ethers.zeroPadValue("0x04", 32);
+      await expect(callAs(0, "denyAssets", userCtx(fakeAdmin, encodeAssetBlock(ethers.zeroPadValue("0x01", 32), ethers.ZeroHash))))
+        .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
     it("reverts NoOperation for empty request", async () => {
@@ -192,7 +188,7 @@ describe("Admin Commands", () => {
 
     it("calls target host with ETH when authorized", async () => {
       // Deploy a second host as the relocation target
-      const target = await deploy("TestHost", commander, ethers.ZeroAddress);
+      const target = await deploy("TestHost", commander);
       const targetAddr = await target.getAddress();
 
       // Compute host ID for target
