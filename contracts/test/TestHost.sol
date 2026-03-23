@@ -63,11 +63,11 @@ contract TestHost is
         emit TransferCalled(from_, to_, asset, meta, amount);
     }
 
-    function creditBalanceToAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
+    function creditAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
         emit CreditToCalled(account, asset, meta, amount, amount);
     }
 
-    function debitAccountToBalance(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
+    function debitAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
         emit DebitFromCalled(account, asset, meta, amount, amount);
     }
 

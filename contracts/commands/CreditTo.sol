@@ -16,7 +16,7 @@ abstract contract CreditBalanceToAccount is CommandBase {
         emit Command(host, NAME, RECIPIENT, creditBalanceToAccountId, BALANCES, SETUP);
     }
 
-    function creditBalanceToAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+    function creditAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
 
     function creditBalanceToAccount(
         CommandContext calldata c
@@ -27,7 +27,7 @@ abstract contract CreditBalanceToAccount is CommandBase {
             BlockRef memory ref = Blocks.from(c.state, i);
             if (!ref.isBalance()) break;
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance(c.state);
-            creditBalanceToAccount(to, asset, meta, amount);
+            creditAccount(to, asset, meta, amount);
             i = ref.end;
         }
 

@@ -19,7 +19,7 @@ abstract contract DebitAccountToBalance is CommandBase {
         emit Command(host, NAME, AMOUNT, debitAccountToBalanceId, SETUP, BALANCES);
     }
 
-    function debitAccountToBalance(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+    function debitAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
 
     function debitAccountToBalance(bytes32 from, bytes calldata request) internal virtual returns (bytes memory) {
         uint q = 0;
@@ -28,7 +28,7 @@ abstract contract DebitAccountToBalance is CommandBase {
         while (q < end) {
             BlockRef memory ref = Blocks.from(request, q);
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount(request);
-            debitAccountToBalance(from, asset, meta, amount);
+            debitAccount(from, asset, meta, amount);
             writer.appendBalance(asset, meta, amount);
             q = ref.end;
         }
