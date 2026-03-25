@@ -4,13 +4,11 @@ pragma solidity ^0.8.33;
 import {Host} from "../contracts/Core.sol";
 import {SwapExactCustodyToBalance, AddLiquidityFromCustodiesToBalances} from "../contracts/Commands.sol";
 import {Data, DataRef, DataPairRef, AssetAmount, HostAmount, Writers, Writer} from "../contracts/Blocks.sol";
-import {ensureAssetRef} from "../contracts/Utils.sol";
-
 using Data for DataRef;
 using Writers for Writer;
 
 contract ExampleHost is Host, SwapExactCustodyToBalance(""), AddLiquidityFromCustodiesToBalances("", 10_000) {
-    constructor(address rush) Host(rush, 1, "example") {}
+    constructor(address fastish) Host(fastish, 1, "example") {}
 
     function swapExactCustodyToBalance(
         bytes32,

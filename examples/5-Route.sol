@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 // Example 5: Route Blocks
 //
 // Route blocks let a command accept arbitrary command-specific parameters
-// alongside standard protocol blocks, without breaking the Rush wire format.
+// alongside standard protocol blocks, without breaking the Fastish wire format.
 //
 // A route block wraps a payload (encoded however the command expects) and can
 // optionally contain nested child blocks. The route schema is published in the

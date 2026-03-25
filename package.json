@@ -1,7 +1,7 @@
 {
-  "name": "@rush/contracts",
+  "name": "@fastish/contracts",
   "version": "0.1.0",
-  "description": "Solidity contracts and protocol building blocks for Rush hosts and commands.",
+  "description": "Solidity contracts and protocol building blocks for Fastish hosts and commands.",
   "private": false,
   "license": "MIT",
   "type": "module",

@@ -9,7 +9,7 @@ pragma solidity ^0.8.33;
 //
 // DebitAccountToBalance:
 //   - reads one or more AMOUNT blocks from `request`
-//   - calls `debitAccount` for each (your hook — deduct from your storage)
+//   - calls `debitAccount` for each (your hook - deduct from your storage)
 //   - returns matching BALANCE blocks as the response
 
 import {Host} from "../contracts/Core.sol";
@@ -17,10 +17,10 @@ import {DebitAccountToBalance} from "../contracts/Commands.sol";
 import {ensureAssetRef} from "../contracts/Utils.sol";
 
 contract ExampleHost is Host, DebitAccountToBalance {
-    // Internal balance ledger: account → asset key → amount
+    // Internal balance ledger: account -> asset key -> amount
     mapping(bytes32 account => mapping(bytes32 assetRef => uint amount)) internal balances;
 
-    constructor(address rush) Host(rush, 1, "example") {}
+    constructor(address fastish) Host(fastish, 1, "example") {}
 
     // debitAccount is the hook DebitAccountToBalance calls for each AMOUNT block.
     // Implement this with whatever storage your app uses.
