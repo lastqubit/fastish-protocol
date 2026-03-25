@@ -44,9 +44,9 @@ describe("Peer Commands", () => {
         .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
     });
 
-    it("reverts NoResponse when request is empty", async () => {
+    it("reverts NoOperation when request is empty", async () => {
       await expect(callAs(0, method))
-        .to.be.revertedWithCustomError(host, "NoResponse");
+        .to.be.revertedWithCustomError(host, "NoOperation");
     });
   });
 
@@ -77,9 +77,9 @@ describe("Peer Commands", () => {
         .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
     });
 
-    it("reverts NoResponse when request is empty", async () => {
+    it("reverts NoOperation when request is empty", async () => {
       await expect(callAs(0, method))
-        .to.be.revertedWithCustomError(host, "NoResponse");
+        .to.be.revertedWithCustomError(host, "NoOperation");
     });
   });
 });

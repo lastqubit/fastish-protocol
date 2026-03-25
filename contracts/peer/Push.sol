@@ -25,6 +25,6 @@ abstract contract PeerPush is PeerBase {
             q = next;
         }
 
-        return response("", 0, q);
+        return done(0, q);
     }
 }

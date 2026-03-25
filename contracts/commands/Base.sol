@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {AccessControl} from "../core/Access.sol";
+import {OperationBase} from "../core/Operation.sol";
 import {CommandEvent} from "../events/Command.sol";
-import {toValueAsset} from "../utils/Assets.sol";
-import {localNodeAddr, toCommandId, toCommandSelector} from "../utils/Ids.sol";
+import {toCommandId, toCommandSelector} from "../utils/Ids.sol";
 
 struct CommandContext {
     uint target;
@@ -13,15 +12,10 @@ struct CommandContext {
     bytes request;
 }
 
-error NoOperation();
-
-abstract contract CommandBase is AccessControl, CommandEvent {
-    bytes32 public immutable valueAsset = toValueAsset();
-
+abstract contract CommandBase is OperationBase, CommandEvent {
     error Expired();
     error NotAdmin(bytes32 value);
     error UnexpectedEndpoint();
-    error FailedCall(address addr, uint node, bytes4 selector, bytes err);
 
     modifier onlyAdmin(bytes32 account) {
         if (account != adminAccount) revert NotAdmin(account);
@@ -34,11 +28,6 @@ abstract contract CommandBase is AccessControl, CommandEvent {
         _;
     }
 
-    modifier onlyTrusted() {
-        enforceCaller(msg.sender);
-        _;
-    }
-
     modifier onlyActive(uint deadline) {
         if (deadline < block.timestamp) revert Expired();
         _;
@@ -46,24 +35,5 @@ abstract contract CommandBase is AccessControl, CommandEvent {
 
     function commandId(string memory name) internal view returns (uint) {
         return toCommandId(toCommandSelector(name), address(this));
-    }
-
-    function done(uint start, uint end) internal pure returns (bytes memory) {
-        if (end <= start) revert NoOperation();
-        return "";
-    }
-
-    function done(bytes memory state, uint start, uint end) internal pure returns (bytes memory) {
-        if (end <= start) revert NoOperation();
-        return state;
-    }
-
-    function callTo(uint node, uint value, bytes memory data) internal returns (bytes memory out) {
-        bool success;
-        address addr = localNodeAddr(ensureTrusted(node));
-        (success, out) = payable(addr).call{value: value}(data);
-        if (!success) {
-            revert FailedCall(addr, node, bytes4(data), out);
-        }
     }
 }

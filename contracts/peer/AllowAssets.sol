@@ -18,14 +18,14 @@ abstract contract PeerAllowAssets is PeerBase {
     function peerAllowAsset(bytes32 asset, bytes32 meta) internal virtual returns (bool);
 
     function peerAllowAssets(bytes calldata request) external payable onlyPeer returns (bytes memory) {
-        uint i = 0;
-        while (i < request.length) {
-            BlockRef memory ref = Blocks.from(request, i);
+        uint q = 0;
+        while (q < request.length) {
+            BlockRef memory ref = Blocks.from(request, q);
             if (ref.key != ASSET_KEY) break;
             (bytes32 asset, bytes32 meta) = ref.unpackAsset(request);
             peerAllowAsset(asset, meta);
-            i = ref.end;
+            q = ref.end;
         }
-        return response("", 0, i);
+        return done(0, q);
     }
 }
