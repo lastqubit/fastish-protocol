@@ -13,13 +13,13 @@ It contains the reusable contracts, utilities, and encoding helpers that Fastish
 
 ## Main Entry Points
 
-Most consumers should start from the barrel files in `contracts/`:
+Most consumers should start from the package root entrypoints:
 
-- `contracts/Core.sol`: core host and validation building blocks
-- `contracts/Commands.sol`: base command contract plus standard command mixins
-- `contracts/Blocks.sol`: block schema, readers, and writers
-- `contracts/Utils.sol`: ids, assets, accounts, layout, strings, and value helpers
-- `contracts/Events.sol`: reusable event emitters and event contracts
+- `@fastish/contracts/Core.sol`: core host and validation building blocks
+- `@fastish/contracts/Commands.sol`: base command contract plus standard command mixins
+- `@fastish/contracts/Blocks.sol`: block schema, readers, and writers
+- `@fastish/contracts/Utils.sol`: ids, assets, accounts, layout, strings, and value helpers
+- `@fastish/contracts/Events.sol`: reusable event emitters and event contracts
 
 ## Start Here
 
@@ -44,7 +44,7 @@ Extend `Host` when you want a Fastish host contract with admin command support a
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Host} from "fastish/contracts/Core.sol";
+import {Host} from "@fastish/contracts/Core.sol";
 
 contract ExampleHost is Host {
     constructor(address fastish)
@@ -69,7 +69,7 @@ Extend `CommandBase` when you want a Fastish command mixin that runs inside the 
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandBase, CommandContext} from "fastish/contracts/Commands.sol";
+import {CommandBase, CommandContext} from "@fastish/contracts/Commands.sol";
 
 string constant NAME = "myCommand";
 string constant ROUTE = "route(uint foo, uint bar)";
@@ -116,11 +116,11 @@ npm run compile
 
 The stable import surface for consumers is:
 
-- `fastish/contracts/Core.sol`
-- `fastish/contracts/Commands.sol`
-- `fastish/contracts/Blocks.sol`
-- `fastish/contracts/Utils.sol`
-- `fastish/contracts/Events.sol`
+- `@fastish/contracts/Core.sol`
+- `@fastish/contracts/Commands.sol`
+- `@fastish/contracts/Blocks.sol`
+- `@fastish/contracts/Utils.sol`
+- `@fastish/contracts/Events.sol`
 
 ## When To Use This Repo
 

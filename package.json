@@ -6,6 +6,7 @@
   "license": "GPL-3.0-only",
   "type": "module",
   "files": [
+    "*.sol",
     "contracts/**/*.sol",
     "README.md",
     "LICENSE"

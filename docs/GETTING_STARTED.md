@@ -42,7 +42,7 @@ The smallest useful Fastish app is a host contract.
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {Host} from "fastish/contracts/Core.sol";
+import {Host} from "@fastish/contracts/Core.sol";
 
 contract ExampleHost is Host {
     constructor(address fastish)
@@ -69,9 +69,9 @@ This example adds `DebitAccountToBalance`, which turns `AMOUNT` blocks in `reque
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {Host} from "fastish/contracts/Core.sol";
-import {DebitAccountToBalance} from "fastish/contracts/Commands.sol";
-import {ensureAssetRef} from "fastish/contracts/Utils.sol";
+import {Host} from "@fastish/contracts/Core.sol";
+import {DebitAccountToBalance} from "@fastish/contracts/Commands.sol";
+import {ensureAssetRef} from "@fastish/contracts/Utils.sol";
 
 contract ExampleHost is Host, DebitAccountToBalance {
     mapping(bytes32 account => mapping(bytes32 assetRef => uint amount)) internal balances;
@@ -160,9 +160,9 @@ When the built-in modules are not enough, add your own command entrypoint.
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {Host} from "fastish/contracts/Core.sol";
-import {CommandContext} from "fastish/contracts/Commands.sol";
-import {toCommandId} from "fastish/contracts/Utils.sol";
+import {Host} from "@fastish/contracts/Core.sol";
+import {CommandContext} from "@fastish/contracts/Commands.sol";
+import {toCommandId} from "@fastish/contracts/Utils.sol";
 
 bytes32 constant NAME = "myCommand";
 string constant ROUTE = "route(uint foo, uint bar)";
@@ -215,8 +215,8 @@ When your command needs to build response blocks manually, use `Writers`.
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {Writers} from "fastish/contracts/Blocks.sol";
-import {Writer} from "fastish/contracts/Schema.sol";
+import {Writers} from "@fastish/contracts/Blocks.sol";
+import {Writer} from "@fastish/contracts/Schema.sol";
 
 function buildBalances() internal pure returns (bytes memory) {
     Writer memory writer = Writers.alloc(108 * 2);

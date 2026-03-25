@@ -1,0 +1,144 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.13.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\lastq\code\fastish-protocol\.npmrc
+5 silly config load:file:C:\Users\lastq\.npmrc
+6 silly config load:file:C:\Users\lastq\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm pack
+8 verbose argv "pack" "--dry-run" "--cache" ".npm-cache"
+9 verbose logfile logs-max:10 dir:C:\Users\lastq\code\fastish-protocol\.npm-cache\_logs\2026-03-25T19_30_15_396Z-
+10 verbose logfile C:\Users\lastq\code\fastish-protocol\.npm-cache\_logs\2026-03-25T19_30_15_396Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with EACCES
+14 notice
+15 notice package: @fastish/contracts@0.1.0
+16 notice Tarball Contents
+17 notice 1.3kB Blocks.sol
+17 notice 3.0kB Commands.sol
+17 notice 506B Core.sol
+17 notice 984B Events.sol
+17 notice 33.7kB LICENSE
+17 notice 4.7kB README.md
+17 notice 860B Schema.sol
+17 notice 1.9kB Utils.sol
+17 notice 1.3kB contracts/Blocks.sol
+17 notice 28.1kB contracts/blocks/Data.sol
+17 notice 238B contracts/blocks/Errors.sol
+17 notice 4.3kB contracts/blocks/Mem.sol
+17 notice 36.9kB contracts/blocks/Readers.sol
+17 notice 6.0kB contracts/blocks/Schema.sol
+17 notice 7.5kB contracts/blocks/Writers.sol
+17 notice 976B contracts/combinators/AmountToBalance.sol
+17 notice 1.2kB contracts/combinators/AmountToCustody.sol
+17 notice 1.0kB contracts/combinators/CustodyToBalance.sol
+17 notice 591B contracts/combinators/EachRoute.sol
+17 notice 961B contracts/combinators/MapBalance.sol
+17 notice 971B contracts/combinators/MapCustody.sol
+17 notice 950B contracts/combinators/RouteToBalance.sol
+17 notice 2.6kB contracts/Commands.sol
+17 notice 1.3kB contracts/commands/admin/Allocate.sol
+17 notice 1.2kB contracts/commands/admin/AllowAssets.sol
+17 notice 1.1kB contracts/commands/admin/Authorize.sol
+17 notice 1.2kB contracts/commands/admin/DenyAssets.sol
+17 notice 848B contracts/commands/admin/Destroy.sol
+17 notice 824B contracts/commands/admin/Init.sol
+17 notice 1.1kB contracts/commands/admin/Relocate.sol
+17 notice 1.1kB contracts/commands/admin/Unauthorize.sol
+17 notice 1.1kB contracts/commands/Base.sol
+17 notice 3.5kB contracts/commands/Borrow.sol
+17 notice 1.1kB contracts/commands/Burn.sol
+17 notice 1.0kB contracts/commands/Create.sol
+17 notice 1.4kB contracts/commands/CreditTo.sol
+17 notice 1.7kB contracts/commands/DebitFrom.sol
+17 notice 1.5kB contracts/commands/Deposit.sol
+17 notice 1.4kB contracts/commands/Fund.sol
+17 notice 3.8kB contracts/commands/Liquidate.sol
+17 notice 7.2kB contracts/commands/Liquidity.sol
+17 notice 1.4kB contracts/commands/Mint.sol
+17 notice 1.9kB contracts/commands/Pipe.sol
+17 notice 1.6kB contracts/commands/Provision.sol
+17 notice 1.6kB contracts/commands/Reclaim.sol
+17 notice 3.7kB contracts/commands/Redeem.sol
+17 notice 1.0kB contracts/commands/Remove.sol
+17 notice 3.7kB contracts/commands/Repay.sol
+17 notice 1.1kB contracts/commands/Settle.sol
+17 notice 4.2kB contracts/commands/Stake.sol
+17 notice 1.1kB contracts/commands/Supply.sol
+17 notice 3.5kB contracts/commands/Swap.sol
+17 notice 1.5kB contracts/commands/Transfer.sol
+17 notice 1.8kB contracts/commands/Unstake.sol
+17 notice 1.4kB contracts/commands/Withdraw.sol
+17 notice 446B contracts/Core.sol
+17 notice 1.7kB contracts/core/Access.sol
+17 notice 276B contracts/core/Balances.sol
+17 notice 1.1kB contracts/core/Host.sol
+17 notice 1.1kB contracts/core/Operation.sol
+17 notice 1.0kB contracts/core/Validator.sol
+17 notice 852B contracts/Events.sol
+17 notice 376B contracts/events/Access.sol
+17 notice 411B contracts/events/Asset.sol
+17 notice 477B contracts/events/Balance.sol
+17 notice 536B contracts/events/Collateral.sol
+17 notice 467B contracts/events/Command.sol
+17 notice 534B contracts/events/Debt.sol
+17 notice 445B contracts/events/Deposit.sol
+17 notice 192B contracts/events/Emitter.sol
+17 notice 417B contracts/events/Fastish.sol
+17 notice 386B contracts/events/Governed.sol
+17 notice 445B contracts/events/HostAnnounced.sol
+17 notice 441B contracts/events/Listing.sol
+17 notice 396B contracts/events/Peer.sol
+17 notice 373B contracts/events/Quote.sol
+17 notice 454B contracts/events/Withdraw.sol
+17 notice 205B contracts/interfaces/IHostDiscovery.sol
+17 notice 1.0kB contracts/peer/AllowAssets.sol
+17 notice 543B contracts/peer/Base.sol
+17 notice 1.0kB contracts/peer/DenyAssets.sol
+17 notice 873B contracts/peer/Pull.sol
+17 notice 873B contracts/peer/Push.sol
+17 notice 907B contracts/Schema.sol
+17 notice 10.2kB contracts/test/TestBlockHelper.sol
+17 notice 1.7kB contracts/test/TestBorrowHost.sol
+17 notice 879B contracts/test/TestBurnHost.sol
+17 notice 905B contracts/test/TestCreateHost.sol
+17 notice 165B contracts/test/TestDiscovery.sol
+17 notice 487B contracts/test/TestECDSA.sol
+17 notice 7.3kB contracts/test/TestHost.sol
+17 notice 6.0kB contracts/test/TestLiquidityHost.sol
+17 notice 1.4kB contracts/test/TestMintHost.sol
+17 notice 1.2kB contracts/test/TestPeerHost.sol
+17 notice 1.7kB contracts/test/TestReclaimHost.sol
+17 notice 169B contracts/test/TestRejectEther.sol
+17 notice 905B contracts/test/TestRemoveHost.sol
+17 notice 1.7kB contracts/test/TestSwapHost.sol
+17 notice 6.0kB contracts/test/TestUtils.sol
+17 notice 320B contracts/test/TestValidator.sol
+17 notice 1.9kB contracts/Utils.sol
+17 notice 1.4kB contracts/utils/Accounts.sol
+17 notice 2.4kB contracts/utils/Assets.sol
+17 notice 276B contracts/utils/Channels.sol
+17 notice 1.2kB contracts/utils/ECDSA.sol
+17 notice 2.6kB contracts/utils/Ids.sol
+17 notice 475B contracts/utils/Layout.sol
+17 notice 383B contracts/utils/Strings.sol
+17 notice 3.2kB contracts/utils/Utils.sol
+17 notice 460B contracts/utils/Value.sol
+17 notice 702B package.json
+18 notice Tarball Details
+19 notice name: @fastish/contracts
+20 notice version: 0.1.0
+21 notice filename: fastish-contracts-0.1.0.tgz
+22 notice package size: 46.7 kB
+23 notice unpacked size: 276.6 kB
+24 notice shasum: 66c61ebe69031be258ab9b8962357fc2ff280f80
+25 notice integrity: sha512-jOT71KJe+fCVF[...]mObLzECmnLoAA==
+26 notice total files: 111
+27 notice
+28 verbose cwd C:\Users\lastq\code\fastish-protocol
+29 verbose os Windows_NT 10.0.26200
+30 verbose node v24.13.0
+31 verbose npm  v11.6.2
+32 verbose exit 0
+33 info ok
