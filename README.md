@@ -41,7 +41,7 @@ It walks through:
 Extend `Host` when you want a Fastish host contract with admin command support and optional discovery registration.
 
 ```solidity
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
 import {Host} from "fastish/contracts/Core.sol";
@@ -66,7 +66,7 @@ contract ExampleHost is Host {
 Extend `CommandBase` when you want a Fastish command mixin that runs inside the protocol's trusted call model. Commands are abstract contracts mixed into a host or composed as a standalone module.
 
 ```solidity
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
 import {CommandBase, CommandContext} from "fastish/contracts/Commands.sol";
