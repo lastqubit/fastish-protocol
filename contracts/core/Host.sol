@@ -16,9 +16,9 @@ abstract contract HostDiscovery is HostAnnouncedEvent, IHostDiscovery {
 }
 
 abstract contract Host is Authorize, Unauthorize, Relocate {
-    constructor(address rush, uint8 version, string memory namespace) AccessControl(rush) {
-        if (rush == address(0) || rush == address(this) || rush.code.length == 0) return;
-        IHostDiscovery(rush).announceHost(host, block.number, version, namespace);
+    constructor(address fastish, uint8 version, string memory namespace) AccessControl(fastish) {
+        if (fastish == address(0) || fastish == address(this) || fastish.code.length == 0) return;
+        IHostDiscovery(fastish).announceHost(host, block.number, version, namespace);
     }
 
     receive() external payable {}

@@ -422,6 +422,19 @@ library Data {
         return uint(bytes32(msg.data[ref.i:ref.i + 32]));
     }
 
+    function unpackRoute2Uint(DataRef memory ref) internal pure returns (uint a, uint b) {
+        ensure(ref, ROUTE_KEY, 96);
+        a = uint(bytes32(msg.data[ref.i:ref.i + 32]));
+        b = uint(bytes32(msg.data[ref.i + 32:ref.i + 64]));
+    }
+
+    function unpackRoute3Uint(DataRef memory ref) internal pure returns (uint a, uint b, uint c) {
+        ensure(ref, ROUTE_KEY, 96);
+        a = uint(bytes32(msg.data[ref.i:ref.i + 32]));
+        b = uint(bytes32(msg.data[ref.i + 32:ref.i + 64]));
+        c = uint(bytes32(msg.data[ref.i + 64:ref.i + 96]));
+    }
+
     function unpackRoute32(DataRef memory ref) internal pure returns (bytes32) {
         ensure(ref, ROUTE_KEY, 32);
         return bytes32(msg.data[ref.i:ref.i + 32]);
