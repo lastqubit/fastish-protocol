@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext } from "../Base.sol";
-import { Channels } from "../../utils/Channels.sol";
+import { CommandBase, CommandContext, Channels } from "../Base.sol";
 import { Blocks, Block } from "../../Blocks.sol";
 
 string constant NAME = "destroy";

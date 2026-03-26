@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext } from "../Base.sol";
-import { Channels } from "../../utils/Channels.sol";
+import { CommandBase, CommandContext, Channels } from "../Base.sol";
 import { HostAmount } from "../../blocks/Schema.sol";
 import { Keys } from "../../blocks/Keys.sol";
 import { Schemas } from "../../blocks/Schema.sol";

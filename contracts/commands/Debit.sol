@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase } from "./Base.sol";
-import { Channels } from "../utils/Channels.sol";
+import { CommandContext, CommandBase, Channels } from "./Base.sol";
 import { Writer } from "../Blocks.sol";
 import { Keys } from "../blocks/Keys.sol";
 import { Schemas } from "../blocks/Schema.sol";
 import { Blocks, Block, Keys } from "../Blocks.sol";
 import { Writers } from "../blocks/Writers.sol";
 
-string constant NAME = "debitAccountToBalance";
+string constant NAME = "debitAccount";
 
 using Blocks for Block;
 using Writers for Writer;
 
 abstract contract DebitAccountToBalance is CommandBase {
-    uint internal immutable debitAccountToBalanceId = commandId(NAME);
+    uint internal immutable debitAccountId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Amount, debitAccountToBalanceId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, Schemas.Amount, debitAccountId, Channels.Setup, Channels.Balances);
     }
 
     /// @dev Override to debit externally managed funds from `account`.
@@ -28,7 +27,7 @@ abstract contract DebitAccountToBalance is CommandBase {
     /// @dev Override to customize request parsing or batching for debits.
     /// The default implementation iterates AMOUNT blocks, calls
     /// `debitAccount`, and emits matching BALANCE blocks.
-    function debitAccountToBalance(bytes32 from, bytes calldata request) internal virtual returns (bytes memory) {
+    function debitAccount(bytes32 from, bytes calldata request) internal virtual returns (bytes memory) {
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocBalancesFrom(request, q, Keys.Amount);
 
@@ -43,9 +42,9 @@ abstract contract DebitAccountToBalance is CommandBase {
         return writer.done();
     }
 
-    function debitAccountToBalance(
+    function debitAccount(
         CommandContext calldata c
-    ) external payable onlyCommand(debitAccountToBalanceId, c.target) returns (bytes memory) {
-        return debitAccountToBalance(c.account, c.request);
+    ) external payable onlyCommand(debitAccountId, c.target) returns (bytes memory) {
+        return debitAccount(c.account, c.request);
     }
 }

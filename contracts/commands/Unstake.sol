@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase } from "./Base.sol";
-import { Channels } from "../utils/Channels.sol";
+import { CommandContext, CommandBase, Channels } from "./Base.sol";
 import { AssetAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant UBTB = "unstakeBalanceToBalances";

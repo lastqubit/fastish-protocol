@@ -129,12 +129,12 @@ contract TestHost is
         return transferId;
     }
 
-    function getCreditBalanceToAccountId() external view returns (uint) {
-        return creditBalanceToAccountId;
+    function getCreditAccountId() external view returns (uint) {
+        return creditAccountId;
     }
 
-    function getDebitAccountToBalanceId() external view returns (uint) {
-        return debitAccountToBalanceId;
+    function getDebitAccountId() external view returns (uint) {
+        return debitAccountId;
     }
 
     function getSettleId() external view returns (uint) {
