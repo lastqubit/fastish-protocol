@@ -24,6 +24,14 @@ library Schemas {
     string constant Funding = "funding(uint host, uint amount)";
     string constant Allocation = "allocation(uint host, bytes32 asset, bytes32 meta, uint amount)";
     string constant Bounty = "bounty(uint amount, bytes32 relayer)";
+
+    function route1(string memory maybeRoute, string memory a) internal pure returns (string memory) {
+        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, ">", a);
+    }
+
+    function route2(string memory maybeRoute, string memory a, string memory b) internal pure returns (string memory) {
+        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, ">", a, ">", b);
+    }
 }
 
 // Block stream:
@@ -95,28 +103,3 @@ struct Tx {
     uint amount;
 }
 
-struct Block {
-    bytes4 key;
-    uint i;
-    uint bound;
-    uint end;
-    uint cursor;
-}
-
-struct BlockPair {
-    Block a;
-    Block b;
-}
-
-struct MemRef {
-    bytes4 key;
-    uint i;
-    uint bound;
-    uint end;
-}
-
-struct Writer {
-    uint i;
-    uint end;
-    bytes dst;
-}

@@ -4,8 +4,8 @@ pragma solidity ^0.8.33;
 import { Host } from "../core/Host.sol";
 import { PeerPull } from "../peer/Pull.sol";
 import { PeerPush } from "../peer/Push.sol";
-import { Block } from "../blocks/Schema.sol";
-import { toHostId } from "../utils/Ids.sol";
+import { Block } from "../Blocks.sol";
+import { Ids } from "../utils/Ids.sol";
 
 contract TestPeerHost is Host, PeerPull, PeerPush {
     event PeerPullCalled(bytes routeData);
@@ -16,7 +16,7 @@ contract TestPeerHost is Host, PeerPull, PeerPush {
         PeerPull("")
         PeerPush("")
     {
-        if (cmdr != address(0)) access(toHostId(cmdr), true);
+        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
     function peerPull(Block memory rawRoute) internal override {

@@ -5,7 +5,6 @@ import { CommandContext, CommandBase } from "./Base.sol";
 import { Channels } from "../utils/Channels.sol";
 import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 import { Schemas } from "../blocks/Schema.sol";
-import { routeSchema1 } from "../utils/Utils.sol";
 
 string constant BABTB = "borrowAgainstBalanceToBalance";
 string constant BACTB = "borrowAgainstCustodyToBalance";
@@ -17,7 +16,7 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     uint internal immutable borrowAgainstCustodyToBalanceId = commandId(BACTB);
 
     constructor(string memory maybeRoute) {
-        string memory schema = routeSchema1(maybeRoute, Schemas.Amount);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Amount);
         emit Command(host, BACTB, schema, borrowAgainstCustodyToBalanceId, Channels.Custodies, Channels.Balances);
     }
 
@@ -56,7 +55,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     uint internal immutable borrowAgainstBalanceToBalanceId = commandId(BABTB);
 
     constructor(string memory maybeRoute) {
-        string memory schema = routeSchema1(maybeRoute, Schemas.Amount);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Amount);
         emit Command(host, BABTB, schema, borrowAgainstBalanceToBalanceId, Channels.Balances, Channels.Balances);
     }
 

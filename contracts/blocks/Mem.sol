@@ -1,19 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { HostAmount, MemRef, Tx, Keys } from "./Schema.sol";
-import { InvalidBlock, MalformedBlocks } from "./Errors.sol";
+import { HostAmount, Tx, Keys } from "./Schema.sol";
+import { Blocks } from "./Blocks.sol";
+
+struct MemRef {
+    bytes4 key;
+    uint i;
+    uint bound;
+    uint end;
+}
 
 library Mem {
     function from(bytes memory source, uint i) internal pure returns (MemRef memory ref) {
         uint eod = source.length;
         if (i == eod) return MemRef(bytes4(0), 0, 0, i);
-        if (i > eod) revert MalformedBlocks();
+        if (i > eod) revert Blocks.MalformedBlocks();
 
         unchecked {
             ref.i = i + 12;
         }
-        if (ref.i > eod) revert MalformedBlocks();
+        if (ref.i > eod) revert Blocks.MalformedBlocks();
 
         bytes32 w;
         assembly ("memory-safe") {
@@ -24,11 +31,11 @@ library Mem {
         ref.bound = ref.i + uint32(bytes4(w << 32));
         ref.end = ref.i + uint32(bytes4(w << 64));
 
-        if (ref.bound > ref.end || ref.end > eod) revert MalformedBlocks();
+        if (ref.bound > ref.end || ref.end > eod) revert Blocks.MalformedBlocks();
     }
 
     function slice(bytes memory source, uint start, uint end) internal pure returns (bytes memory out) {
-        if (end < start || end > source.length) revert MalformedBlocks();
+        if (end < start || end > source.length) revert Blocks.MalformedBlocks();
         uint len = end - start;
         out = new bytes(len);
         if (len == 0) return out;
@@ -51,10 +58,10 @@ library Mem {
     }
 
     function find(bytes memory source, uint i, uint limit, bytes4 key) internal pure returns (MemRef memory ref) {
-        if (limit > source.length) revert MalformedBlocks();
+        if (limit > source.length) revert Blocks.MalformedBlocks();
         while (i < limit) {
             ref = from(source, i);
-            if (ref.end > limit) revert MalformedBlocks();
+            if (ref.end > limit) revert Blocks.MalformedBlocks();
             if (ref.key == key) return ref;
             i = ref.end;
         }
@@ -63,16 +70,16 @@ library Mem {
     }
 
     function ensure(MemRef memory ref, bytes4 key) internal pure {
-        if (key == 0 || key != ref.key) revert InvalidBlock();
+        if (key == 0 || key != ref.key) revert Blocks.InvalidBlock();
     }
 
     function ensure(MemRef memory ref, bytes4 key, uint len) internal pure {
-        if (key == 0 || key != ref.key || len != (ref.bound - ref.i)) revert InvalidBlock();
+        if (key == 0 || key != ref.key || len != (ref.bound - ref.i)) revert Blocks.InvalidBlock();
     }
 
     function ensure(MemRef memory ref, bytes4 key, uint min, uint max) internal pure {
         uint len = ref.bound - ref.i;
-        if (key == 0 || key != ref.key || len < min || (max != 0 && len > max)) revert InvalidBlock();
+        if (key == 0 || key != ref.key || len < min || (max != 0 && len > max)) revert Blocks.InvalidBlock();
     }
 
     function unpackBalance(

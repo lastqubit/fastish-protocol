@@ -7,7 +7,6 @@ import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
 import { Keys } from "../blocks/Keys.sol";
 import { Schemas } from "../blocks/Schema.sol";
 import { Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
-import { routeSchema1 } from "../utils/Utils.sol";
 using Blocks for Block;
 using Writers for Writer;
 
@@ -18,7 +17,7 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
     uint internal immutable swapExactBalanceToBalanceId = commandId(SEBTB);
 
     constructor(string memory maybeRoute) {
-        string memory schema = routeSchema1(maybeRoute, Schemas.Minimum);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
         emit Command(host, SEBTB, schema, swapExactBalanceToBalanceId, Channels.Balances, Channels.Balances);
     }
 
@@ -57,7 +56,7 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
     uint internal immutable swapExactCustodyToBalanceId = commandId(SECTB);
 
     constructor(string memory maybeRoute) {
-        string memory schema = routeSchema1(maybeRoute, Schemas.Minimum);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
         emit Command(host, SECTB, schema, swapExactCustodyToBalanceId, Channels.Custodies, Channels.Balances);
     }
 

@@ -5,7 +5,6 @@ import { CommandContext, CommandBase } from "./Base.sol";
 import { Channels } from "../utils/Channels.sol";
 import { AssetAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 import { Schemas } from "../blocks/Schema.sol";
-import { routeSchema1 } from "../utils/Utils.sol";
 
 string constant NAME = "reclaimToBalances";
 
@@ -18,7 +17,7 @@ abstract contract ReclaimToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema1(maybeRoute, Schemas.Amount);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Amount);
         emit Command(host, NAME, schema, reclaimToBalancesId, Channels.Setup, Channels.Balances);
     }
 

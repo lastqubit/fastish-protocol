@@ -7,11 +7,11 @@ import { Unauthorize } from "../commands/admin/Unauthorize.sol";
 import { Relocate } from "../commands/admin/Relocate.sol";
 import { HostAnnouncedEvent } from "../events/HostAnnounced.sol";
 import { IHostDiscovery } from "../interfaces/IHostDiscovery.sol";
-import { ensureHost } from "../utils/Ids.sol";
+import { Ids } from "../utils/Ids.sol";
 
 abstract contract HostDiscovery is HostAnnouncedEvent, IHostDiscovery {
     function announceHost(uint id, uint blocknum, uint16 version, string calldata namespace) external {
-        emit HostAnnounced(ensureHost(id, msg.sender), blocknum, version, namespace);
+        emit HostAnnounced(Ids.host(id, msg.sender), blocknum, version, namespace);
     }
 }
 

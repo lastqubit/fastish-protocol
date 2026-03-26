@@ -7,7 +7,6 @@ import { HostAmount } from "../../blocks/Schema.sol";
 import { Keys } from "../../blocks/Keys.sol";
 import { Schemas } from "../../blocks/Schema.sol";
 import { Blocks, Block, Keys } from "../../Blocks.sol";
-import { ensureAssetRef } from "../../utils/Assets.sol";
 using Blocks for Block;
 
 string constant NAME = "allocate";

@@ -2,12 +2,13 @@
 pragma solidity ^0.8.33;
 
 import { Blocks, Keys } from "./Blocks.sol";
-import { MalformedBlocks } from "./Errors.sol";
-import { AssetAmount, HostAmount, Tx, Writer, Keys } from "./Schema.sol";
+import { AssetAmount, HostAmount, Tx, Keys } from "./Schema.sol";
 
-error WriterOverflow();
-error IncompleteWriter();
-error EmptyRequest();
+struct Writer {
+    uint i;
+    uint end;
+    bytes dst;
+}
 
 uint constant ALLOC_SCALE = 10_000;
 uint constant BALANCE_BLOCK_LEN = 108;
@@ -15,10 +16,14 @@ uint constant CUSTODY_BLOCK_LEN = 140;
 uint constant TX_BLOCK_LEN = 172;
 
 library Writers {
+    error WriterOverflow();
+    error IncompleteWriter();
+    error EmptyRequest();
+
     // Encodes a 12-byte block header (4-byte key + 4-byte selfLen + 4-byte totalLen) into a uint so assembly can
     // write the full header in one mstore while the payload starts at offset + 12.
     function toBlockHeader(bytes4 key, uint selfLen, uint totalLen) internal pure returns (uint) {
-        if (selfLen > type(uint32).max || totalLen > type(uint32).max || selfLen > totalLen) revert MalformedBlocks();
+        if (selfLen > type(uint32).max || totalLen > type(uint32).max || selfLen > totalLen) revert Blocks.MalformedBlocks();
         return (uint(uint32(key)) << 224) | (uint(uint32(selfLen)) << 192) | (uint(uint32(totalLen)) << 160);
     }
 
@@ -96,7 +101,7 @@ library Writers {
         (count, next) = Blocks.count(blocks, i, source);
         if (count == 0) revert EmptyRequest();
         uint scaledCount = count * scaledRatio;
-        if (scaledCount % ALLOC_SCALE != 0) revert MalformedBlocks();
+        if (scaledCount % ALLOC_SCALE != 0) revert Blocks.MalformedBlocks();
         uint len = (scaledCount / ALLOC_SCALE) * blockLen;
         writer = Writer({i: 0, end: len, dst: new bytes(len)});
     }

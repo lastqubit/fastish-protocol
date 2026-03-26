@@ -3,9 +3,10 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { BorrowAgainstCustodyToBalance } from "../commands/Borrow.sol";
-import { AssetAmount, HostAmount, Block } from "../blocks/Schema.sol";
+import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
+import { Block } from "../Blocks.sol";
 import { Blocks } from "../blocks/Blocks.sol";
-import { toHostId } from "../utils/Ids.sol";
+import { Ids } from "../utils/Ids.sol";
 
 using Blocks for Block;
 
@@ -17,7 +18,7 @@ contract TestBorrowHost is Host, BorrowAgainstCustodyToBalance {
     uint public returnAmount;
 
     constructor(address cmdr) Host(address(0), 1, "test") BorrowAgainstCustodyToBalance("") {
-        if (cmdr != address(0)) access(toHostId(cmdr), true);
+        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
     function setReturn(bytes32 asset, bytes32 meta, uint amount) external {

@@ -4,9 +4,10 @@ pragma solidity ^0.8.33;
 import { Host } from "../core/Host.sol";
 import { AddLiquidityFromCustodiesToBalances, RemoveLiquidityFromCustodyToBalances, AddLiquidityFromBalancesToBalances, RemoveLiquidityFromBalanceToBalances } from "../commands/Liquidity.sol";
 import { Blocks } from "../blocks/Blocks.sol";
-import { AssetAmount, BlockPair, Block, HostAmount, Writer } from "../blocks/Schema.sol";
+import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
+import { Block, BlockPair, Writer } from "../Blocks.sol";
 import { Writers } from "../blocks/Writers.sol";
-import { toHostId } from "../utils/Ids.sol";
+import { Ids } from "../utils/Ids.sol";
 
 using Blocks for Block;
 using Writers for Writer;
@@ -50,7 +51,7 @@ contract TestLiquidityHost is
         AddLiquidityFromBalancesToBalances("route(bytes data)", 15_000)
         RemoveLiquidityFromBalanceToBalances("route(bytes data)", 20_000)
     {
-        if (cmdr != address(0)) access(toHostId(cmdr), true);
+        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
     function addLiquidityFromCustodiesToBalances(

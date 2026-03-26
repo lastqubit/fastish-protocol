@@ -1,75 +1,75 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { COMMAND, EVM32, HOST, NODE, PEER } from "./Layout.sol";
-import { bytes32ToString } from "./Strings.sol";
-import { isLocalFamily, matchesBase, toLocalBase } from "./Utils.sol";
+import {Layout} from "./Layout.sol";
+import {isLocalFamily, matchesBase, toLocalBase} from "./Utils.sol";
 
-error InvalidId();
+library Ids {
+    error InvalidId();
 
-uint24 constant NODE_FAMILY = (uint24(EVM32) << 8) | uint24(NODE);
-uint32 constant HOST_PREFIX = (uint32(EVM32) << 16) | (uint32(NODE) << 8) | uint32(HOST);
-uint32 constant COMMAND_PREFIX = (uint32(EVM32) << 16) | (uint32(NODE) << 8) | uint32(COMMAND);
-uint32 constant PEER_PREFIX = (uint32(EVM32) << 16) | (uint32(NODE) << 8) | uint32(PEER);
-string constant COMMAND_ARGS = "((uint256,bytes32,bytes,bytes))";
-string constant PEER_ARGS = "(bytes)";
+    uint24 constant Node = (uint24(Layout.Evm32) << 8) | uint24(Layout.Node);
+    uint32 constant Host = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Node) << 8) | uint32(Layout.Host);
+    uint32 constant Command = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Node) << 8) | uint32(Layout.Command);
+    uint32 constant Peer = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Node) << 8) | uint32(Layout.Peer);
 
-function isHost(uint id) pure returns (bool) {
-    return uint32(id >> 224) == HOST_PREFIX;
+    function isHost(uint id) internal pure returns (bool) {
+        return uint32(id >> 224) == Host;
+    }
+
+    function isCommand(uint id) internal pure returns (bool) {
+        return uint32(id >> 224) == Command;
+    }
+
+    function isPeer(uint id) internal pure returns (bool) {
+        return uint32(id >> 224) == Peer;
+    }
+
+    function command(uint id) internal pure returns (uint cid) {
+        if (!isCommand(id)) revert InvalidId();
+        return id;
+    }
+
+    function host(uint id, address target) internal view returns (uint hid) {
+        if (id != toHost(target)) revert InvalidId();
+        return id;
+    }
+
+    function toHost(address target) internal view returns (uint) {
+        return toLocalBase(Host) | uint(uint160(target));
+    }
+
+    function toCommand(bytes4 selector, address target) internal view returns (uint) {
+        uint id = toLocalBase(Command) | uint(uint160(target));
+        id |= uint(uint32(selector)) << 160;
+        return id;
+    }
+
+    function toPeer(bytes4 selector, address target) internal view returns (uint) {
+        uint id = toLocalBase(Peer) | uint(uint160(target));
+        id |= uint(uint32(selector)) << 160;
+        return id;
+    }
+
+    function nodeAddr(uint id) internal view returns (address) {
+        if (!isLocalFamily(id, Node)) revert InvalidId();
+        return address(uint160(id));
+    }
+
+    function hostAddr(uint id) internal view returns (address) {
+        if (!matchesBase(bytes32(id), toLocalBase(Host))) revert InvalidId();
+        return address(uint160(id));
+    }
 }
 
-function isCommand(uint id) pure returns (bool) {
-    return uint32(id >> 224) == COMMAND_PREFIX;
-}
+library Selectors {
+    string constant CommandArgs = "((uint256,bytes32,bytes,bytes))";
+    string constant PeerArgs = "(bytes)";
 
-function isPeer(uint id) pure returns (bool) {
-    return uint32(id >> 224) == PEER_PREFIX;
-}
+    function command(string memory name) internal pure returns (bytes4) {
+        return bytes4(keccak256(bytes.concat(bytes(name), bytes(CommandArgs))));
+    }
 
-function toHostId(address addr) view returns (uint) {
-    return toLocalBase(HOST_PREFIX) | uint(uint160(addr));
-}
-
-function toCommandSelector(string memory name) pure returns (bytes4) {
-    return bytes4(keccak256(bytes.concat(bytes(name), bytes(COMMAND_ARGS))));
-}
-
-function toCommandSelector(bytes32 name) pure returns (bytes4) {
-    return toCommandSelector(bytes32ToString(name));
-}
-
-function toPeerSelector(string memory name) pure returns (bytes4) {
-    return bytes4(keccak256(bytes.concat(bytes(name), bytes(PEER_ARGS))));
-}
-
-function toCommandId(bytes4 selector, address addr) view returns (uint) {
-    uint id = toLocalBase(COMMAND_PREFIX) | uint(uint160(addr));
-    id |= uint(uint32(selector)) << 160;
-    return id;
-}
-
-function toPeerId(bytes4 selector, address addr) view returns (uint) {
-    uint id = toLocalBase(PEER_PREFIX) | uint(uint160(addr));
-    id |= uint(uint32(selector)) << 160;
-    return id;
-}
-
-function ensureHost(uint id, address addr) view returns (uint) {
-    if (id != toHostId(addr)) revert InvalidId();
-    return id;
-}
-
-function ensureCommand(uint id) pure returns (uint cid) {
-    if (!isCommand(id)) revert InvalidId();
-    return id;
-}
-
-function localNodeAddr(uint node) view returns (address) {
-    if (!isLocalFamily(node, NODE_FAMILY)) revert InvalidId();
-    return address(uint160(node));
-}
-
-function localHostAddr(uint host) view returns (address) {
-    if (!matchesBase(bytes32(host), toLocalBase(HOST_PREFIX))) revert InvalidId();
-    return address(uint160(host));
+    function peer(string memory name) internal pure returns (bytes4) {
+        return bytes4(keccak256(bytes.concat(bytes(name), bytes(PeerArgs))));
+    }
 }

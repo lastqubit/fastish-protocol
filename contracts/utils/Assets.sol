@@ -1,71 +1,76 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { ASSET, ERC20, ERC721, EVM32, VALUE } from "./Layout.sol";
-import { matchesBase, toLocalBase } from "./Utils.sol";
+import {Layout} from "./Layout.sol";
+import {matchesBase, toLocalBase} from "./Utils.sol";
 
-uint32 constant VALUE_PREFIX = (uint32(EVM32) << 16) | (uint32(ASSET) << 8) | uint32(VALUE);
-uint32 constant ERC20_PREFIX = (uint32(EVM32) << 16) | (uint32(ASSET) << 8) | uint32(ERC20);
-uint32 constant ERC721_PREFIX = (uint32(EVM32) << 16) | (uint32(ASSET) << 8) | uint32(ERC721);
+library Assets {
+    error InvalidAsset();
 
-error ZeroAmount();
-error InvalidAsset();
-error BadAmount(uint amount);
+    uint32 constant Value = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Asset) << 8) | uint32(Layout.Value);
+    uint32 constant Erc20 = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Asset) << 8) | uint32(Layout.Erc20);
+    uint32 constant Erc721 = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Asset) << 8) | uint32(Layout.Erc721);
 
-function isAsset32(bytes32 asset) pure returns (bool) {
-    return bytes1(asset) == 0x20;
-}
-
-function toValueAsset() view returns (bytes32) {
-    return bytes32(toLocalBase(VALUE_PREFIX));
-}
-
-function toErc20Asset(address addr) view returns (bytes32) {
-    return bytes32(toLocalBase(ERC20_PREFIX) | (uint(uint160(addr)) << 32));
-}
-
-function toErc721Asset(address issuer) view returns (bytes32) {
-    return bytes32(toLocalBase(ERC721_PREFIX) | (uint(uint160(issuer)) << 32));
-}
-
-function resolveAmount(uint available, uint min, uint max) pure returns (uint) {
-    uint amount = available > max ? max : available;
-    if (amount < min) {
-        revert BadAmount(amount);
+    function is32(bytes32 asset) internal pure returns (bool) {
+        return bytes1(asset) == 0x20;
     }
-    return amount;
-}
 
-function ensureAmount(uint amount) pure returns (uint) {
-    if (amount == 0) {
-        revert ZeroAmount();
+    function toValue() internal view returns (bytes32) {
+        return bytes32(toLocalBase(Value));
     }
-    return amount;
-}
 
-function ensureAmount(uint amount, uint min, uint max) pure returns (uint) {
-    if (amount < min || amount > max) {
-        revert BadAmount(amount);
+    function toErc20(address addr) internal view returns (bytes32) {
+        return bytes32(toLocalBase(Erc20) | (uint(uint160(addr)) << 32));
     }
-    return amount;
+
+    function toErc721(address issuer) internal view returns (bytes32) {
+        return bytes32(toLocalBase(Erc721) | (uint(uint160(issuer)) << 32));
+    }
+
+    function ensureRef(bytes32 asset, bytes32 meta) internal pure returns (bytes32) {
+        if (asset == 0 || (bytes1(asset) == 0x20 && meta != 0)) revert InvalidAsset();
+        return bytes1(asset) == 0x20 ? asset : keccak256(bytes.concat(asset, meta));
+    }
+
+    function erc20Addr(bytes32 asset) internal view returns (address) {
+        if (!matchesBase(asset, toLocalBase(Erc20))) revert InvalidAsset();
+        return address(uint160(uint(asset) >> 32));
+    }
+
+    function erc721Issuer(bytes32 asset) internal view returns (address) {
+        if (!matchesBase(asset, toLocalBase(Erc721))) revert InvalidAsset();
+        return address(uint160(uint(asset) >> 32));
+    }
 }
 
-function ensureAssetRef(bytes32 asset, bytes32 meta) pure returns (bytes32) {
-    if (asset == 0 || (bytes1(asset) == 0x20 && meta != 0)) revert InvalidAsset();
-    return bytes1(asset) == 0x20 ? asset : keccak256(bytes.concat(asset, meta));
-}
+library Amounts {
+    error ZeroAmount();
+    error BadAmount(uint amount);
 
-function ensureBalanceRef(bytes32 asset, bytes32 meta, uint amount) pure returns (bytes32 ref) {
-    ensureAmount(amount);
-    return ensureAssetRef(asset, meta);
-}
+    function ensure(uint amount) internal pure returns (uint) {
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
+        return amount;
+    }
 
-function localErc20Addr(bytes32 asset) view returns (address) {
-    if (!matchesBase(asset, toLocalBase(ERC20_PREFIX))) revert InvalidAsset();
-    return address(uint160(uint(asset) >> 32));
-}
+    function ensure(uint amount, uint min, uint max) internal pure returns (uint) {
+        if (amount < min || amount > max) {
+            revert BadAmount(amount);
+        }
+        return amount;
+    }
 
-function localErc721Issuer(bytes32 asset) view returns (address) {
-    if (!matchesBase(asset, toLocalBase(ERC721_PREFIX))) revert InvalidAsset();
-    return address(uint160(uint(asset) >> 32));
+    function ensureRef(bytes32 asset, bytes32 meta, uint amount) internal pure returns (bytes32 ref) {
+        ensure(amount);
+        return Assets.ensureRef(asset, meta);
+    }
+
+    function resolve(uint available, uint min, uint max) internal pure returns (uint) {
+        uint amount = available > max ? max : available;
+        if (amount < min) {
+            revert BadAmount(amount);
+        }
+        return amount;
+    }
 }

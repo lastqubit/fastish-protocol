@@ -15,7 +15,8 @@ import { DenyAssets } from "../commands/admin/DenyAssets.sol";
 import { Destroy } from "../commands/admin/Destroy.sol";
 import { Init } from "../commands/admin/Init.sol";
 import { Allocate } from "../commands/admin/Allocate.sol";
-import { Block, Tx } from "../blocks/Schema.sol";
+import { Tx } from "../blocks/Schema.sol";
+import { Block } from "../Blocks.sol";
 
 contract TestHost is
     Host,

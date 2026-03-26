@@ -5,8 +5,8 @@ import { CommandBase, CommandContext } from "./Base.sol";
 import { Keys } from "../blocks/Keys.sol";
 import { Schemas } from "../blocks/Schema.sol";
 import { Blocks, Block, Keys } from "../Blocks.sol";
-import { isAdminAccount, InvalidAccount } from "../utils/Accounts.sol";
-import { msgValue, useValue, ValueBudget } from "../utils/Value.sol";
+import { Accounts } from "../utils/Accounts.sol";
+import { Values } from "../utils/Value.sol";
 
 using Blocks for Block;
 
@@ -33,14 +33,14 @@ abstract contract Pipe is CommandBase {
         bytes32 account,
         bytes memory state,
         bytes calldata steps,
-        ValueBudget memory budget
+        Values.Budget memory budget
     ) internal returns (bytes memory) {
         uint i = 0;
         while (i < steps.length) {
             Block memory ref = Blocks.from(steps, i);
             if (ref.key != Keys.Step) break;
             (uint target, uint value, bytes calldata request) = ref.unpackStep();
-            uint spend = useValue(value, budget);
+            uint spend = Values.use(budget, value);
             state = dispatchStep(target, account, state, request, spend);
             i = ref.cursor;
         }
@@ -50,8 +50,8 @@ abstract contract Pipe is CommandBase {
 
     // Any unused value will not be credited back to the account using this path.
     function pipe(CommandContext calldata c) external payable onlyCommand(pipeId, c.target) returns (bytes memory) {
-        if (isAdminAccount(c.account)) revert InvalidAccount();
-        ValueBudget memory budget = msgValue();
+        if (Accounts.isAdmin(c.account)) revert Accounts.InvalidAccount();
+        Values.Budget memory budget = Values.fromMsg();
         return pipe(c.account, c.state, c.request, budget);
     }
 }

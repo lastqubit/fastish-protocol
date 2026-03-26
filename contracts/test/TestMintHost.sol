@@ -3,9 +3,9 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { MintToBalances } from "../commands/Mint.sol";
-import { Block, Writer } from "../blocks/Schema.sol";
+import { Block, Writer } from "../Blocks.sol";
 import { Writers } from "../blocks/Writers.sol";
-import { toHostId } from "../utils/Ids.sol";
+import { Ids } from "../utils/Ids.sol";
 
 using Writers for Writer;
 
@@ -20,7 +20,7 @@ contract TestMintHost is Host, MintToBalances {
         Host(address(0), 1, "test")
         MintToBalances("", 10_000)
     {
-        if (cmdr != address(0)) access(toHostId(cmdr), true);
+        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
     function setReturn(bytes32 asset, bytes32 meta, uint amount) external {

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { AssetAmount, HostAmount, Tx, Block, MemRef, Writer } from "../blocks/Schema.sol";
+import { AssetAmount, HostAmount, Tx } from "../blocks/Schema.sol";
+import { Block, Writer } from "../Blocks.sol";
+import { MemRef } from "../blocks/Mem.sol";
 import { Blocks, Keys } from "../blocks/Blocks.sol";
 import { Mem } from "../blocks/Mem.sol";
 import { Writers, BALANCE_BLOCK_LEN, CUSTODY_BLOCK_LEN, TX_BLOCK_LEN } from "../blocks/Writers.sol";

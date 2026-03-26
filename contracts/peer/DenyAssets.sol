@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { PeerBase } from "./Base.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Keys } from "../Blocks.sol";
+import {PeerBase} from "./Base.sol";
+import {Blocks, Block, Keys, Schemas} from "../Blocks.sol";
 using Blocks for Block;
 
 string constant NAME = "peerDenyAssets";

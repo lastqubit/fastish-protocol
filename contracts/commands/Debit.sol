@@ -3,7 +3,7 @@ pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase } from "./Base.sol";
 import { Channels } from "../utils/Channels.sol";
-import { Writer } from "../blocks/Schema.sol";
+import { Writer } from "../Blocks.sol";
 import { Keys } from "../blocks/Keys.sol";
 import { Schemas } from "../blocks/Schema.sol";
 import { Blocks, Block, Keys } from "../Blocks.sol";

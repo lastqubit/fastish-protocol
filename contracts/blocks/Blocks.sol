@@ -1,12 +1,31 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { BlockPair, Block, HostAsset, AssetAmount, HostAmount, Tx, Keys } from "./Schema.sol";
-import { InvalidBlock, MalformedBlocks, UnexpectedAsset, UnexpectedHost, UnexpectedMeta, ZeroNode, ZeroRecipient } from "./Errors.sol";
+import { HostAsset, AssetAmount, HostAmount, Tx, Keys } from "./Schema.sol";
+
+struct Block {
+    bytes4 key;
+    uint i;
+    uint bound;
+    uint end;
+    uint cursor;
+}
+
+struct BlockPair {
+    Block a;
+    Block b;
+}
 
 using Blocks for Block;
 
 library Blocks {
+    error MalformedBlocks();
+    error InvalidBlock();
+    error ZeroRecipient();
+    error ZeroNode();
+    error UnexpectedHost();
+    error UnexpectedAsset();
+    error UnexpectedMeta();
     // ── infrastructure ────────────────────────────────────────────────────────
 
     function at(uint i) internal pure returns (Block memory ref) {

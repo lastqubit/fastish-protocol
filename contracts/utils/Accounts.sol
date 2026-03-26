@@ -1,42 +1,40 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { ACCOUNT, ADMIN, EVM32, USER } from "./Layout.sol";
-import { isFamily, toLocalBase, toUnspecifiedBase } from "./Utils.sol";
+import {Layout} from "./Layout.sol";
+import {isFamily, toLocalBase, toUnspecifiedBase} from "./Utils.sol";
 
-error InvalidAccount();
+library Accounts {
+    error InvalidAccount();
 
-uint24 constant ACCOUNT_FAMILY = (uint24(EVM32) << 8) | uint24(ACCOUNT);
-uint32 constant ADMIN_PREFIX = (uint32(EVM32) << 16) | (uint32(ACCOUNT) << 8) | uint32(ADMIN);
-uint32 constant USER_PREFIX = (uint32(EVM32) << 16) | (uint32(ACCOUNT) << 8) | uint32(USER);
+    uint24 constant Family = (uint24(Layout.Evm32) << 8) | uint24(Layout.Account);
+    uint32 constant Admin = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.Admin);
+    uint32 constant User = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.User);
 
-function addrOr(address addr, address or) pure returns (address) {
-    return addr == address(0) ? or : addr;
-}
-
-function accountPrefix(bytes32 account) pure returns (uint32) {
-    return uint32(uint(account) >> 224);
-}
-
-function isAdminAccount(bytes32 account) pure returns (bool) {
-    return accountPrefix(account) == ADMIN_PREFIX;
-}
-
-function toAdminAccount(address addr) view returns (bytes32) {
-    return bytes32(toLocalBase(ADMIN_PREFIX) | (uint(uint160(addr)) << 32));
-}
-
-function toUserAccount(address addr) pure returns (bytes32) {
-    return bytes32(toUnspecifiedBase(USER_PREFIX) | (uint(uint160(addr)) << 32));
-}
-
-function ensureEvmAccount(bytes32 account) pure {
-    if (!isFamily(uint(account), ACCOUNT_FAMILY)) {
-        revert InvalidAccount();
+    function prefix(bytes32 account) internal pure returns (uint32) {
+        return uint32(uint(account) >> 224);
     }
-}
 
-function accountEvmAddr(bytes32 account) pure returns (address) {
-    ensureEvmAccount(account);
-    return address(uint160(uint(account) >> 32));
+    function isAdmin(bytes32 account) internal pure returns (bool) {
+        return prefix(account) == Admin;
+    }
+
+    function toAdmin(address addr) internal view returns (bytes32) {
+        return bytes32(toLocalBase(Admin) | (uint(uint160(addr)) << 32));
+    }
+
+    function toUser(address addr) internal pure returns (bytes32) {
+        return bytes32(toUnspecifiedBase(User) | (uint(uint160(addr)) << 32));
+    }
+
+    function ensureEvm(bytes32 account) internal pure returns (bytes32) {
+        if (!isFamily(uint(account), Family)) {
+            revert InvalidAccount();
+        }
+        return account;
+    }
+
+    function addrEvm(bytes32 account) internal pure returns (address) {
+        return address(uint160(uint(ensureEvm(account)) >> 32));
+    }
 }

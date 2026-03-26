@@ -3,11 +3,10 @@ pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase } from "./Base.sol";
 import { Channels } from "../utils/Channels.sol";
-import { AssetAmount, HostAmount, BlockPair } from "../blocks/Schema.sol";
+import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
 import { Keys } from "../blocks/Keys.sol";
 import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
-import { routeSchema1, routeSchema2 } from "../utils/Utils.sol";
+import { Blocks, Block, BlockPair, Writers, Writer, Keys } from "../Blocks.sol";
 
 using Blocks for Block;
 using Writers for Writer;
@@ -23,7 +22,7 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema1(maybeRoute, Schemas.Minimum);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
         emit Command(host, ALFCTB, schema, addLiquidityFromCustodiesToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
@@ -65,7 +64,7 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema2(maybeRoute, Schemas.Minimum, Schemas.Minimum);
+        string memory schema = Schemas.route2(maybeRoute, Schemas.Minimum, Schemas.Minimum);
         emit Command(host, RLFCTB, schema, removeLiquidityFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
@@ -106,7 +105,7 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema1(maybeRoute, Schemas.Minimum);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
         emit Command(host, ALFBTB, schema, addLiquidityFromBalancesToBalancesId, Channels.Balances, Channels.Balances);
     }
 
@@ -148,7 +147,7 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema2(maybeRoute, Schemas.Minimum, Schemas.Minimum);
+        string memory schema = Schemas.route2(maybeRoute, Schemas.Minimum, Schemas.Minimum);
         emit Command(host, RLFBTB, schema, removeLiquidityFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 

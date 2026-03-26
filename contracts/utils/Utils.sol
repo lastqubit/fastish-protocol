@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Schemas } from "../blocks/Schema.sol";
-
 uint16 constant MAX_BPS = 10_000;
 
 error ValueOverflow();
@@ -70,6 +68,24 @@ function max160(uint value) pure returns (uint) {
     return value;
 }
 
+function addrOr(address addr, address or) pure returns (address) {
+    return addr == address(0) ? or : addr;
+}
+
+function bytes32ToString(bytes32 value) pure returns (string memory result) {
+    uint len;
+    while (len < 32 && value[len] != 0) {
+        unchecked {
+            ++len;
+        }
+    }
+
+    result = new string(len);
+    assembly ("memory-safe") {
+        mstore(add(result, 0x20), value)
+    }
+}
+
 function toLocalBase(uint32 prefix) view returns (uint) {
     return (uint(prefix) << 224) | (uint(max32(block.chainid)) << 192);
 }
@@ -108,10 +124,3 @@ function beforeBps(uint amount, uint16 bps) pure returns (uint) {
     return (amount * MAX_BPS) / (MAX_BPS + bps);
 }
 
-function routeSchema1(string memory maybeRoute, string memory a) pure returns (string memory) {
-    return string.concat(bytes(maybeRoute).length == 0 ? Schemas.RouteEmpty : maybeRoute, ">", a);
-}
-
-function routeSchema2(string memory maybeRoute, string memory a, string memory b) pure returns (string memory) {
-    return string.concat(bytes(maybeRoute).length == 0 ? Schemas.RouteEmpty : maybeRoute, ">", a, ">", b);
-}
