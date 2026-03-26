@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {BALANCE_KEY, CUSTODY_KEY, HostAmount, MemRef, TX_KEY, Tx} from "./Schema.sol";
-import {InvalidBlock, MalformedBlocks} from "./Errors.sol";
+import { HostAmount, MemRef, Tx, Keys } from "./Schema.sol";
+import { InvalidBlock, MalformedBlocks } from "./Errors.sol";
 
 library Mem {
     function from(bytes memory source, uint i) internal pure returns (MemRef memory ref) {
@@ -79,7 +79,7 @@ library Mem {
         MemRef memory ref,
         bytes memory source
     ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        ensure(ref, BALANCE_KEY, 96);
+        ensure(ref, Keys.BALANCE, 96);
         uint i = ref.i;
 
         assembly ("memory-safe") {
@@ -94,7 +94,7 @@ library Mem {
         MemRef memory ref,
         bytes memory source
     ) internal pure returns (HostAmount memory value) {
-        ensure(ref, CUSTODY_KEY, 128);
+        ensure(ref, Keys.CUSTODY, 128);
         uint i = ref.i;
 
         assembly ("memory-safe") {
@@ -107,7 +107,7 @@ library Mem {
     }
 
     function toTxValue(MemRef memory ref, bytes memory source) internal pure returns (Tx memory value) {
-        ensure(ref, TX_KEY, 160);
+        ensure(ref, Keys.TX, 160);
         uint i = ref.i;
 
         assembly ("memory-safe") {

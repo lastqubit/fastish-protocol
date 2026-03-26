@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES, SETUP} from "../utils/Channels.sol";
-import {RECIPIENT} from "../blocks/Schema.sol";
-import {BALANCE_KEY, Blocks, Data, DataRef} from "../Blocks.sol";
-using Data for DataRef;
+import { CommandContext, CommandBase } from "./Base.sol";
+import { BALANCES, SETUP } from "../utils/Channels.sol";
+import { Keys } from "../blocks/Keys.sol";
+import { Schemas } from "../blocks/Schema.sol";
+import { Blocks, Block, Keys } from "../Blocks.sol";
+using Blocks for Block;
 
 string constant NAME = "withdraw";
 
@@ -14,7 +15,7 @@ abstract contract Withdraw is CommandBase {
     uint internal immutable withdrawId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, RECIPIENT, withdrawId, BALANCES, SETUP);
+        emit Command(host, NAME, Schemas.RECIPIENT, withdrawId, BALANCES, SETUP);
     }
 
     /// @dev Override to send funds to `account`.
@@ -27,8 +28,8 @@ abstract contract Withdraw is CommandBase {
         bytes32 to = Blocks.resolveRecipient(c.request, 0, c.request.length, c.account);
         uint i = 0;
         while (i < c.state.length) {
-            DataRef memory ref = Data.from(c.state, i);
-            if (ref.key != BALANCE_KEY) break;
+            Block memory ref = Blocks.from(c.state, i);
+            if (ref.key != Keys.BALANCE) break;
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance();
             withdraw(to, asset, meta, amount);
             i = ref.cursor;

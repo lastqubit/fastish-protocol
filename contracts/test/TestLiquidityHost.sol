@@ -1,19 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Host} from "../core/Host.sol";
-import {
-    AddLiquidityFromCustodiesToBalances,
-    RemoveLiquidityFromCustodyToBalances,
-    AddLiquidityFromBalancesToBalances,
-    RemoveLiquidityFromBalanceToBalances
-} from "../commands/Liquidity.sol";
-import {Data} from "../blocks/Data.sol";
-import {AssetAmount, DataPairRef, DataRef, HostAmount, Writer} from "../blocks/Schema.sol";
-import {Writers} from "../blocks/Writers.sol";
-import {toHostId} from "../utils/Ids.sol";
+import { Host } from "../core/Host.sol";
+import { AddLiquidityFromCustodiesToBalances, RemoveLiquidityFromCustodyToBalances, AddLiquidityFromBalancesToBalances, RemoveLiquidityFromBalanceToBalances } from "../commands/Liquidity.sol";
+import { Blocks } from "../blocks/Blocks.sol";
+import { AssetAmount, BlockPair, Block, HostAmount, Writer } from "../blocks/Schema.sol";
+import { Writers } from "../blocks/Writers.sol";
+import { toHostId } from "../utils/Ids.sol";
 
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 contract TestLiquidityHost is
@@ -60,8 +55,8 @@ contract TestLiquidityHost is
 
     function addLiquidityFromCustodiesToBalances(
         bytes32 account,
-        DataPairRef memory rawCustodies,
-        DataRef memory rawRoute,
+        BlockPair memory rawCustodies,
+        Block memory rawRoute,
         Writer memory out
     ) internal override {
         HostAmount memory a = rawCustodies.a.toCustodyValue();
@@ -79,7 +74,7 @@ contract TestLiquidityHost is
     function removeLiquidityFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal override {
         bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
@@ -93,8 +88,8 @@ contract TestLiquidityHost is
 
     function addLiquidityFromBalancesToBalances(
         bytes32 account,
-        DataPairRef memory rawBalances,
-        DataRef memory rawRoute,
+        BlockPair memory rawBalances,
+        Block memory rawRoute,
         Writer memory out
     ) internal override {
         AssetAmount memory a = rawBalances.a.toBalanceValue();
@@ -112,7 +107,7 @@ contract TestLiquidityHost is
     function removeLiquidityFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal override {
         bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
@@ -124,7 +119,7 @@ contract TestLiquidityHost is
         out.appendBalance(REDEEM_FROM_BALANCE_ASSET, bytes32(routeLen), balance.amount + 20);
     }
 
-    function emitMinimum(DataRef memory rawRoute) internal {
+    function emitMinimum(Block memory rawRoute) internal {
         if (rawRoute.bound < rawRoute.end) {
             (bytes32 asset, bytes32 meta, uint amount) = rawRoute.innerMinimum();
             emit MinimumObserved(asset, meta, amount);

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {ASSET, ERC20, ERC721, EVM32, VALUE} from "./Layout.sol";
-import {matchesBase, toLocalBase} from "./Utils.sol";
+import { ASSET, ERC20, ERC721, EVM32, VALUE } from "./Layout.sol";
+import { matchesBase, toLocalBase } from "./Utils.sol";
 
 uint32 constant VALUE_PREFIX = (uint32(EVM32) << 16) | (uint32(ASSET) << 8) | uint32(VALUE);
 uint32 constant ERC20_PREFIX = (uint32(EVM32) << 16) | (uint32(ASSET) << 8) | uint32(ERC20);

@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Host} from "../core/Host.sol";
-import {Deposit} from "../commands/Deposit.sol";
-import {Withdraw} from "../commands/Withdraw.sol";
-import {Transfer} from "../commands/Transfer.sol";
-import {CreditBalanceToAccount} from "../commands/Credit.sol";
-import {DebitAccountToBalance} from "../commands/Debit.sol";
-import {Settle} from "../commands/Settle.sol";
-import {Provision, ProvisionFromBalance} from "../commands/Provision.sol";
-import {Pipe} from "../commands/Pipe.sol";
-import {AllowAssets} from "../commands/admin/AllowAssets.sol";
-import {DenyAssets} from "../commands/admin/DenyAssets.sol";
-import {Destroy} from "../commands/admin/Destroy.sol";
-import {Init} from "../commands/admin/Init.sol";
-import {Allocate} from "../commands/admin/Allocate.sol";
-import {DataRef, Tx} from "../blocks/Schema.sol";
+import { Host } from "../core/Host.sol";
+import { Deposit } from "../commands/Deposit.sol";
+import { Withdraw } from "../commands/Withdraw.sol";
+import { Transfer } from "../commands/Transfer.sol";
+import { CreditBalanceToAccount } from "../commands/Credit.sol";
+import { DebitAccountToBalance } from "../commands/Debit.sol";
+import { Settle } from "../commands/Settle.sol";
+import { Provision, ProvisionFromBalance } from "../commands/Provision.sol";
+import { Pipe } from "../commands/Pipe.sol";
+import { AllowAssets } from "../commands/admin/AllowAssets.sol";
+import { DenyAssets } from "../commands/admin/DenyAssets.sol";
+import { Destroy } from "../commands/admin/Destroy.sol";
+import { Init } from "../commands/admin/Init.sol";
+import { Allocate } from "../commands/admin/Allocate.sol";
+import { Block, Tx } from "../blocks/Schema.sol";
 
 contract TestHost is
     Host,
@@ -80,12 +80,12 @@ contract TestHost is
         emit ProvisionCalled(host_, account, asset, meta, amount);
     }
 
-    function init(DataRef memory rawRoute) internal override {
+    function init(Block memory rawRoute) internal override {
         bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
         emit InitCalled(routeData);
     }
 
-    function destroy(DataRef memory rawRoute) internal override {
+    function destroy(Block memory rawRoute) internal override {
         bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
         emit DestroyCalled(routeData);
     }

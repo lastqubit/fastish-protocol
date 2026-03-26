@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandBase, CommandContext} from "./Base.sol";
-import {STEP, STEP_KEY} from "../blocks/Schema.sol";
-import {Data, DataRef} from "../Blocks.sol";
-import {isAdminAccount, InvalidAccount} from "../utils/Accounts.sol";
-import {msgValue, useValue, ValueBudget} from "../utils/Value.sol";
+import { CommandBase, CommandContext } from "./Base.sol";
+import { Keys } from "../blocks/Keys.sol";
+import { Schemas } from "../blocks/Schema.sol";
+import { Blocks, Block, Keys } from "../Blocks.sol";
+import { isAdminAccount, InvalidAccount } from "../utils/Accounts.sol";
+import { msgValue, useValue, ValueBudget } from "../utils/Value.sol";
 
-using Data for DataRef;
+using Blocks for Block;
 
 string constant NAME = "pipe";
 
@@ -15,7 +16,7 @@ abstract contract Pipe is CommandBase {
     uint internal immutable pipeId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, STEP, pipeId, 0, 0);
+        emit Command(host, NAME, Schemas.STEP, pipeId, 0, 0);
     }
 
     /// @dev Override to execute a single STEP target and return the next
@@ -36,8 +37,8 @@ abstract contract Pipe is CommandBase {
     ) internal returns (bytes memory) {
         uint i = 0;
         while (i < steps.length) {
-            DataRef memory ref = Data.from(steps, i);
-            if (ref.key != STEP_KEY) break;
+            Block memory ref = Blocks.from(steps, i);
+            if (ref.key != Keys.STEP) break;
             (uint target, uint value, bytes calldata request) = ref.unpackStep();
             uint spend = useValue(value, budget);
             state = dispatchStep(target, account, state, request, spend);

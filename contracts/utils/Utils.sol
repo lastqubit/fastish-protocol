@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {ROUTE_EMPTY} from "../blocks/Schema.sol";
+import { Schemas } from "../blocks/Schema.sol";
 
 uint16 constant MAX_BPS = 10_000;
 
@@ -109,9 +109,9 @@ function beforeBps(uint amount, uint16 bps) pure returns (uint) {
 }
 
 function routeSchema1(string memory maybeRoute, string memory a) pure returns (string memory) {
-    return string.concat(bytes(maybeRoute).length == 0 ? ROUTE_EMPTY : maybeRoute, ">", a);
+    return string.concat(bytes(maybeRoute).length == 0 ? Schemas.ROUTE_EMPTY : maybeRoute, ">", a);
 }
 
 function routeSchema2(string memory maybeRoute, string memory a, string memory b) pure returns (string memory) {
-    return string.concat(bytes(maybeRoute).length == 0 ? ROUTE_EMPTY : maybeRoute, ">", a, ">", b);
+    return string.concat(bytes(maybeRoute).length == 0 ? Schemas.ROUTE_EMPTY : maybeRoute, ">", a, ">", b);
 }

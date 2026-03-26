@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES, CUSTODIES} from "../utils/Channels.sol";
-import {AssetAmount, HostAmount, BALANCE_KEY, CUSTODY_KEY, Data, DataRef, Writers, Writer} from "../Blocks.sol";
+import { CommandContext, CommandBase } from "./Base.sol";
+import { BALANCES, CUSTODIES } from "../utils/Channels.sol";
+import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant LFBTB = "liquidateFromBalanceToBalances";
 string constant LFCTB = "liquidateFromCustodyToBalances";
 
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract LiquidateFromBalanceToBalances is CommandBase {
@@ -29,7 +29,7 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
     function liquidateFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -38,15 +38,15 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
     ) external payable onlyCommand(liquidateFromBalanceToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, BALANCE_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.BALANCE, outScale);
 
         while (i < end) {
-            DataRef memory route;
+            Block memory route;
             if (useRoute) {
-                route = Data.routeFrom(c.request, q);
+                route = Blocks.routeFrom(c.request, q);
                 q = route.cursor;
             }
-            DataRef memory ref = Data.from(c.state, i);
+            Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
             liquidateFromBalanceToBalances(c.account, balance, route, writer);
             i = ref.cursor;
@@ -74,7 +74,7 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
     function liquidateFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -83,15 +83,15 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
     ) external payable onlyCommand(liquidateFromCustodyToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, CUSTODY_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.CUSTODY, outScale);
 
         while (i < end) {
-            DataRef memory route;
+            Block memory route;
             if (useRoute) {
-                route = Data.routeFrom(c.request, q);
+                route = Blocks.routeFrom(c.request, q);
                 q = route.cursor;
             }
-            DataRef memory ref = Data.from(c.state, i);
+            Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
             liquidateFromCustodyToBalances(c.account, custody, route, writer);
             i = ref.cursor;

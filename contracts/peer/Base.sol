@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {OperationBase} from "../core/Operation.sol";
-import {PeerEvent} from "../events/Peer.sol";
-import {toPeerId, toPeerSelector} from "../utils/Ids.sol";
+import { OperationBase } from "../core/Operation.sol";
+import { PeerEvent } from "../events/Peer.sol";
+import { toPeerId, toPeerSelector } from "../utils/Ids.sol";
 
 abstract contract PeerBase is OperationBase, PeerEvent {
     modifier onlyPeer() {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {OperationBase} from "../core/Operation.sol";
-import {CommandEvent} from "../events/Command.sol";
-import {toCommandId, toCommandSelector} from "../utils/Ids.sol";
+import { OperationBase } from "../core/Operation.sol";
+import { CommandEvent } from "../events/Command.sol";
+import { toCommandId, toCommandSelector } from "../utils/Ids.sol";
 
 struct CommandContext {
     uint target;

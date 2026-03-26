@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandBase, CommandContext} from "../Base.sol";
-import {SETUP} from "../../utils/Channels.sol";
-import {ASSET, ASSET_KEY} from "../../blocks/Schema.sol";
-import {Data, DataRef} from "../../Blocks.sol";
-using Data for DataRef;
+import { CommandBase, CommandContext } from "../Base.sol";
+import { SETUP } from "../../utils/Channels.sol";
+import { Keys } from "../../blocks/Keys.sol";
+import { Schemas } from "../../blocks/Schema.sol";
+import { Blocks, Block, Keys } from "../../Blocks.sol";
+using Blocks for Block;
 
 string constant NAME = "denyAssets";
 
@@ -13,7 +14,7 @@ abstract contract DenyAssets is CommandBase {
     uint internal immutable denyAssetsId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, ASSET, denyAssetsId, SETUP, SETUP);
+        emit Command(host, NAME, Schemas.ASSET, denyAssetsId, SETUP, SETUP);
     }
 
     /// @dev Override to deny a single asset/meta pair.
@@ -25,8 +26,8 @@ abstract contract DenyAssets is CommandBase {
     ) external payable onlyAdmin(c.account) onlyCommand(denyAssetsId, c.target) returns (bytes memory) {
         uint i = 0;
         while (i < c.request.length) {
-            DataRef memory ref = Data.from(c.request, i);
-            if (ref.key != ASSET_KEY) break;
+            Block memory ref = Blocks.from(c.request, i);
+            if (ref.key != Keys.ASSET) break;
             (bytes32 asset, bytes32 meta) = ref.unpackAsset();
             denyAsset(asset, meta);
             i = ref.cursor;

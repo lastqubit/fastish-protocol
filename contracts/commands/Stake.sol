@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {SETUP, BALANCES, CUSTODIES} from "../utils/Channels.sol";
-import {AssetAmount, HostAmount, BALANCE_KEY, CUSTODY_KEY, Data, DataRef, Writers, Writer} from "../Blocks.sol";
+import { CommandContext, CommandBase } from "./Base.sol";
+import { SETUP, BALANCES, CUSTODIES } from "../utils/Channels.sol";
+import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant SBTB = "stakeBalanceToBalances";
 string constant SCTB = "stakeCustodyToBalances";
 string constant SCTP = "stakeCustodyToPosition";
 
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract StakeBalanceToBalances is CommandBase {
@@ -26,7 +26,7 @@ abstract contract StakeBalanceToBalances is CommandBase {
     function stakeBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -35,13 +35,13 @@ abstract contract StakeBalanceToBalances is CommandBase {
     ) external payable onlyCommand(stakeBalanceToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, BALANCE_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.BALANCE, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            route = Data.routeFrom(c.request, q);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
             q = route.cursor;
-            DataRef memory ref = Data.from(c.state, i);
+            Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
             stakeBalanceToBalances(c.account, balance, route, writer);
             i = ref.cursor;
@@ -65,7 +65,7 @@ abstract contract StakeCustodyToBalances is CommandBase {
     function stakeCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -74,13 +74,13 @@ abstract contract StakeCustodyToBalances is CommandBase {
     ) external payable onlyCommand(stakeCustodyToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, CUSTODY_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.CUSTODY, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            route = Data.routeFrom(c.request, q);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
             q = route.cursor;
-            DataRef memory ref = Data.from(c.state, i);
+            Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
             stakeCustodyToBalances(c.account, custody, route, writer);
             i = ref.cursor;
@@ -99,7 +99,7 @@ abstract contract StakeCustodyToPosition is CommandBase {
 
     /// @dev Override to stake a custody position into a non-balance setup
     /// target described by `rawRoute`.
-    function stakeCustodyToPosition(bytes32 account, HostAmount memory custody, DataRef memory rawRoute) internal virtual;
+    function stakeCustodyToPosition(bytes32 account, HostAmount memory custody, Block memory rawRoute) internal virtual;
 
     function stakeCustodyToPosition(
         CommandContext calldata c
@@ -107,11 +107,11 @@ abstract contract StakeCustodyToPosition is CommandBase {
         uint i = 0;
         uint q = 0;
         while (i < c.state.length) {
-            DataRef memory ref = Data.from(c.state, i);
-            if (ref.key != CUSTODY_KEY) break;
+            Block memory ref = Blocks.from(c.state, i);
+            if (ref.key != Keys.CUSTODY) break;
             HostAmount memory custody = ref.toCustodyValue();
-            DataRef memory route;
-            route = Data.routeFrom(c.request, q);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
             q = route.cursor;
             stakeCustodyToPosition(c.account, custody, route);
             i = ref.cursor;

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Host} from "../core/Host.sol";
-import {ReclaimToBalances} from "../commands/Reclaim.sol";
-import {AssetAmount, DataRef, Writer} from "../blocks/Schema.sol";
-import {Data} from "../blocks/Data.sol";
-import {Writers} from "../blocks/Writers.sol";
-import {toHostId} from "../utils/Ids.sol";
+import { Host } from "../core/Host.sol";
+import { ReclaimToBalances } from "../commands/Reclaim.sol";
+import { AssetAmount, Block, Writer } from "../blocks/Schema.sol";
+import { Blocks } from "../blocks/Blocks.sol";
+import { Writers } from "../blocks/Writers.sol";
+import { toHostId } from "../utils/Ids.sol";
 
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 contract TestReclaimHost is Host, ReclaimToBalances {
@@ -34,7 +34,7 @@ contract TestReclaimHost is Host, ReclaimToBalances {
     function reclaimToBalances(
         bytes32 account,
         AssetAmount memory amount,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal override {
         bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];

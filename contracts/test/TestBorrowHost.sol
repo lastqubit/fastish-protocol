@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Host} from "../core/Host.sol";
-import {BorrowAgainstCustodyToBalance} from "../commands/Borrow.sol";
-import {AssetAmount, HostAmount, DataRef} from "../blocks/Schema.sol";
-import {Data} from "../blocks/Data.sol";
-import {toHostId} from "../utils/Ids.sol";
+import { Host } from "../core/Host.sol";
+import { BorrowAgainstCustodyToBalance } from "../commands/Borrow.sol";
+import { AssetAmount, HostAmount, Block } from "../blocks/Schema.sol";
+import { Blocks } from "../blocks/Blocks.sol";
+import { toHostId } from "../utils/Ids.sol";
 
-using Data for DataRef;
+using Blocks for Block;
 
 contract TestBorrowHost is Host, BorrowAgainstCustodyToBalance {
     event BorrowCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes routeData);
@@ -29,7 +29,7 @@ contract TestBorrowHost is Host, BorrowAgainstCustodyToBalance {
     function borrowAgainstCustodyToBalance(
         bytes32 account,
         HostAmount memory custody,
-        DataRef memory rawRoute
+        Block memory rawRoute
     ) internal override returns (AssetAmount memory) {
         bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
         emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, routeData);

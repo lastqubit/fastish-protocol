@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {COMMAND, EVM32, HOST, NODE, PEER} from "./Layout.sol";
-import {bytes32ToString} from "./Strings.sol";
-import {isLocalFamily, matchesBase, toLocalBase} from "./Utils.sol";
+import { COMMAND, EVM32, HOST, NODE, PEER } from "./Layout.sol";
+import { bytes32ToString } from "./Strings.sol";
+import { isLocalFamily, matchesBase, toLocalBase } from "./Utils.sol";
 
 error InvalidId();
 

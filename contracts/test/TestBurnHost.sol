@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Host} from "../core/Host.sol";
-import {Burn} from "../commands/Burn.sol";
-import {toHostId} from "../utils/Ids.sol";
+import { Host } from "../core/Host.sol";
+import { Burn } from "../commands/Burn.sol";
+import { toHostId } from "../utils/Ids.sol";
 
 contract TestBurnHost is Host, Burn {
     event BurnCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount);

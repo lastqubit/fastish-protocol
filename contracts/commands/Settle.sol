@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {TRANSACTIONS, SETUP} from "../utils/Channels.sol";
-import {TX_KEY, Tx} from "../blocks/Schema.sol";
-import {Data, DataRef} from "../Blocks.sol";
-using Data for DataRef;
+import { CommandContext, CommandBase } from "./Base.sol";
+import { TRANSACTIONS, SETUP } from "../utils/Channels.sol";
+import { Tx } from "../blocks/Schema.sol";
+import { Keys } from "../blocks/Keys.sol";
+import { Blocks, Block, Keys } from "../Blocks.sol";
+using Blocks for Block;
 
 string constant NAME = "settle";
 
@@ -23,8 +24,8 @@ abstract contract Settle is CommandBase {
     function settle(CommandContext calldata c) external payable onlyCommand(settleId, c.target) returns (bytes memory) {
         uint i = 0;
         while (i < c.state.length) {
-            DataRef memory ref = Data.from(c.state, i);
-            if (ref.key != TX_KEY) break;
+            Block memory ref = Blocks.from(c.state, i);
+            if (ref.key != Keys.TX) break;
             Tx memory value = ref.toTxValue();
             settle(value);
             i = ref.cursor;

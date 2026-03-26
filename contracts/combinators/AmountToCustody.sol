@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {AMOUNT_KEY, HostAmount} from "../Schema.sol";
-import {Data, DataRef, Writers, Writer} from "../Blocks.sol";
+import { HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract AmountToCustody {
@@ -22,10 +21,10 @@ abstract contract AmountToCustody {
         uint host,
         bytes32 account
     ) internal returns (bytes memory) {
-        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(blocks, i, AMOUNT_KEY);
+        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(blocks, i, Keys.AMOUNT);
 
         while (i < end) {
-            DataRef memory ref = Data.from(blocks, i);
+            Block memory ref = Blocks.from(blocks, i);
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
             HostAmount memory out = amountToCustody(host, account, asset, meta, amount);
             if (out.amount > 0) writer.appendCustody(out);

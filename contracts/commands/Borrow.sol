@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES, CUSTODIES} from "../utils/Channels.sol";
-import {AssetAmount, HostAmount, AMOUNT, BALANCE_KEY, CUSTODY_KEY, Data, DataRef, Writers, Writer} from "../Blocks.sol";
-import {routeSchema1} from "../utils/Utils.sol";
+import { CommandContext, CommandBase } from "./Base.sol";
+import { BALANCES, CUSTODIES } from "../utils/Channels.sol";
+import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { Schemas } from "../blocks/Schema.sol";
+import { routeSchema1 } from "../utils/Utils.sol";
 
 string constant BABTB = "borrowAgainstBalanceToBalance";
 string constant BACTB = "borrowAgainstCustodyToBalance";
 
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     uint internal immutable borrowAgainstCustodyToBalanceId = commandId(BACTB);
 
     constructor(string memory maybeRoute) {
-        string memory schema = routeSchema1(maybeRoute, AMOUNT);
+        string memory schema = routeSchema1(maybeRoute, Schemas.AMOUNT);
         emit Command(host, BACTB, schema, borrowAgainstCustodyToBalanceId, CUSTODIES, BALANCES);
     }
 
@@ -26,7 +27,7 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     function borrowAgainstCustodyToBalance(
         bytes32 account,
         HostAmount memory custody,
-        DataRef memory rawRoute
+        Block memory rawRoute
     ) internal virtual returns (AssetAmount memory);
 
     function borrowAgainstCustodyToBalance(
@@ -34,13 +35,13 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     ) external payable onlyCommand(borrowAgainstCustodyToBalanceId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, CUSTODY_KEY);
+        (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.CUSTODY);
 
         while (i < end) {
-            DataRef memory route;
-            route = Data.routeFrom(c.request, q);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
             q = route.cursor;
-            DataRef memory ref = Data.from(c.state, i);
+            Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
             AssetAmount memory out = borrowAgainstCustodyToBalance(c.account, custody, route);
             writer.appendNonZeroBalance(out);
@@ -55,7 +56,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     uint internal immutable borrowAgainstBalanceToBalanceId = commandId(BABTB);
 
     constructor(string memory maybeRoute) {
-        string memory schema = routeSchema1(maybeRoute, AMOUNT);
+        string memory schema = routeSchema1(maybeRoute, Schemas.AMOUNT);
         emit Command(host, BABTB, schema, borrowAgainstBalanceToBalanceId, BALANCES, BALANCES);
     }
 
@@ -65,7 +66,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     function borrowAgainstBalanceToBalance(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute
+        Block memory rawRoute
     ) internal virtual returns (AssetAmount memory);
 
     function borrowAgainstBalanceToBalance(
@@ -73,13 +74,13 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     ) external payable onlyCommand(borrowAgainstBalanceToBalanceId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, BALANCE_KEY);
+        (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.BALANCE);
 
         while (i < end) {
-            DataRef memory route;
-            route = Data.routeFrom(c.request, q);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
             q = route.cursor;
-            DataRef memory ref = Data.from(c.state, i);
+            Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
             AssetAmount memory out = borrowAgainstBalanceToBalance(c.account, balance, route);
             writer.appendNonZeroBalance(out);

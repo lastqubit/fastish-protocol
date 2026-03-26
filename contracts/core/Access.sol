@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {AccessEvent} from "../events/Access.sol";
-import {addrOr, toAdminAccount} from "../utils/Accounts.sol";
-import {toHostId} from "../utils/Ids.sol";
+import { AccessEvent } from "../events/Access.sol";
+import { addrOr, toAdminAccount } from "../utils/Accounts.sol";
+import { toHostId } from "../utils/Ids.sol";
 
 abstract contract AccessControl is AccessEvent {
     address internal immutable commander;

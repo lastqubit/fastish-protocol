@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES} from "../utils/Channels.sol";
-import {AssetAmount, BALANCE_KEY, Data, DataRef, Writers, Writer} from "../Blocks.sol";
+import { CommandContext, CommandBase } from "./Base.sol";
+import { BALANCES } from "../utils/Channels.sol";
+import { AssetAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant UBTB = "unstakeBalanceToBalances";
 
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract UnstakeBalanceToBalances is CommandBase {
@@ -24,7 +24,7 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
     function unstakeBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -33,13 +33,13 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
     ) external payable onlyCommand(unstakeBalanceToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, BALANCE_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.BALANCE, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            route = Data.routeFrom(c.request, q);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
             q = route.cursor;
-            DataRef memory ref = Data.from(c.state, i);
+            Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
             unstakeBalanceToBalances(c.account, balance, route, writer);
             i = ref.cursor;

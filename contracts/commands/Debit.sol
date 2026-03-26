@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES, SETUP} from "../utils/Channels.sol";
-import {AMOUNT, AMOUNT_KEY, Writer} from "../blocks/Schema.sol";
-import {Data, DataRef} from "../Blocks.sol";
-import {Writers} from "../blocks/Writers.sol";
+import { CommandContext, CommandBase } from "./Base.sol";
+import { BALANCES, SETUP } from "../utils/Channels.sol";
+import { Writer } from "../blocks/Schema.sol";
+import { Keys } from "../blocks/Keys.sol";
+import { Schemas } from "../blocks/Schema.sol";
+import { Blocks, Block, Keys } from "../Blocks.sol";
+import { Writers } from "../blocks/Writers.sol";
 
 string constant NAME = "debitAccountToBalance";
 
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract DebitAccountToBalance is CommandBase {
     uint internal immutable debitAccountToBalanceId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, AMOUNT, debitAccountToBalanceId, SETUP, BALANCES);
+        emit Command(host, NAME, Schemas.AMOUNT, debitAccountToBalanceId, SETUP, BALANCES);
     }
 
     /// @dev Override to debit externally managed funds from `account`.
@@ -28,10 +30,10 @@ abstract contract DebitAccountToBalance is CommandBase {
     /// `debitAccount`, and emits matching BALANCE blocks.
     function debitAccountToBalance(bytes32 from, bytes calldata request) internal virtual returns (bytes memory) {
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocBalancesFrom(request, q, AMOUNT_KEY);
+        (Writer memory writer, uint end) = Writers.allocBalancesFrom(request, q, Keys.AMOUNT);
 
         while (q < end) {
-            DataRef memory ref = Data.from(request, q);
+            Block memory ref = Blocks.from(request, q);
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
             debitAccount(from, asset, meta, amount);
             writer.appendBalance(asset, meta, amount);
