@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES, CUSTODIES} from "../utils/Channels.sol";
-import {AssetAmount, HostAmount, BALANCE_KEY, CUSTODY_KEY, Data, DataRef, Blocks, BlockRef, Writers, Writer} from "../Blocks.sol";
+import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant RDBTB = "redeemFromBalanceToBalances";
 string constant RDCTB = "redeemFromCustodyToBalances";
 
-using Blocks for BlockRef;
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract RedeemFromBalanceToBalances is CommandBase {
@@ -20,15 +18,17 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
         useRoute = bytes(maybeRoute).length > 0;
-        emit Command(host, RDBTB, maybeRoute, redeemFromBalanceToBalancesId, BALANCES, BALANCES);
+        emit Command(host, RDBTB, maybeRoute, redeemFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 
-    // @dev `balance` is the redeemable claim/share/position amount offered for redemption.
-    // `rawRoute` is zero-initialized and should be ignored when `maybeRoute` is empty.
+    /// @dev Override to redeem a balance position into balances.
+    /// `rawRoute` is zero-initialized and should be ignored when
+    /// `maybeRoute` is empty. Implementations may append one or more BALANCE
+    /// blocks to `out`.
     function redeemFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -37,15 +37,18 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
     ) external payable onlyCommand(redeemFromBalanceToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, BALANCE_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            if (useRoute) (route, q) = Data.routeFrom(c.request, q);
-            BlockRef memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue(c.state);
+            Block memory route;
+            if (useRoute) {
+                route = Blocks.routeFrom(c.request, q);
+                q = route.cursor;
+            }
+            Block memory ref = Blocks.from(c.state, i);
+            AssetAmount memory balance = ref.toBalanceValue();
             redeemFromBalanceToBalances(c.account, balance, route, writer);
-            i = ref.end;
+            i = ref.cursor;
         }
 
         return writer.finish();
@@ -60,15 +63,17 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
         useRoute = bytes(maybeRoute).length > 0;
-        emit Command(host, RDCTB, maybeRoute, redeemFromCustodyToBalancesId, CUSTODIES, BALANCES);
+        emit Command(host, RDCTB, maybeRoute, redeemFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
-    // @dev `custody` is the redeemable claim/share/position amount offered for redemption.
-    // `rawRoute` is zero-initialized and should be ignored when `maybeRoute` is empty.
+    /// @dev Override to redeem a custody position into balances.
+    /// `rawRoute` is zero-initialized and should be ignored when
+    /// `maybeRoute` is empty. Implementations may append one or more BALANCE
+    /// blocks to `out`.
     function redeemFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -77,15 +82,18 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
     ) external payable onlyCommand(redeemFromCustodyToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, CUSTODY_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            if (useRoute) (route, q) = Data.routeFrom(c.request, q);
-            BlockRef memory ref = Blocks.from(c.state, i);
-            HostAmount memory custody = ref.toCustodyValue(c.state);
+            Block memory route;
+            if (useRoute) {
+                route = Blocks.routeFrom(c.request, q);
+                q = route.cursor;
+            }
+            Block memory ref = Blocks.from(c.state, i);
+            HostAmount memory custody = ref.toCustodyValue();
             redeemFromCustodyToBalances(c.account, custody, route, writer);
-            i = ref.end;
+            i = ref.cursor;
         }
 
         return writer.finish();

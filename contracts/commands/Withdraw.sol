@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES, SETUP} from "../utils/Channels.sol";
-import {BlockRef, RECIPIENT} from "../blocks/Schema.sol";
-import {Blocks} from "../blocks/Readers.sol";
-using Blocks for BlockRef;
+import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { Keys } from "../blocks/Keys.sol";
+import { Schemas } from "../blocks/Schema.sol";
+import { Blocks, Block, Keys } from "../Blocks.sol";
+using Blocks for Block;
 
 string constant NAME = "withdraw";
 
@@ -14,9 +14,11 @@ abstract contract Withdraw is CommandBase {
     uint internal immutable withdrawId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, RECIPIENT, withdrawId, BALANCES, SETUP);
+        emit Command(host, NAME, Schemas.Recipient, withdrawId, Channels.Balances, Channels.Setup);
     }
 
+    /// @dev Override to send funds to `account`.
+    /// Called once per BALANCE block in state.
     function withdraw(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
 
     function withdraw(
@@ -25,11 +27,11 @@ abstract contract Withdraw is CommandBase {
         bytes32 to = Blocks.resolveRecipient(c.request, 0, c.request.length, c.account);
         uint i = 0;
         while (i < c.state.length) {
-            BlockRef memory ref = Blocks.from(c.state, i);
-            if (!ref.isBalance()) break;
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance(c.state);
+            Block memory ref = Blocks.from(c.state, i);
+            if (ref.key != Keys.Balance) break;
+            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance();
             withdraw(to, asset, meta, amount);
-            i = ref.end;
+            i = ref.cursor;
         }
 
         return done(0, i);

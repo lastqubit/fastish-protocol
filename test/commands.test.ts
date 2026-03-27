@@ -224,13 +224,13 @@ describe("Commands", () => {
 
   // ── CreditTo ──────────────────────────────────────────────────────────────
 
-  describe("creditBalanceToAccount", () => {
+  describe("creditAccount", () => {
     const asset = ethers.zeroPadValue("0x30", 32);
     const meta  = ethers.ZeroHash;
 
     it("emits CreditToCalled for BALANCE blocks in state", async () => {
       const state = encodeBalanceBlock(asset, meta, 300n);
-      const tx = await callAs(0, "creditBalanceToAccount", ctx({ state }));
+      const tx = await callAs(0, "creditAccount", ctx({ state }));
       await expect(tx).to.emit(host, "CreditToCalled");
     });
 
@@ -238,38 +238,38 @@ describe("Commands", () => {
       const recipient = ethers.zeroPadValue("0xcafe", 32);
       const state = encodeBalanceBlock(asset, meta, 100n);
       const request = encodeRecipientBlock(recipient);
-      const tx = await callAs(0, "creditBalanceToAccount", ctx({ state, request }));
+      const tx = await callAs(0, "creditAccount", ctx({ state, request }));
       await expect(tx).to.emit(host, "CreditToCalled")
         .withArgs(recipient, asset, meta, 100n, 100n);
     });
 
     it("reverts NoOperation for empty state", async () => {
-      await expect(callAs(0, "creditBalanceToAccount", ctx()))
+      await expect(callAs(0, "creditAccount", ctx()))
         .to.be.revertedWithCustomError(host, "NoOperation");
     });
   });
 
   // ── DebitFrom ─────────────────────────────────────────────────────────────
 
-  describe("debitAccountToBalance", () => {
+  describe("debitAccount", () => {
     const asset = ethers.zeroPadValue("0x40", 32);
     const meta  = ethers.ZeroHash;
 
     it("emits DebitFromCalled and returns BALANCE blocks", async () => {
       const request = encodeAmountBlock(asset, meta, 400n);
-      const tx = await callAs(0, "debitAccountToBalance", ctx({ request }));
+      const tx = await callAs(0, "debitAccount", ctx({ request }));
       await expect(tx).to.emit(host, "DebitFromCalled")
         .withArgs(userAccount, asset, meta, 400n, 400n);
     });
 
     it("returns one BALANCE block per AMOUNT block", async () => {
       const request = encodeAmountBlock(asset, meta, 100n);
-      const result: string = await host.debitAccountToBalance.staticCall(ctx({ request }));
+      const result: string = await host.debitAccount.staticCall(ctx({ request }));
       expect(result).to.equal(encodeBalanceBlock(asset, meta, 100n));
     });
 
     it("reverts EmptyRequest when request has no AMOUNT blocks", async () => {
-      await expect(callAs(0, "debitAccountToBalance", ctx()))
+      await expect(callAs(0, "debitAccount", ctx()))
         .to.be.revertedWithCustomError(host, "EmptyRequest");
     });
 
@@ -283,7 +283,7 @@ describe("Commands", () => {
         encodeAmountBlock(asset2, meta, 200n),
         encodeAmountBlock(asset3, meta, 300n),
       );
-      const tx = await callAs(0, "debitAccountToBalance", ctx({ request }));
+      const tx = await callAs(0, "debitAccount", ctx({ request }));
       await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset1, meta, 100n, 100n);
       await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset2, meta, 200n, 200n);
       await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset3, meta, 300n, 300n);
@@ -297,7 +297,7 @@ describe("Commands", () => {
         encodeAmountBlock(asset1, meta, 100n),
         encodeAmountBlock(asset2, meta, 200n),
       );
-      const result: string = await host.debitAccountToBalance.staticCall(ctx({ request }));
+      const result: string = await host.debitAccount.staticCall(ctx({ request }));
       expect(result).to.equal(concat(
         encodeBalanceBlock(asset1, meta, 100n),
         encodeBalanceBlock(asset2, meta, 200n),
@@ -345,15 +345,15 @@ describe("Commands", () => {
 
   // ── Fund ──────────────────────────────────────────────────────────────────
 
-  describe("fund", () => {
-    it("emits FundCalled and returns CUSTODY blocks", async () => {
+  describe("provisionFromBalance", () => {
+    it("emits ProvisionCalled and returns CUSTODY blocks", async () => {
       const asset = ethers.zeroPadValue("0x60", 32);
       const meta  = ethers.ZeroHash;
       const hostId = 123456n;
       const state = encodeBalanceBlock(asset, meta, 600n);
       const request = encodeNodeBlock(hostId);
-      const tx = await callAs(0, "fund", ctx({ state, request }));
-      await expect(tx).to.emit(host, "FundCalled")
+      const tx = await callAs(0, "provisionFromBalance", ctx({ state, request }));
+      await expect(tx).to.emit(host, "ProvisionCalled")
         .withArgs(hostId, userAccount, asset, meta, 600n);
     });
 
@@ -363,25 +363,25 @@ describe("Commands", () => {
       const hostId = 123456n;
       const state = encodeBalanceBlock(asset, meta, 600n);
       const request = encodeNodeBlock(hostId);
-      const result: string = await host.fund.staticCall(ctx({ state, request }));
+      const result: string = await host.provisionFromBalance.staticCall(ctx({ state, request }));
       expect(result).to.equal(encodeCustodyBlock(hostId, asset, meta, 600n));
     });
 
     it("reverts EmptyRequest when state has no BALANCE blocks", async () => {
       const hostId = 123456n;
       const request = encodeNodeBlock(hostId);
-      await expect(callAs(0, "fund", ctx({ request })))
+      await expect(callAs(0, "provisionFromBalance", ctx({ request })))
         .to.be.revertedWithCustomError(host, "EmptyRequest");
     });
 
     it("reverts ZeroNode when no NODE block and backup is 0", async () => {
       const asset = ethers.zeroPadValue("0x60", 32);
       const state = encodeBalanceBlock(asset, ethers.ZeroHash, 100n);
-      await expect(callAs(0, "fund", ctx({ state })))
+      await expect(callAs(0, "provisionFromBalance", ctx({ state })))
         .to.be.revertedWithCustomError(host, "ZeroNode");
     });
 
-    it("emits FundCalled for each BALANCE block in a batch state", async () => {
+    it("emits ProvisionCalled for each BALANCE block in a batch state", async () => {
       const asset1 = ethers.zeroPadValue("0x61", 32);
       const asset2 = ethers.zeroPadValue("0x62", 32);
       const asset3 = ethers.zeroPadValue("0x63", 32);
@@ -393,10 +393,10 @@ describe("Commands", () => {
         encodeBalanceBlock(asset3, meta, 30n),
       );
       const request = encodeNodeBlock(hostId);
-      const tx = await callAs(0, "fund", ctx({ state, request }));
-      await expect(tx).to.emit(host, "FundCalled").withArgs(hostId, userAccount, asset1, meta, 10n);
-      await expect(tx).to.emit(host, "FundCalled").withArgs(hostId, userAccount, asset2, meta, 20n);
-      await expect(tx).to.emit(host, "FundCalled").withArgs(hostId, userAccount, asset3, meta, 30n);
+      const tx = await callAs(0, "provisionFromBalance", ctx({ state, request }));
+      await expect(tx).to.emit(host, "ProvisionCalled").withArgs(hostId, userAccount, asset1, meta, 10n);
+      await expect(tx).to.emit(host, "ProvisionCalled").withArgs(hostId, userAccount, asset2, meta, 20n);
+      await expect(tx).to.emit(host, "ProvisionCalled").withArgs(hostId, userAccount, asset3, meta, 30n);
     });
 
     it("returns one CUSTODY block per BALANCE block in a batch state", async () => {
@@ -408,7 +408,7 @@ describe("Commands", () => {
         encodeBalanceBlock(asset1, meta, 10n),
         encodeBalanceBlock(asset2, meta, 20n),
       );
-      const result: string = await host.fund.staticCall(ctx({ state, request: encodeNodeBlock(hostId) }));
+      const result: string = await host.provisionFromBalance.staticCall(ctx({ state, request: encodeNodeBlock(hostId) }));
       expect(result).to.equal(concat(
         encodeCustodyBlock(hostId, asset1, meta, 10n),
         encodeCustodyBlock(hostId, asset2, meta, 20n),
@@ -422,7 +422,7 @@ describe("Commands", () => {
       const b1 = encodeBalanceBlock(asset1, meta, 10n);
       const b2 = encodeBalanceBlock(asset2, meta, 20n);
       const truncatedState = ethers.hexlify(ethers.getBytes(concat(b1, b2)).slice(0, -1));
-      await expect(callAs(0, "fund", ctx({ state: truncatedState, request: encodeNodeBlock(123n) })))
+      await expect(callAs(0, "provisionFromBalance", ctx({ state: truncatedState, request: encodeNodeBlock(123n) })))
         .to.be.revertedWithCustomError(host, "MalformedBlocks");
     });
   });

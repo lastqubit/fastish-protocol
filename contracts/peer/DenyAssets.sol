@@ -2,9 +2,8 @@
 pragma solidity ^0.8.33;
 
 import {PeerBase} from "./Base.sol";
-import {ASSET, ASSET_KEY, BlockRef} from "../blocks/Schema.sol";
-import {Blocks} from "../blocks/Readers.sol";
-using Blocks for BlockRef;
+import {Blocks, Block, Keys, Schemas} from "../Blocks.sol";
+using Blocks for Block;
 
 string constant NAME = "peerDenyAssets";
 
@@ -12,7 +11,7 @@ abstract contract PeerDenyAssets is PeerBase {
     uint internal immutable peerDenyAssetsId = peerId(NAME);
 
     constructor() {
-        emit Peer(host, NAME, ASSET, peerDenyAssetsId);
+        emit Peer(host, NAME, Schemas.Asset, peerDenyAssetsId);
     }
 
     function peerDenyAsset(bytes32 asset, bytes32 meta) internal virtual returns (bool);
@@ -20,11 +19,11 @@ abstract contract PeerDenyAssets is PeerBase {
     function peerDenyAssets(bytes calldata request) external payable onlyPeer returns (bytes memory) {
         uint q = 0;
         while (q < request.length) {
-            BlockRef memory ref = Blocks.from(request, q);
-            if (ref.key != ASSET_KEY) break;
-            (bytes32 asset, bytes32 meta) = ref.unpackAsset(request);
+            Block memory ref = Blocks.from(request, q);
+            if (ref.key != Keys.Asset) break;
+            (bytes32 asset, bytes32 meta) = ref.unpackAsset();
             peerDenyAsset(asset, meta);
-            q = ref.end;
+            q = ref.cursor;
         }
         return done(0, q);
     }

@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES, CUSTODIES} from "../utils/Channels.sol";
-import {AssetAmount, HostAmount, BALANCE_KEY, CUSTODY_KEY, ROUTE_EMPTY, Data, DataRef, Blocks, BlockRef, Writers, Writer} from "../Blocks.sol";
+import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { Schemas } from "../blocks/Schema.sol";
 
 string constant RFBTB = "repayFromBalanceToBalances";
 string constant RFCTB = "repayFromCustodyToBalances";
 
-using Blocks for BlockRef;
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract RepayFromBalanceToBalances is CommandBase {
@@ -20,15 +19,17 @@ abstract contract RepayFromBalanceToBalances is CommandBase {
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
         useRoute = bytes(maybeRoute).length > 0;
-        emit Command(host, RFBTB, maybeRoute, repayFromBalanceToBalancesId, BALANCES, BALANCES);
+        emit Command(host, RFBTB, maybeRoute, repayFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 
-    // @dev `balance` is the offered repayment amount and may leave a returned remainder.
-    // `rawRoute` is zero-initialized and should be ignored when `maybeRoute` is empty.
+    /// @dev Override to repay debt using a balance amount.
+    /// `rawRoute` is zero-initialized and should be ignored when
+    /// `maybeRoute` is empty. Implementations may append returned balances to
+    /// `out`.
     function repayFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -37,15 +38,18 @@ abstract contract RepayFromBalanceToBalances is CommandBase {
     ) external payable onlyCommand(repayFromBalanceToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, BALANCE_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            if (useRoute) (route, q) = Data.routeFrom(c.request, q);
-            BlockRef memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue(c.state);
+            Block memory route;
+            if (useRoute) {
+                route = Blocks.routeFrom(c.request, q);
+                q = route.cursor;
+            }
+            Block memory ref = Blocks.from(c.state, i);
+            AssetAmount memory balance = ref.toBalanceValue();
             repayFromBalanceToBalances(c.account, balance, route, writer);
-            i = ref.end;
+            i = ref.cursor;
         }
 
         return writer.finish();
@@ -60,15 +64,17 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
         useRoute = bytes(maybeRoute).length > 0;
-        emit Command(host, RFCTB, maybeRoute, repayFromCustodyToBalancesId, CUSTODIES, BALANCES);
+        emit Command(host, RFCTB, maybeRoute, repayFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
-    // @dev `custody` is the offered repayment amount and may leave a returned remainder.
-    // `rawRoute` is zero-initialized and should be ignored when `maybeRoute` is empty.
+    /// @dev Override to repay debt using a custody amount.
+    /// `rawRoute` is zero-initialized and should be ignored when
+    /// `maybeRoute` is empty. Implementations may append returned balances to
+    /// `out`.
     function repayFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -77,15 +83,18 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
     ) external payable onlyCommand(repayFromCustodyToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, CUSTODY_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            if (useRoute) (route, q) = Data.routeFrom(c.request, q);
-            BlockRef memory ref = Blocks.from(c.state, i);
-            HostAmount memory custody = ref.toCustodyValue(c.state);
+            Block memory route;
+            if (useRoute) {
+                route = Blocks.routeFrom(c.request, q);
+                q = route.cursor;
+            }
+            Block memory ref = Blocks.from(c.state, i);
+            HostAmount memory custody = ref.toCustodyValue();
             repayFromCustodyToBalances(c.account, custody, route, writer);
-            i = ref.end;
+            i = ref.cursor;
         }
 
         return writer.finish();

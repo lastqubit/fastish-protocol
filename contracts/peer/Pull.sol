@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {PeerBase} from "./Base.sol";
-import {Data, DataRef, ROUTE_KEY} from "../Blocks.sol";
-using Data for DataRef;
+import { PeerBase } from "./Base.sol";
+import { Blocks, Block, Keys } from "../Blocks.sol";
+using Blocks for Block;
 
 string constant NAME = "peerPull";
 
@@ -14,15 +14,15 @@ abstract contract PeerPull is PeerBase {
         emit Peer(host, NAME, route, peerPullId);
     }
 
-    function peerPull(DataRef memory rawRoute) internal virtual;
+    function peerPull(Block memory rawRoute) internal virtual;
 
     function peerPull(bytes calldata request) external payable onlyPeer returns (bytes memory) {
         uint q = 0;
         while (q < request.length) {
-            (DataRef memory ref, uint next) = Data.from(request, q);
-            if (ref.key != ROUTE_KEY) break;
+            Block memory ref = Blocks.from(request, q);
+            if (ref.key != Keys.Route) break;
             peerPull(ref);
-            q = next;
+            q = ref.cursor;
         }
 
         return done(0, q);

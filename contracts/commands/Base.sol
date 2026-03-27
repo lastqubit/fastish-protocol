@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {OperationBase} from "../core/Operation.sol";
-import {CommandEvent} from "../events/Command.sol";
-import {toCommandId, toCommandSelector} from "../utils/Ids.sol";
+import { OperationBase } from "../core/Operation.sol";
+import { CommandEvent } from "../events/Command.sol";
+import { Channels } from "../utils/Channels.sol";
+import { Ids, Selectors } from "../utils/Ids.sol";
 
 struct CommandContext {
     uint target;
@@ -34,6 +35,6 @@ abstract contract CommandBase is OperationBase, CommandEvent {
     }
 
     function commandId(string memory name) internal view returns (uint) {
-        return toCommandId(toCommandSelector(name), address(this));
+        return Ids.toCommand(Selectors.command(name), address(this));
     }
 }

@@ -1,24 +1,30 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Blocks} from "./Readers.sol";
-import {MalformedBlocks} from "./Errors.sol";
-import {AssetAmount, BALANCE_KEY, CUSTODY_KEY, HostAmount, TX_KEY, Tx, Writer} from "./Schema.sol";
+import { Blocks } from "./Blocks.sol";
+import { AssetAmount, HostAmount, Tx, Keys } from "./Schema.sol";
 
-error WriterOverflow();
-error IncompleteWriter();
-error EmptyRequest();
+struct Writer {
+    uint i;
+    uint end;
+    bytes dst;
+}
 
 uint constant ALLOC_SCALE = 10_000;
 uint constant BALANCE_BLOCK_LEN = 108;
+uint constant BOUNTY_BLOCK_LEN = 76;
 uint constant CUSTODY_BLOCK_LEN = 140;
 uint constant TX_BLOCK_LEN = 172;
 
 library Writers {
+    error WriterOverflow();
+    error IncompleteWriter();
+    error EmptyRequest();
+
     // Encodes a 12-byte block header (4-byte key + 4-byte selfLen + 4-byte totalLen) into a uint so assembly can
     // write the full header in one mstore while the payload starts at offset + 12.
     function toBlockHeader(bytes4 key, uint selfLen, uint totalLen) internal pure returns (uint) {
-        if (selfLen > type(uint32).max || totalLen > type(uint32).max || selfLen > totalLen) revert MalformedBlocks();
+        if (selfLen > type(uint32).max || totalLen > type(uint32).max || selfLen > totalLen) revert Blocks.MalformedBlocks();
         return (uint(uint32(key)) << 224) | (uint(uint32(selfLen)) << 192) | (uint(uint32(totalLen)) << 160);
     }
 
@@ -96,7 +102,7 @@ library Writers {
         (count, next) = Blocks.count(blocks, i, source);
         if (count == 0) revert EmptyRequest();
         uint scaledCount = count * scaledRatio;
-        if (scaledCount % ALLOC_SCALE != 0) revert MalformedBlocks();
+        if (scaledCount % ALLOC_SCALE != 0) revert Blocks.MalformedBlocks();
         uint len = (scaledCount / ALLOC_SCALE) * blockLen;
         writer = Writer({i: 0, end: len, dst: new bytes(len)});
     }
@@ -104,7 +110,7 @@ library Writers {
     function writeBalanceBlock(bytes memory dst, uint i, AssetAmount memory value) internal pure returns (uint next) {
         next = i + BALANCE_BLOCK_LEN;
         if (next > dst.length) revert WriterOverflow();
-        uint header = toBlockHeader(BALANCE_KEY, 96, 96);
+        uint header = toBlockHeader(Keys.Balance, 96, 96);
         assembly ("memory-safe") {
             let p := add(add(dst, 0x20), i)
             mstore(p, header)
@@ -130,10 +136,26 @@ library Writers {
         if (value.amount > 0) appendBalance(writer, value);
     }
 
+    function writeBountyBlock(bytes memory dst, uint i, uint amount, bytes32 relayer) internal pure returns (uint next) {
+        next = i + BOUNTY_BLOCK_LEN;
+        if (next > dst.length) revert WriterOverflow();
+        uint header = toBlockHeader(Keys.Bounty, 64, 64);
+        assembly ("memory-safe") {
+            let p := add(add(dst, 0x20), i)
+            mstore(p, header)
+            mstore(add(p, 0x0c), amount)
+            mstore(add(p, 0x2c), relayer)
+        }
+    }
+
+    function appendBounty(Writer memory writer, uint amount, bytes32 relayer) internal pure {
+        writer.i = writeBountyBlock(writer.dst, writer.i, amount, relayer);
+    }
+
     function writeCustodyBlock(bytes memory dst, uint i, HostAmount memory value) internal pure returns (uint next) {
         next = i + CUSTODY_BLOCK_LEN;
         if (next > dst.length) revert WriterOverflow();
-        uint header = toBlockHeader(CUSTODY_KEY, 128, 128);
+        uint header = toBlockHeader(Keys.Custody, 128, 128);
         assembly ("memory-safe") {
             let p := add(add(dst, 0x20), i)
             mstore(p, header)
@@ -155,7 +177,7 @@ library Writers {
     function writeTxBlock(bytes memory dst, uint i, Tx memory value) internal pure returns (uint next) {
         next = i + TX_BLOCK_LEN;
         if (next > dst.length) revert WriterOverflow();
-        uint header = toBlockHeader(TX_KEY, 160, 160);
+        uint header = toBlockHeader(Keys.Transaction, 160, 160);
         assembly ("memory-safe") {
             let p := add(add(dst, 0x20), i)
             mstore(p, header)

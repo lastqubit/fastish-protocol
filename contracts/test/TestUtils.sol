@@ -1,22 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {addrOr, toAdminAccount, toUserAccount, accountEvmAddr, isAdminAccount, ensureEvmAccount} from "../utils/Accounts.sol";
-import {
-    toValueAsset,
-    toErc20Asset,
-    toErc721Asset,
-    isAsset32,
-    resolveAmount,
-    ensureAmount,
-    ensureAssetRef,
-    localErc20Addr,
-    localErc721Issuer
-} from "../utils/Assets.sol";
-import {toHostId, toCommandId, toCommandSelector, isHost, isCommand, localNodeAddr, localHostAddr, ensureHost, ensureCommand} from "../utils/Ids.sol";
-import {applyBps, beforeBps, isFamily, isLocal, isLocalFamily, matchesBase, toLocalBase, toUnspecifiedBase, max8, max16, max32, max64, max128, max160} from "../utils/Utils.sol";
-import {msgValue, useValue, ValueBudget} from "../utils/Value.sol";
-import {bytes32ToString} from "../utils/Strings.sol";
+import { Accounts } from "../utils/Accounts.sol";
+import { Amounts, Assets } from "../utils/Assets.sol";
+import { Ids, Selectors } from "../utils/Ids.sol";
+import { addrOr, applyBps, beforeBps, bytes32ToString, isFamily, isLocal, isLocalFamily, matchesBase, toLocalBase, toUnspecifiedBase, max8, max16, max32, max64, max128, max160 } from "../utils/Utils.sol";
+import { Values } from "../utils/Value.sol";
 
 contract TestUtils {
     function testAddrOr(address addr, address or_) external pure returns (address) {
@@ -24,95 +13,95 @@ contract TestUtils {
     }
 
     function testToAdminAccount(address addr) external view returns (bytes32) {
-        return toAdminAccount(addr);
+        return Accounts.toAdmin(addr);
     }
 
     function testToUserAccount(address addr) external pure returns (bytes32) {
-        return toUserAccount(addr);
+        return Accounts.toUser(addr);
     }
 
     function testAccountEvmAddr(bytes32 account) external pure returns (address) {
-        return accountEvmAddr(account);
+        return Accounts.addrEvm(account);
     }
 
     function testIsAdminAccount(bytes32 account) external pure returns (bool) {
-        return isAdminAccount(account);
+        return Accounts.isAdmin(account);
     }
 
     function testToValueAsset() external view returns (bytes32) {
-        return toValueAsset();
+        return Assets.toValue();
     }
 
     function testToErc20Asset(address addr) external view returns (bytes32) {
-        return toErc20Asset(addr);
+        return Assets.toErc20(addr);
     }
 
     function testToErc721Asset(address addr) external view returns (bytes32) {
-        return toErc721Asset(addr);
+        return Assets.toErc721(addr);
     }
 
     function testIsAsset32(bytes32 asset) external pure returns (bool) {
-        return isAsset32(asset);
+        return Assets.is32(asset);
     }
 
     function testResolveAmount(uint available, uint min, uint max) external pure returns (uint) {
-        return resolveAmount(available, min, max);
+        return Amounts.resolve(available, min, max);
     }
 
     function testEnsureAmount(uint amount) external pure returns (uint) {
-        return ensureAmount(amount);
+        return Amounts.ensure(amount);
     }
 
     function testEnsureAmountRange(uint amount, uint min, uint max) external pure returns (uint) {
-        return ensureAmount(amount, min, max);
+        return Amounts.ensure(amount, min, max);
     }
 
     function testEnsureAssetRef(bytes32 asset, bytes32 meta) external pure returns (bytes32) {
-        return ensureAssetRef(asset, meta);
+        return Assets.ensureRef(asset, meta);
     }
 
     function testLocalErc20Addr(bytes32 asset) external view returns (address) {
-        return localErc20Addr(asset);
+        return Assets.erc20Addr(asset);
     }
 
     function testLocalErc721Issuer(bytes32 asset) external view returns (address) {
-        return localErc721Issuer(asset);
+        return Assets.erc721Issuer(asset);
     }
 
     function testToHostId(address addr) external view returns (uint) {
-        return toHostId(addr);
+        return Ids.toHost(addr);
     }
 
     function testToCommandId(bytes32 name, address addr) external view returns (uint) {
-        return toCommandId(toCommandSelector(name), addr);
+        return Ids.toCommand(Selectors.command(bytes32ToString(name)), addr);
     }
 
     function testToCommandSelector(bytes32 name) external pure returns (bytes4) {
-        return toCommandSelector(name);
+        return Selectors.command(bytes32ToString(name));
     }
 
     function testIsHost(uint id) external pure returns (bool) {
-        return isHost(id);
+        return Ids.isHost(id);
     }
 
     function testIsCommand(uint id) external pure returns (bool) {
-        return isCommand(id);
+        return Ids.isCommand(id);
     }
 
     function testLocalNodeAddr(uint node) external view returns (address) {
-        return localNodeAddr(node);
+        return Ids.nodeAddr(node);
     }
 
     function testLocalHostAddr(uint host) external view returns (address) {
-        return localHostAddr(host);
+        return Ids.hostAddr(host);
     }
 
     function testEnsureHost(uint id, address addr) external view returns (uint) {
-        return ensureHost(id, addr);
+        return Ids.host(id, addr);
     }
 
     function testEnsureCommand(uint id) external pure returns (uint) {
-        return ensureCommand(id);
+        return Ids.command(id);
     }
 
     function testApplyBps(uint amount, uint16 bps) external pure returns (uint) {
@@ -140,13 +129,13 @@ contract TestUtils {
     }
 
     function testMsgValue() external payable returns (uint) {
-        ValueBudget memory budget = msgValue();
+        Values.Budget memory budget = Values.fromMsg();
         return budget.remaining;
     }
 
     function testUseValue(uint amount, uint remaining) external pure returns (uint spent, uint remainingAfter) {
-        ValueBudget memory budget = ValueBudget({remaining: remaining});
-        spent = useValue(amount, budget);
+        Values.Budget memory budget = Values.Budget({remaining: remaining});
+        spent = Values.use(budget, amount);
         remainingAfter = budget.remaining;
     }
 

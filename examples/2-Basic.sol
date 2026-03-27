@@ -12,9 +12,9 @@ pragma solidity ^0.8.33;
 //   - calls `debitAccount` for each (your hook - deduct from your storage)
 //   - returns matching BALANCE blocks as the response
 
-import {Host} from "../contracts/Core.sol";
-import {DebitAccountToBalance} from "../contracts/Commands.sol";
-import {ensureAssetRef} from "../contracts/Utils.sol";
+import { Host } from "../contracts/Core.sol";
+import { DebitAccountToBalance } from "../contracts/Commands.sol";
+import { Assets } from "../contracts/Utils.sol";
 
 contract ExampleHost is Host, DebitAccountToBalance {
     // Internal balance ledger: account -> asset key -> amount
@@ -26,7 +26,7 @@ contract ExampleHost is Host, DebitAccountToBalance {
     // Implement this with whatever storage your app uses.
     function debitAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
         // ensureAssetRef combines asset + meta into a single composite storage key.
-        bytes32 ref = ensureAssetRef(asset, meta);
+        bytes32 ref = Assets.ensureRef(asset, meta);
         balances[account][ref] -= amount;
     }
 }

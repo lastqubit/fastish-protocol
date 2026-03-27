@@ -1,6 +1,39 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
+import { Keys } from "./Keys.sol";
+
+library Schemas {
+    string constant Amount = "amount(bytes32 asset, bytes32 meta, uint amount)";
+    string constant Balance = "balance(bytes32 asset, bytes32 meta, uint amount)";
+    string constant Custody = "custody(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Minimum = "minimum(bytes32 asset, bytes32 meta, uint amount)";
+    string constant Maximum = "maximum(bytes32 asset, bytes32 meta, uint amount)";
+    string constant Route = "route(bytes data)";
+    string constant RouteEmpty = "route()";
+    string constant Quantity = "quantity(uint amount)";
+    string constant Rate = "rate(uint value)";
+    string constant Party = "party(bytes32 account)";
+    string constant Recipient = "recipient(bytes32 account)";
+    string constant Transaction = "tx(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Step = "step(uint target, uint value, bytes request)";
+    string constant Auth = "auth(uint cid, uint deadline, bytes proof)";
+    string constant Asset = "asset(bytes32 asset, bytes32 meta)";
+    string constant Node = "node(uint id)";
+    string constant Listing = "listing(uint host, bytes32 asset, bytes32 meta)";
+    string constant Funding = "funding(uint host, uint amount)";
+    string constant Allocation = "allocation(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Bounty = "bounty(uint amount, bytes32 relayer)";
+
+    function route1(string memory maybeRoute, string memory a) internal pure returns (string memory) {
+        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, ">", a);
+    }
+
+    function route2(string memory maybeRoute, string memory a, string memory b) internal pure returns (string memory) {
+        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, ">", a, ">", b);
+    }
+}
+
 // Block stream:
 // - encoding is [bytes4 key][bytes4 selfLen][bytes4 totalLen][self payload][child blocks...]
 // - `selfLen` covers only the block payload
@@ -20,7 +53,7 @@ pragma solidity ^0.8.33;
 // - `->` separates request and response shapes, appears at most once, and is omitted when no output is modeled
 // - top-level blocks of the same type should be grouped together
 // - primary / driving blocks should appear before auxiliary blocks
-// - `route(<fields...>)` is a reserved extensible schema form whose key is always `ROUTE_KEY`
+// - `route(<fields...>)` is a reserved extensible schema form whose key is always `Keys.Route`
 // - canonical blocks are `amount(...)` for request amounts, `balance(...)` for state balances,
 //   `minimum(...)` for result floors, `maximum(...)` for spend ceilings, and `quantity(...)`
 //   for plain scalar amounts
@@ -32,46 +65,6 @@ pragma solidity ^0.8.33;
 // - the signed slice runs from the parent block start through the AUTH head, excluding only AUTH proof bytes
 // - `cid` binds the signature to one command; `deadline` acts as expiry and nonce
 // - current helpers assume proof layout `[bytes20 signer][bytes65 sig]`
-
-string constant AMOUNT = "amount(bytes32 asset, bytes32 meta, uint amount)";
-bytes4 constant AMOUNT_KEY = bytes4(keccak256("amount(bytes32 asset, bytes32 meta, uint amount)"));
-string constant BALANCE = "balance(bytes32 asset, bytes32 meta, uint amount)";
-bytes4 constant BALANCE_KEY = bytes4(keccak256("balance(bytes32 asset, bytes32 meta, uint amount)"));
-string constant CUSTODY = "custody(uint host, bytes32 asset, bytes32 meta, uint amount)";
-bytes4 constant CUSTODY_KEY = bytes4(keccak256("custody(uint host, bytes32 asset, bytes32 meta, uint amount)"));
-string constant MINIMUM = "minimum(bytes32 asset, bytes32 meta, uint amount)";
-bytes4 constant MINIMUM_KEY = bytes4(keccak256("minimum(bytes32 asset, bytes32 meta, uint amount)"));
-string constant MAXIMUM = "maximum(bytes32 asset, bytes32 meta, uint amount)";
-bytes4 constant MAXIMUM_KEY = bytes4(keccak256("maximum(bytes32 asset, bytes32 meta, uint amount)"));
-string constant ROUTE = "route(bytes data)";
-string constant ROUTE_EMPTY = "route()";
-bytes4 constant ROUTE_KEY = bytes4(keccak256("route(bytes data)"));
-string constant QUANTITY = "quantity(uint amount)";
-bytes4 constant QUANTITY_KEY = bytes4(keccak256("quantity(uint amount)"));
-string constant RATE = "rate(uint value)";
-bytes4 constant RATE_KEY = bytes4(keccak256("rate(uint value)"));
-string constant PARTY = "party(bytes32 account)";
-bytes4 constant PARTY_KEY = bytes4(keccak256("party(bytes32 account)"));
-string constant RECIPIENT = "recipient(bytes32 account)";
-bytes4 constant RECIPIENT_KEY = bytes4(keccak256("recipient(bytes32 account)"));
-string constant TX = "tx(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
-bytes4 constant TX_KEY = bytes4(keccak256("tx(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)"));
-string constant STEP = "step(uint target, uint value, bytes request)";
-bytes4 constant STEP_KEY = bytes4(keccak256("step(uint target, uint value, bytes request)"));
-string constant AUTH = "auth(uint cid, uint deadline, bytes proof)";
-bytes4 constant AUTH_KEY = bytes4(keccak256("auth(uint cid, uint deadline, bytes proof)"));
-string constant ASSET = "asset(bytes32 asset, bytes32 meta)";
-bytes4 constant ASSET_KEY = bytes4(keccak256("asset(bytes32 asset, bytes32 meta)"));
-string constant NODE = "node(uint id)";
-bytes4 constant NODE_KEY = bytes4(keccak256("node(uint id)"));
-string constant LISTING = "listing(uint host, bytes32 asset, bytes32 meta)";
-bytes4 constant LISTING_KEY = bytes4(keccak256("listing(uint host, bytes32 asset, bytes32 meta)"));
-string constant FUNDING = "funding(uint host, uint amount)";
-bytes4 constant FUNDING_KEY = bytes4(keccak256("funding(uint host, uint amount)"));
-string constant ALLOCATION = "allocation(uint host, bytes32 asset, bytes32 meta, uint amount)";
-bytes4 constant ALLOCATION_KEY = bytes4(keccak256("allocation(uint host, bytes32 asset, bytes32 meta, uint amount)"));
-string constant BOUNTY = "bounty(uint amount, bytes32 relayer)";
-bytes4 constant BOUNTY_KEY = bytes4(keccak256("bounty(uint amount, bytes32 relayer)"));
 
 uint constant AUTH_PROOF_LEN = 85;
 uint constant AUTH_TOTAL_LEN = 161;
@@ -96,7 +89,7 @@ struct UserAmount {
     uint amount;
 }
 
-struct Listing {
+struct HostAsset {
     uint host;
     bytes32 asset;
     bytes32 meta;
@@ -110,39 +103,3 @@ struct Tx {
     uint amount;
 }
 
-struct BlockRef {
-    bytes4 key;
-    uint i;
-    uint bound;
-    uint end;
-}
-
-struct BlockPairRef {
-    BlockRef a;
-    BlockRef b;
-}
-
-struct DataRef {
-    bytes4 key;
-    uint i;
-    uint bound;
-    uint end;
-}
-
-struct DataPairRef {
-    DataRef a;
-    DataRef b;
-}
-
-struct MemRef {
-    bytes4 key;
-    uint i;
-    uint bound;
-    uint end;
-}
-
-struct Writer {
-    uint i;
-    uint end;
-    bytes dst;
-}

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandBase, CommandContext} from "../Base.sol";
-import {SETUP} from "../../utils/Channels.sol";
-import {BlockRef, NODE, NODE_KEY} from "../../blocks/Schema.sol";
-import {Blocks} from "../../blocks/Readers.sol";
-using Blocks for BlockRef;
+import { CommandBase, CommandContext, Channels } from "../Base.sol";
+import { Keys } from "../../blocks/Keys.sol";
+import { Schemas } from "../../blocks/Schema.sol";
+import { Blocks, Block, Keys } from "../../Blocks.sol";
+using Blocks for Block;
 
 string constant NAME = "authorize";
 
@@ -13,7 +13,7 @@ abstract contract Authorize is CommandBase {
     uint internal immutable authorizeId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, NODE, authorizeId, SETUP, SETUP);
+        emit Command(host, NAME, Schemas.Node, authorizeId, Channels.Setup, Channels.Setup);
     }
 
     function authorize(
@@ -21,11 +21,11 @@ abstract contract Authorize is CommandBase {
     ) external payable onlyAdmin(c.account) onlyCommand(authorizeId, c.target) returns (bytes memory) {
         uint i = 0;
         while (i < c.request.length) {
-            BlockRef memory ref = Blocks.from(c.request, i);
-            if (ref.key != NODE_KEY) break;
-            uint node = ref.unpackNode(c.request);
+            Block memory ref = Blocks.from(c.request, i);
+            if (ref.key != Keys.Node) break;
+            uint node = ref.unpackNode();
             access(node, true);
-            i = ref.end;
+            i = ref.cursor;
         }
         return done(0, i);
     }

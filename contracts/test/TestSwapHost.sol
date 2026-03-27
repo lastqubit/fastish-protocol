@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Host} from "../core/Host.sol";
-import {SwapExactBalanceToBalance} from "../commands/Swap.sol";
-import {AssetAmount, DataRef} from "../Schema.sol";
-import {Data} from "../blocks/Data.sol";
+import { Host } from "../core/Host.sol";
+import { SwapExactBalanceToBalance } from "../commands/Swap.sol";
+import { AssetAmount, Block, Blocks } from "../Blocks.sol";
 
-using Data for DataRef;
+using Blocks for Block;
 
 contract TestSwapHost is Host, SwapExactBalanceToBalance {
     event SwapMapped(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes routeData);
@@ -20,7 +19,7 @@ contract TestSwapHost is Host, SwapExactBalanceToBalance {
     function swapExactBalanceToBalance(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute
+        Block memory rawRoute
     ) internal override returns (AssetAmount memory out) {
         bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
         emit SwapMapped(account, balance.asset, balance.meta, balance.amount, routeData);

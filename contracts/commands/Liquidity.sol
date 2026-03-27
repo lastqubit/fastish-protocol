@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES, CUSTODIES} from "../utils/Channels.sol";
-import {AssetAmount, HostAmount, BALANCE_KEY, CUSTODY_KEY, MINIMUM, DataPairRef} from "../blocks/Schema.sol";
-import {BlockRef, Blocks, Data, DataRef, Writers, Writer} from "../Blocks.sol";
-import {routeSchema1, routeSchema2} from "../utils/Utils.sol";
+import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
+import { Keys } from "../blocks/Keys.sol";
+import { Schemas } from "../blocks/Schema.sol";
+import { Blocks, Block, BlockPair, Writers, Writer, Keys } from "../Blocks.sol";
 
-using Blocks for BlockRef;
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 string constant ALFCTB = "addLiquidityFromCustodiesToBalances";
@@ -22,16 +21,18 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema1(maybeRoute, MINIMUM);
-        emit Command(host, ALFCTB, schema, addLiquidityFromCustodiesToBalancesId, CUSTODIES, BALANCES);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
+        emit Command(host, ALFCTB, schema, addLiquidityFromCustodiesToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
-    // @dev implementation extracts the requested minimum liquidity output from rawRoute.innerMinimum()
-    // and may append up to three balances per custody pair: two refunds plus the liquidity receipt.
+    /// @dev Override to add liquidity from two custody inputs.
+    /// Implementations extract the requested minimum liquidity output from
+    /// `rawRoute.innerMinimum()` and may append up to three BALANCE blocks to
+    /// `out`: two refunds plus the liquidity receipt.
     function addLiquidityFromCustodiesToBalances(
         bytes32 account,
-        DataPairRef memory rawCustodies,
-        DataRef memory rawRoute,
+        BlockPair memory rawCustodies,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -40,13 +41,15 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
     ) external payable onlyCommand(addLiquidityFromCustodiesToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, CUSTODY_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            (route, q) = Data.routeFrom(c.request, q);
-            DataPairRef memory custodies;
-            (custodies, i) = Data.twoFrom(c.state, i);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
+            q = route.cursor;
+            BlockPair memory custodies;
+            custodies = Blocks.twoFrom(c.state, i);
+            i = custodies.b.cursor;
             addLiquidityFromCustodiesToBalances(c.account, custodies, route, writer);
         }
 
@@ -60,16 +63,17 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema2(maybeRoute, MINIMUM, MINIMUM);
-        emit Command(host, RLFCTB, schema, removeLiquidityFromCustodyToBalancesId, CUSTODIES, BALANCES);
+        string memory schema = Schemas.route2(maybeRoute, Schemas.Minimum, Schemas.Minimum);
+        emit Command(host, RLFCTB, schema, removeLiquidityFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
-    // @dev implementation extracts requested minimum outputs from rawRoute and
-    // may append up to two balances per custody input when removing liquidity.
+    /// @dev Override to remove liquidity from a custody position.
+    /// Implementations extract requested minimum outputs from `rawRoute` and
+    /// may append up to two BALANCE blocks to `out`.
     function removeLiquidityFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -78,15 +82,16 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
     ) external payable onlyCommand(removeLiquidityFromCustodyToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, CUSTODY_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            (route, q) = Data.routeFrom(c.request, q);
-            BlockRef memory ref = Blocks.from(c.state, i);
-            HostAmount memory custody = ref.toCustodyValue(c.state);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
+            q = route.cursor;
+            Block memory ref = Blocks.from(c.state, i);
+            HostAmount memory custody = ref.toCustodyValue();
             removeLiquidityFromCustodyToBalances(c.account, custody, route, writer);
-            i = ref.end;
+            i = ref.cursor;
         }
 
         return writer.finish();
@@ -99,16 +104,18 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema1(maybeRoute, MINIMUM);
-        emit Command(host, ALFBTB, schema, addLiquidityFromBalancesToBalancesId, BALANCES, BALANCES);
+        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
+        emit Command(host, ALFBTB, schema, addLiquidityFromBalancesToBalancesId, Channels.Balances, Channels.Balances);
     }
 
-    // @dev implementation extracts the requested minimum liquidity output from rawRoute.innerMinimum()
-    // and may append up to three balances per balance pair: two refunds plus the liquidity receipt.
+    /// @dev Override to add liquidity from two balance inputs.
+    /// Implementations extract the requested minimum liquidity output from
+    /// `rawRoute.innerMinimum()` and may append up to three BALANCE blocks to
+    /// `out`: two refunds plus the liquidity receipt.
     function addLiquidityFromBalancesToBalances(
         bytes32 account,
-        DataPairRef memory rawBalances,
-        DataRef memory rawRoute,
+        BlockPair memory rawBalances,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -117,13 +124,15 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
     ) external payable onlyCommand(addLiquidityFromBalancesToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, BALANCE_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            (route, q) = Data.routeFrom(c.request, q);
-            DataPairRef memory balances;
-            (balances, i) = Data.twoFrom(c.state, i);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
+            q = route.cursor;
+            BlockPair memory balances;
+            balances = Blocks.twoFrom(c.state, i);
+            i = balances.b.cursor;
             addLiquidityFromBalancesToBalances(c.account, balances, route, writer);
         }
 
@@ -137,16 +146,17 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
 
     constructor(string memory maybeRoute, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = routeSchema2(maybeRoute, MINIMUM, MINIMUM);
-        emit Command(host, RLFBTB, schema, removeLiquidityFromBalanceToBalancesId, BALANCES, BALANCES);
+        string memory schema = Schemas.route2(maybeRoute, Schemas.Minimum, Schemas.Minimum);
+        emit Command(host, RLFBTB, schema, removeLiquidityFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 
-    // @dev implementation extracts requested minimum outputs from rawRoute and
-    // may append up to two balances per balance input when removing liquidity.
+    /// @dev Override to remove liquidity from a balance position.
+    /// Implementations extract requested minimum outputs from `rawRoute` and
+    /// may append up to two BALANCE blocks to `out`.
     function removeLiquidityFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -155,15 +165,16 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
     ) external payable onlyCommand(removeLiquidityFromBalanceToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, BALANCE_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            (route, q) = Data.routeFrom(c.request, q);
-            BlockRef memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue(c.state);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
+            q = route.cursor;
+            Block memory ref = Blocks.from(c.state, i);
+            AssetAmount memory balance = ref.toBalanceValue();
             removeLiquidityFromBalanceToBalances(c.account, balance, route, writer);
-            i = ref.end;
+            i = ref.cursor;
         }
 
         return writer.finish();

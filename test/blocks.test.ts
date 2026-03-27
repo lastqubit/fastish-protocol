@@ -3,13 +3,25 @@ import { ethers } from "ethers";
 import { deploy } from "./helpers/setup.js";
 import "./helpers/matchers.js";
 import {
-  AMOUNT_KEY, BALANCE_KEY, CUSTODY_KEY, RECIPIENT_KEY, NODE_KEY,
-  FUNDING_KEY, ASSET_KEY, ALLOCATION_KEY, TX_KEY, BOUNTY_KEY, QUANTITY_KEY,
+  Keys,
   encodeAmountBlock, encodeBalanceBlock, encodeCustodyBlock,
   encodeRecipientBlock, encodeNodeBlock, encodeFundingBlock,
   encodeAssetBlock, encodeAllocationBlock, encodeTxBlock, encodeQuantityBlock, encodeMinimumBlock, encodeMaximumBlock,
+  encodeAuthBlock,
   pad32, concat
 } from "./helpers/blocks.js";
+
+function encodeUint32(value: number): string {
+  return ethers.toBeHex(value, 4);
+}
+
+function blockWithChildren(key: string, payload: string, children: string): string {
+  const payloadBytes = ethers.getBytes(payload);
+  const childrenBytes = ethers.getBytes(children);
+  const selfLen = payloadBytes.length;
+  const totalLen = selfLen + childrenBytes.length;
+  return ethers.concat([key, encodeUint32(selfLen), encodeUint32(totalLen), payload, children]);
+}
 
 describe("Blocks", () => {
   let helper: Awaited<ReturnType<typeof deploy>>;
@@ -26,7 +38,7 @@ describe("Blocks", () => {
     const amount = 12345n;
 
     it("toBlockHeader packs key/selfLen/totalLen into upper bits", async () => {
-      const key = BALANCE_KEY;
+      const key = Keys.Balance;
       const header: bigint = await helper.testBlockHeader(key, 96n, 96n);
       // Key in bits 224-255
       const keyFromHeader = (header >> 224n) & 0xffffffffn;
@@ -37,7 +49,7 @@ describe("Blocks", () => {
     });
 
     it("toBlockHeader reverts MalformedBlocks when selfLen > totalLen", async () => {
-      await expect(helper.testBlockHeader(BALANCE_KEY, 96n, 64n))
+      await expect(helper.testBlockHeader(Keys.Balance, 96n, 64n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
@@ -46,9 +58,9 @@ describe("Blocks", () => {
       expect(ethers.getBytes(data).length).to.equal(108);
     });
 
-    it("writeBalanceBlock starts with BALANCE_KEY", async () => {
+    it("writeBalanceBlock starts with Keys.Balance", async () => {
       const data: string = await helper.testWriteBalanceBlock(asset, meta, amount);
-      expect(data.slice(0, 10)).to.equal(BALANCE_KEY);
+      expect(data.slice(0, 10)).to.equal(Keys.Balance);
     });
 
     it("writeBalanceBlock encodes asset, meta, amount correctly", async () => {
@@ -116,7 +128,7 @@ describe("Blocks", () => {
     it("from parses block key, bound, end correctly", async () => {
       const data = encodeAmountBlock(asset, meta, amount);
       const [key, bound, end] = await helper.testParseBlock(data, 0n);
-      expect(key).to.equal(AMOUNT_KEY);
+      expect(key).to.equal(Keys.Amount);
       expect(end).to.equal(BigInt(ethers.getBytes(data).length));
       expect(bound).to.equal(end); // no children
     });
@@ -337,7 +349,7 @@ describe("Blocks", () => {
       const b2 = encodeAmountBlock(asset, meta, 2n);
       const b3 = encodeBalanceBlock(asset, meta, 3n); // different key
       const data = concat(b1, b2, b3);
-      const [count, next] = await helper.testCountBlocks(data, 0n, AMOUNT_KEY);
+      const [count, next] = await helper.testCountBlocks(data, 0n, Keys.Amount);
       expect(count).to.equal(2n);
       expect(next).to.equal(BigInt(ethers.getBytes(concat(b1, b2)).length));
     });
@@ -402,63 +414,62 @@ describe("Blocks", () => {
       expect(result).to.equal(42n);
     });
 
-    it("create32 produces correct 44-byte block", async () => {
-      const key = QUANTITY_KEY;
-      const val = ethers.zeroPadValue("0x0abc", 32);
-      const data: string = await helper.testCreate32(key, val);
-      expect(ethers.getBytes(data).length).to.equal(44);
-      expect(data.slice(0, 10)).to.equal(key);
+    it("verifyAuth returns hash, deadline, proof, and next for valid trailing AUTH", async () => {
+      const cid = 77n;
+      const deadline = 123456n;
+      const signer = "0x" + "11".repeat(20);
+      const sig = "0x" + "22".repeat(65);
+      const proof = ethers.concat([signer, sig]);
+      const auth = encodeAuthBlock(cid, deadline, proof);
+      const parent = blockWithChildren(
+        Keys.Amount,
+        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+        auth
+      );
+
+      const [hash, outDeadline, outProof] = await helper.testVerifyAuth(parent, 0n, cid);
+      expect(outDeadline).to.equal(deadline);
+      expect(outProof).to.equal(proof);
+
+      const parentBytes = ethers.getBytes(parent);
+      const expectedHash = ethers.keccak256(parentBytes.slice(0, parentBytes.length - 85));
+      expect(hash).to.equal(expectedHash);
     });
 
-    it("create64 produces correct 76-byte block", async () => {
-      const key = ASSET_KEY;
-      const a = ethers.zeroPadValue("0x01", 32);
-      const b = ethers.zeroPadValue("0x02", 32);
-      const data: string = await helper.testCreate64(key, a, b);
-      expect(ethers.getBytes(data).length).to.equal(76);
+    it("verifyAuth reverts MalformedBlocks when cid mismatches", async () => {
+      const proof = ethers.concat(["0x" + "11".repeat(20), "0x" + "22".repeat(65)]);
+      const auth = encodeAuthBlock(77n, 123456n, proof);
+      const parent = blockWithChildren(
+        Keys.Amount,
+        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+        auth
+      );
+
+      await expect(helper.testVerifyAuth(parent, 0n, 88n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
-    it("create96 produces correct 108-byte block", async () => {
-      const key = AMOUNT_KEY;
-      const a = ethers.zeroPadValue("0x01", 32);
-      const b = ethers.zeroPadValue("0x02", 32);
-      const c = ethers.zeroPadValue("0x03", 32);
-      const data: string = await helper.testCreate96(key, a, b, c);
-      expect(ethers.getBytes(data).length).to.equal(108);
+    it("verifyAuth reverts MalformedBlocks when trailing auth is missing", async () => {
+      const parent = encodeAmountBlock(asset, meta, amount);
+
+      await expect(helper.testVerifyAuth(parent, 0n, 77n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
-    it("create128 produces correct 140-byte block", async () => {
-      const key = CUSTODY_KEY;
-      const a = ethers.zeroPadValue("0x01", 32);
-      const b = ethers.zeroPadValue("0x02", 32);
-      const c = ethers.zeroPadValue("0x03", 32);
-      const d = ethers.zeroPadValue("0x04", 32);
-      const data: string = await helper.testCreate128(key, a, b, c, d);
-      expect(ethers.getBytes(data).length).to.equal(140);
-      expect(data.slice(0, 10)).to.equal(key);
-    });
+    it("verifyAuth reverts MalformedBlocks when trailing bytes are too short for AUTH", async () => {
+      const truncatedAuthTail = ethers.hexlify(ethers.getBytes(encodeAuthBlock(77n, 123456n, ethers.concat(["0x" + "11".repeat(20), "0x" + "22".repeat(65)]))).slice(0, 100));
+      const parent = blockWithChildren(
+        Keys.Amount,
+        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+        truncatedAuthTail
+      );
 
-    it("toBountyBlock produces correct BOUNTY block", async () => {
-      const relayer = ethers.zeroPadValue("0xdd", 32);
-      const data: string = await helper.testToBounty(500n, relayer);
-      expect(ethers.getBytes(data).length).to.equal(76);
-      expect(data.slice(0, 10)).to.equal(BOUNTY_KEY);
-    });
-
-    it("toCustodyBlock produces correct CUSTODY block", async () => {
-      const hostId = 1234n;
-      const data: string = await helper.testToCustody(hostId, asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(140);
-      expect(data.slice(0, 10)).to.equal(CUSTODY_KEY);
-      const [h, a, m, v] = await helper.testUnpackCustody(data, 0n);
-      expect(h).to.equal(hostId);
-      expect(a).to.equal(asset);
-      expect(m).to.equal(meta);
-      expect(v).to.equal(amount);
+      await expect(helper.testVerifyAuth(parent, 0n, 77n))
+        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
     it("count returns 0 for empty source", async () => {
-      const [count] = await helper.testCountBlocks("0x", 0n, AMOUNT_KEY);
+      const [count] = await helper.testCountBlocks("0x", 0n, Keys.Amount);
       expect(count).to.equal(0n);
     });
 
@@ -542,7 +553,7 @@ describe("Blocks", () => {
       const b1 = encodeBalanceBlock(asset, meta, 1n);
       const b2 = encodeBalanceBlock(asset, meta, 2n);
       const combined = concat(b1, b2);
-      const [count] = await helper.testMemCount(combined, 0n, BALANCE_KEY);
+      const [count] = await helper.testMemCount(combined, 0n, Keys.Balance);
       expect(count).to.equal(2n);
     });
 

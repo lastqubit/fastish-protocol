@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {OperationBase} from "../core/Operation.sol";
-import {PeerEvent} from "../events/Peer.sol";
-import {toPeerId, toPeerSelector} from "../utils/Ids.sol";
-
-error NoResponse();
+import { OperationBase } from "../core/Operation.sol";
+import { PeerEvent } from "../events/Peer.sol";
+import { Ids, Selectors } from "../utils/Ids.sol";
 
 abstract contract PeerBase is OperationBase, PeerEvent {
     modifier onlyPeer() {
@@ -14,6 +12,6 @@ abstract contract PeerBase is OperationBase, PeerEvent {
     }
 
     function peerId(string memory name) internal view returns (uint) {
-        return toPeerId(toPeerSelector(name), address(this));
+        return Ids.toPeer(Selectors.peer(name), address(this));
     }
 }

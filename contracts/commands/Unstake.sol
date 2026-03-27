@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase} from "./Base.sol";
-import {BALANCES} from "../utils/Channels.sol";
-import {AssetAmount, BALANCE_KEY, Blocks, BlockRef, Data, DataRef, Writers, Writer} from "../Blocks.sol";
+import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { AssetAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant UBTB = "unstakeBalanceToBalances";
 
-using Blocks for BlockRef;
-using Data for DataRef;
+using Blocks for Block;
 using Writers for Writer;
 
 abstract contract UnstakeBalanceToBalances is CommandBase {
@@ -17,14 +15,15 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
 
     constructor(string memory route, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, UBTB, route, unstakeBalanceToBalancesId, BALANCES, BALANCES);
+        emit Command(host, UBTB, route, unstakeBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 
-    // @dev `balance` is the input stake/share/LP-style position being redeemed.
+    /// @dev Override to unstake or redeem a balance position.
+    /// Implementations may append one or more BALANCE blocks to `out`.
     function unstakeBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        DataRef memory rawRoute,
+        Block memory rawRoute,
         Writer memory out
     ) internal virtual;
 
@@ -33,15 +32,16 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
     ) external payable onlyCommand(unstakeBalanceToBalancesId, c.target) returns (bytes memory) {
         uint i = 0;
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, BALANCE_KEY, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
 
         while (i < end) {
-            DataRef memory route;
-            (route, q) = Data.routeFrom(c.request, q);
-            BlockRef memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue(c.state);
+            Block memory route;
+            route = Blocks.routeFrom(c.request, q);
+            q = route.cursor;
+            Block memory ref = Blocks.from(c.state, i);
+            AssetAmount memory balance = ref.toBalanceValue();
             unstakeBalanceToBalances(c.account, balance, route, writer);
-            i = ref.end;
+            i = ref.cursor;
         }
 
         return writer.finish();

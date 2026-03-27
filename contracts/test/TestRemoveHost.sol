@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Host} from "../core/Host.sol";
-import {Remove} from "../commands/Remove.sol";
-import {DataRef} from "../blocks/Schema.sol";
-import {toHostId} from "../utils/Ids.sol";
+import { Host } from "../core/Host.sol";
+import { Remove } from "../commands/Remove.sol";
+import { Block } from "../Blocks.sol";
+import { Ids } from "../utils/Ids.sol";
 
 contract TestRemoveHost is Host, Remove {
     event RemoveCalled(bytes32 account, bytes routeData);
@@ -13,10 +13,10 @@ contract TestRemoveHost is Host, Remove {
         Host(address(0), 1, "test")
         Remove("")
     {
-        if (cmdr != address(0)) access(toHostId(cmdr), true);
+        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
-    function remove(bytes32 account, DataRef memory rawRoute) internal override {
+    function remove(bytes32 account, Block memory rawRoute) internal override {
         bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
         emit RemoveCalled(account, routeData);
     }

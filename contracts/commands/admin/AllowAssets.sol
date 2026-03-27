@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandBase, CommandContext} from "../Base.sol";
-import {SETUP} from "../../utils/Channels.sol";
-import {ASSET, ASSET_KEY, BlockRef} from "../../blocks/Schema.sol";
-import {Blocks} from "../../blocks/Readers.sol";
-using Blocks for BlockRef;
+import { CommandBase, CommandContext, Channels } from "../Base.sol";
+import { Keys } from "../../blocks/Keys.sol";
+import { Schemas } from "../../blocks/Schema.sol";
+import { Blocks, Block, Keys } from "../../Blocks.sol";
+using Blocks for Block;
 
 string constant NAME = "allowAssets";
 
@@ -13,9 +13,11 @@ abstract contract AllowAssets is CommandBase {
     uint internal immutable allowAssetsId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, ASSET, allowAssetsId, SETUP, SETUP);
+        emit Command(host, NAME, Schemas.Asset, allowAssetsId, Channels.Setup, Channels.Setup);
     }
 
+    /// @dev Override to allow a single asset/meta pair.
+    /// Called once per ASSET block in the request.
     function allowAsset(bytes32 asset, bytes32 meta) internal virtual returns (bool);
 
     function allowAssets(
@@ -23,11 +25,11 @@ abstract contract AllowAssets is CommandBase {
     ) external payable onlyAdmin(c.account) onlyCommand(allowAssetsId, c.target) returns (bytes memory) {
         uint i = 0;
         while (i < c.request.length) {
-            BlockRef memory ref = Blocks.from(c.request, i);
-            if (ref.key != ASSET_KEY) break;
-            (bytes32 asset, bytes32 meta) = ref.unpackAsset(c.request);
+            Block memory ref = Blocks.from(c.request, i);
+            if (ref.key != Keys.Asset) break;
+            (bytes32 asset, bytes32 meta) = ref.unpackAsset();
             allowAsset(asset, meta);
-            i = ref.end;
+            i = ref.cursor;
         }
         return done(0, i);
     }

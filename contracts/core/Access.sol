@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {AccessEvent} from "../events/Access.sol";
-import {addrOr, toAdminAccount} from "../utils/Accounts.sol";
-import {toHostId} from "../utils/Ids.sol";
+import { AccessEvent } from "../events/Access.sol";
+import { Accounts } from "../utils/Accounts.sol";
+import { Ids } from "../utils/Ids.sol";
+import { addrOr } from "../utils/Utils.sol";
 
 abstract contract AccessControl is AccessEvent {
     address internal immutable commander;
@@ -17,8 +18,8 @@ abstract contract AccessControl is AccessEvent {
 
     constructor(address cmdr) {
         commander = addrOr(cmdr, address(this));
-        adminAccount = toAdminAccount(commander);
-        host = toHostId(address(this));
+        adminAccount = Accounts.toAdmin(commander);
+        host = Ids.toHost(address(this));
     }
 
     // @dev inbound auth is host-based.
@@ -28,7 +29,7 @@ abstract contract AccessControl is AccessEvent {
     }
 
     function isTrusted(address caller) internal view returns (bool) {
-        return caller == commander || caller == address(this) || authorized[toHostId(caller)];
+        return caller == commander || caller == address(this) || authorized[Ids.toHost(caller)];
     }
 
     function enforceCaller(address caller) internal view returns (address) {
