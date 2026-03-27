@@ -224,13 +224,13 @@ describe("Commands", () => {
 
   // ── CreditTo ──────────────────────────────────────────────────────────────
 
-  describe("creditBalanceToAccount", () => {
+  describe("creditAccount", () => {
     const asset = ethers.zeroPadValue("0x30", 32);
     const meta  = ethers.ZeroHash;
 
     it("emits CreditToCalled for BALANCE blocks in state", async () => {
       const state = encodeBalanceBlock(asset, meta, 300n);
-      const tx = await callAs(0, "creditBalanceToAccount", ctx({ state }));
+      const tx = await callAs(0, "creditAccount", ctx({ state }));
       await expect(tx).to.emit(host, "CreditToCalled");
     });
 
@@ -238,38 +238,38 @@ describe("Commands", () => {
       const recipient = ethers.zeroPadValue("0xcafe", 32);
       const state = encodeBalanceBlock(asset, meta, 100n);
       const request = encodeRecipientBlock(recipient);
-      const tx = await callAs(0, "creditBalanceToAccount", ctx({ state, request }));
+      const tx = await callAs(0, "creditAccount", ctx({ state, request }));
       await expect(tx).to.emit(host, "CreditToCalled")
         .withArgs(recipient, asset, meta, 100n, 100n);
     });
 
     it("reverts NoOperation for empty state", async () => {
-      await expect(callAs(0, "creditBalanceToAccount", ctx()))
+      await expect(callAs(0, "creditAccount", ctx()))
         .to.be.revertedWithCustomError(host, "NoOperation");
     });
   });
 
   // ── DebitFrom ─────────────────────────────────────────────────────────────
 
-  describe("debitAccountToBalance", () => {
+  describe("debitAccount", () => {
     const asset = ethers.zeroPadValue("0x40", 32);
     const meta  = ethers.ZeroHash;
 
     it("emits DebitFromCalled and returns BALANCE blocks", async () => {
       const request = encodeAmountBlock(asset, meta, 400n);
-      const tx = await callAs(0, "debitAccountToBalance", ctx({ request }));
+      const tx = await callAs(0, "debitAccount", ctx({ request }));
       await expect(tx).to.emit(host, "DebitFromCalled")
         .withArgs(userAccount, asset, meta, 400n, 400n);
     });
 
     it("returns one BALANCE block per AMOUNT block", async () => {
       const request = encodeAmountBlock(asset, meta, 100n);
-      const result: string = await host.debitAccountToBalance.staticCall(ctx({ request }));
+      const result: string = await host.debitAccount.staticCall(ctx({ request }));
       expect(result).to.equal(encodeBalanceBlock(asset, meta, 100n));
     });
 
     it("reverts EmptyRequest when request has no AMOUNT blocks", async () => {
-      await expect(callAs(0, "debitAccountToBalance", ctx()))
+      await expect(callAs(0, "debitAccount", ctx()))
         .to.be.revertedWithCustomError(host, "EmptyRequest");
     });
 
@@ -283,7 +283,7 @@ describe("Commands", () => {
         encodeAmountBlock(asset2, meta, 200n),
         encodeAmountBlock(asset3, meta, 300n),
       );
-      const tx = await callAs(0, "debitAccountToBalance", ctx({ request }));
+      const tx = await callAs(0, "debitAccount", ctx({ request }));
       await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset1, meta, 100n, 100n);
       await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset2, meta, 200n, 200n);
       await expect(tx).to.emit(host, "DebitFromCalled").withArgs(userAccount, asset3, meta, 300n, 300n);
@@ -297,7 +297,7 @@ describe("Commands", () => {
         encodeAmountBlock(asset1, meta, 100n),
         encodeAmountBlock(asset2, meta, 200n),
       );
-      const result: string = await host.debitAccountToBalance.staticCall(ctx({ request }));
+      const result: string = await host.debitAccount.staticCall(ctx({ request }));
       expect(result).to.equal(concat(
         encodeBalanceBlock(asset1, meta, 100n),
         encodeBalanceBlock(asset2, meta, 200n),
