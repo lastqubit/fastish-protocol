@@ -1,6 +1,6 @@
 {
   "name": "@fastish/contracts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Solidity contracts and protocol building blocks for Fastish hosts and commands.",
   "private": false,
   "license": "GPL-3.0-only",
