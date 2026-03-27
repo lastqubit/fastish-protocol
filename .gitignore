@@ -3,5 +3,6 @@ cache/
 coverage/
 dist/
 node_modules/
+.npm-cache/
 typechain-types/
 .claude/
