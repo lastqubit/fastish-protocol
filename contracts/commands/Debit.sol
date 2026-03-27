@@ -13,7 +13,7 @@ string constant NAME = "debitAccount";
 using Blocks for Block;
 using Writers for Writer;
 
-abstract contract DebitAccountToBalance is CommandBase {
+abstract contract DebitAccount is CommandBase {
     uint internal immutable debitAccountId = commandId(NAME);
 
     constructor() {

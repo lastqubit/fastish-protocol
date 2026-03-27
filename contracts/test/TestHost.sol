@@ -5,8 +5,8 @@ import { Host } from "../core/Host.sol";
 import { Deposit } from "../commands/Deposit.sol";
 import { Withdraw } from "../commands/Withdraw.sol";
 import { Transfer } from "../commands/Transfer.sol";
-import { CreditBalanceToAccount } from "../commands/Credit.sol";
-import { DebitAccountToBalance } from "../commands/Debit.sol";
+import { CreditAccount } from "../commands/Credit.sol";
+import { DebitAccount } from "../commands/Debit.sol";
 import { Settle } from "../commands/Settle.sol";
 import { Provision, ProvisionFromBalance } from "../commands/Provision.sol";
 import { Pipe } from "../commands/Pipe.sol";
@@ -23,8 +23,8 @@ contract TestHost is
     Deposit,
     Withdraw,
     Transfer,
-    CreditBalanceToAccount,
-    DebitAccountToBalance,
+    CreditAccount,
+    DebitAccount,
     Settle,
     Provision,
     ProvisionFromBalance,

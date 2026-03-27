@@ -9,7 +9,7 @@ string constant NAME = "creditAccount";
 
 using Blocks for Block;
 
-abstract contract CreditBalanceToAccount is CommandBase {
+abstract contract CreditAccount is CommandBase {
     uint internal immutable creditAccountId = commandId(NAME);
 
     constructor() {
