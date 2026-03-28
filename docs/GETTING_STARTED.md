@@ -63,17 +63,17 @@ If `rootzero` is a contract, the host announces itself there during deployment. 
 
 The easiest way to integrate is to inherit a built-in command module and implement its hook.
 
-This example adds `DebitAccountToBalance`, which turns `AMOUNT` blocks in `request` into `BALANCE` blocks in the response:
+This example adds `DebitAccount`, which turns `AMOUNT` blocks in `request` into `BALANCE` blocks in the response:
 
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
 import {Host} from "@rootzero/contracts/Core.sol";
-import {DebitAccountToBalance} from "@rootzero/contracts/Commands.sol";
+import {DebitAccount} from "@rootzero/contracts/Commands.sol";
 import {ensureAssetRef} from "@rootzero/contracts/Utils.sol";
 
-contract ExampleHost is Host, DebitAccountToBalance {
+contract ExampleHost is Host, DebitAccount {
     mapping(bytes32 account => mapping(bytes32 assetRef => uint amount)) internal balances;
 
     constructor(address rootzero)
@@ -238,7 +238,7 @@ If you are only consuming built-in commands, you often will not need to touch wr
 
 Imagine you want a host that keeps internal balances and lets RootZero debit them.
 
-1. Deploy a host that inherits `Host` and `DebitAccountToBalance`.
+1. Deploy a host that inherits `Host` and `DebitAccount`.
 2. Store balances in your own mapping.
 3. Implement `debitAccount(account, asset, meta, amount)`.
 4. Send `debitAccountToBalance` a request containing one or more `AMOUNT` blocks.
@@ -268,7 +268,7 @@ If you want to learn by example, these are the best files to read next:
 ## Recommended Learning Order
 
 1. Deploy a plain `Host`.
-2. Add one built-in command such as `DebitAccountToBalance` or `Deposit`.
+2. Add one built-in command such as `DebitAccount` or `Deposit`.
 3. Use the TypeScript block helpers to build requests.
 4. Only then add a custom command with a route block.
 

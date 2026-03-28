@@ -2,18 +2,14 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Writer } from "../Blocks.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Keys } from "../Blocks.sol";
-import { Writers } from "../blocks/Writers.sol";
+import { Writer, Keys, Schemas, Blocks, Block, Writers } from "../Blocks.sol";
 
 string constant NAME = "debitAccount";
 
 using Blocks for Block;
 using Writers for Writer;
 
-abstract contract DebitAccountToBalance is CommandBase {
+abstract contract DebitAccount is CommandBase {
     uint internal immutable debitAccountId = commandId(NAME);
 
     constructor() {

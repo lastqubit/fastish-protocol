@@ -2,8 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
-import { Schemas } from "../blocks/Schema.sol";
+import { AssetAmount, Schemas, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant NAME = "reclaimToBalances";
 

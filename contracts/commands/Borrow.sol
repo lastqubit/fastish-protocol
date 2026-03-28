@@ -2,8 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
-import { Schemas } from "../blocks/Schema.sol";
+import { AssetAmount, HostAmount, Schemas, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant BABTB = "borrowAgainstBalanceToBalance";
 string constant BACTB = "borrowAgainstCustodyToBalance";

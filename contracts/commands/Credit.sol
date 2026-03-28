@@ -2,14 +2,12 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Keys } from "../Blocks.sol";
+import { Keys, Schemas, Blocks, Block } from "../Blocks.sol";
 string constant NAME = "creditAccount";
 
 using Blocks for Block;
 
-abstract contract CreditBalanceToAccount is CommandBase {
+abstract contract CreditAccount is CommandBase {
     uint internal immutable creditAccountId = commandId(NAME);
 
     constructor() {

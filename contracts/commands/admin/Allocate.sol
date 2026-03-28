@@ -2,10 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "../Base.sol";
-import { HostAmount } from "../../blocks/Schema.sol";
-import { Keys } from "../../blocks/Keys.sol";
-import { Schemas } from "../../blocks/Schema.sol";
-import { Blocks, Block, Keys } from "../../Blocks.sol";
+import { HostAmount, Keys, Schemas, Blocks, Block } from "../../Blocks.sol";
 using Blocks for Block;
 
 string constant NAME = "allocate";

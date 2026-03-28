@@ -2,10 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, HostAmount, Keys, Schemas, Blocks, Block, Writers, Writer } from "../Blocks.sol";
 using Blocks for Block;
 using Writers for Writer;
 

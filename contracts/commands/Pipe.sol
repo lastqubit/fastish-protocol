@@ -2,9 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext } from "./Base.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Keys } from "../Blocks.sol";
+import { Keys, Schemas, Blocks, Block } from "../Blocks.sol";
 import { Accounts } from "../utils/Accounts.sol";
 import { Values } from "../utils/Value.sol";
 
