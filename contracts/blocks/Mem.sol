@@ -45,15 +45,15 @@ library Mem {
         }
     }
 
-    function count(bytes memory source, uint i, bytes4 key) internal pure returns (uint count_, uint next) {
-        next = i;
-        while (next < source.length) {
-            MemRef memory ref = from(source, next);
+    function count(bytes memory source, uint i, bytes4 key) internal pure returns (uint total, uint cursor) {
+        cursor = i;
+        while (cursor < source.length) {
+            MemRef memory ref = from(source, cursor);
             if (ref.key != key) break;
             unchecked {
-                ++count_;
+                ++total;
             }
-            next = ref.end;
+            cursor = ref.end;
         }
     }
 

@@ -45,7 +45,7 @@ library Writers {
         bytes calldata blocks,
         uint i,
         bytes4 source
-    ) internal pure returns (Writer memory writer, uint next) {
+    ) internal pure returns (Writer memory writer, uint cursor) {
         return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, BALANCE_BLOCK_LEN);
     }
 
@@ -53,7 +53,7 @@ library Writers {
         bytes calldata blocks,
         uint i,
         bytes4 source
-    ) internal pure returns (Writer memory writer, uint next) {
+    ) internal pure returns (Writer memory writer, uint cursor) {
         return allocFromScaledCount(blocks, i, source, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
     }
 
@@ -62,7 +62,7 @@ library Writers {
         uint i,
         bytes4 source,
         uint scaledRatio
-    ) internal pure returns (Writer memory writer, uint next) {
+    ) internal pure returns (Writer memory writer, uint cursor) {
         return allocFromScaledCount(blocks, i, source, scaledRatio, BALANCE_BLOCK_LEN);
     }
 
@@ -70,9 +70,9 @@ library Writers {
         bytes calldata blocks,
         uint i,
         uint scaledRatio
-    ) internal pure returns (Writer memory writer, uint next) {
+    ) internal pure returns (Writer memory writer, uint cursor) {
         uint count;
-        (count, next) = Blocks.count(blocks, i);
+        (count, cursor) = Blocks.count(blocks, i);
         writer = allocFromScaledCount(count, scaledRatio, BALANCE_BLOCK_LEN);
     }
 
@@ -80,7 +80,7 @@ library Writers {
         bytes calldata blocks,
         uint i,
         bytes4 source
-    ) internal pure returns (Writer memory writer, uint next) {
+    ) internal pure returns (Writer memory writer, uint cursor) {
         return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, TX_BLOCK_LEN);
     }
 
@@ -88,7 +88,7 @@ library Writers {
         bytes calldata blocks,
         uint i,
         bytes4 source
-    ) internal pure returns (Writer memory writer, uint next) {
+    ) internal pure returns (Writer memory writer, uint cursor) {
         return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
     }
 
@@ -97,7 +97,7 @@ library Writers {
         uint i,
         bytes4 source,
         uint scaledRatio
-    ) internal pure returns (Writer memory writer, uint next) {
+    ) internal pure returns (Writer memory writer, uint cursor) {
         return allocFromScaledCount(blocks, i, source, scaledRatio, CUSTODY_BLOCK_LEN);
     }
 
@@ -107,9 +107,9 @@ library Writers {
         bytes4 source,
         uint scaledRatio,
         uint blockLen
-    ) internal pure returns (Writer memory writer, uint next) {
+    ) internal pure returns (Writer memory writer, uint cursor) {
         uint count;
-        (count, next) = Blocks.count(blocks, i, source);
+        (count, cursor) = Blocks.count(blocks, i, source);
         writer = allocFromScaledCount(count, scaledRatio, blockLen);
     }
 

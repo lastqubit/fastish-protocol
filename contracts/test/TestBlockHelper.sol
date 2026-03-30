@@ -200,7 +200,7 @@ contract TestBlockHelper {
         return (value.from, value.to, value.asset, value.meta, value.amount);
     }
 
-    function testCountBlocks(bytes calldata source, uint i, bytes4 key) external pure returns (uint count, uint next) {
+    function testCountBlocks(bytes calldata source, uint i, bytes4 key) external pure returns (uint count, uint cursor) {
         return Blocks.count(source, i, key);
     }
 
@@ -299,14 +299,14 @@ contract TestBlockHelper {
         return Mem.slice(source, start, end_);
     }
 
-    function testMemCount(bytes memory source, uint i, bytes4 key) external pure returns (uint count, uint next) {
+    function testMemCount(bytes memory source, uint i, bytes4 key) external pure returns (uint count, uint cursor) {
         return Mem.count(source, i, key);
     }
 
     function testAllocBalancesFromCount(bytes calldata source, uint i, bytes4 sourceKey)
         external
         pure
-        returns (uint count, uint next)
+        returns (uint count, uint cursor)
     {
         return Blocks.count(source, i, sourceKey);
     }

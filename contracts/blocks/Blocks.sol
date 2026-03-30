@@ -88,24 +88,24 @@ library Blocks {
         ref.cursor = next;
     }
 
-    function count(bytes calldata source, uint i, bytes4 key) internal pure returns (uint count_, uint next) {
-        next = i;
-        while (next < source.length) {
-            Block memory ref = from(source, next);
+    function count(bytes calldata source, uint i, bytes4 key) internal pure returns (uint total, uint cursor) {
+        cursor = i;
+        while (cursor < source.length) {
+            Block memory ref = from(source, cursor);
             if (ref.key != key) break;
             unchecked {
-                ++count_;
+                ++total;
             }
-            next = ref.cursor;
+            cursor = ref.cursor;
         }
     }
 
-    function count(bytes calldata source, uint i) internal pure returns (uint count_, uint next) {
-        next = i;
-        while (next < source.length) {
-            next = from(source, next).cursor;
+    function count(bytes calldata source, uint i) internal pure returns (uint total, uint cursor) {
+        cursor = i;
+        while (cursor < source.length) {
+            cursor = from(source, cursor).cursor;
             unchecked {
-                ++count_;
+                ++total;
             }
         }
     }
