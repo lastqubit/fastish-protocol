@@ -45,13 +45,10 @@ abstract contract MyCommand is CommandBase {
         Block memory bundle = Blocks.bundleFrom(c.request, 0);
 
         // The first bundled member is the ROUTE block.
-        Block memory route = bundle.first();
+        uint host = bundle.member(0).unpackRouteUint();
 
-        // Decode the `host` uint from the route payload.
-        uint host = route.unpackRouteUint();
-
-        // The next bundled member is the AMOUNT block.
-        (bytes32 asset, bytes32 meta, uint amount) = bundle.nextOf(route).unpackAmount();
+        // The second bundled member is the AMOUNT block.
+        (bytes32 asset, bytes32 meta, uint amount) = bundle.member(1).unpackAmount();
 
         // Delegate to the implementer to move the asset to the target host.
         sendToHost(host, asset, meta, amount);
