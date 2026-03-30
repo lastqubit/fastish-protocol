@@ -13,7 +13,7 @@ import "./helpers/matchers.js";
 describe("SwapExactBalanceToBalance", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let userAccount: string;
-  const swapMethod = "swapExactBalanceToBalance((uint256,bytes32,bytes,bytes))";
+  const swapMethod = "swapExactBalanceToBalance((uint256,bytes,bytes,bytes))";
 
   before(async () => {
     const signer = await getSigner(0);

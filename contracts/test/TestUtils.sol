@@ -28,6 +28,26 @@ contract TestUtils {
         return Accounts.isAdmin(account);
     }
 
+    function testEncodeAccount(bytes calldata raw) external pure returns (bytes32) {
+        return Accounts.encode(raw);
+    }
+
+    function testToAccountRef(bytes calldata raw) external pure returns (bytes32) {
+        return Accounts.toRef(raw);
+    }
+
+    function testIsAccountRef(bytes32 account) external pure returns (bool) {
+        return Accounts.isRef(account);
+    }
+
+    function testResolveAccount(bytes32 account) external pure returns (bytes memory) {
+        return Accounts.resolve(account);
+    }
+
+    function testRoundTripAccount(bytes calldata raw) external pure returns (bytes memory) {
+        return Accounts.resolve(Accounts.encode(raw));
+    }
+
     function testToValueAsset() external view returns (bytes32) {
         return Assets.toValue();
     }

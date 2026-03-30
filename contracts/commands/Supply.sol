@@ -19,12 +19,13 @@ abstract contract Supply is CommandBase {
     function supply(bytes32 account, HostAmount memory value) internal virtual;
 
     function supply(CommandContext calldata c) external payable onlyCommand(supplyId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         while (i < c.state.length) {
             Block memory ref = Blocks.from(c.state, i);
             if (ref.key != Keys.Custody) break;
             HostAmount memory value = ref.toCustodyValue();
-            supply(c.account, value);
+            supply(account, value);
             i = ref.cursor;
         }
 

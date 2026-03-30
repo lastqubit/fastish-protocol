@@ -19,12 +19,13 @@ abstract contract Burn is CommandBase {
     function burn(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual returns (uint);
 
     function burn(CommandContext calldata c) external payable onlyCommand(burnId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         while (i < c.state.length) {
             Block memory ref = Blocks.from(c.state, i);
             if (ref.key != Keys.Balance) break;
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance();
-            burn(c.account, asset, meta, amount);
+            burn(account, asset, meta, amount);
             i = ref.cursor;
         }
 

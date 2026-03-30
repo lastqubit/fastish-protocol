@@ -24,7 +24,7 @@ abstract contract Withdraw is CommandBase {
     function withdraw(
         CommandContext calldata c
     ) external payable onlyCommand(withdrawId, c.target) returns (bytes memory) {
-        bytes32 to = Blocks.resolveRecipient(c.request, 0, c.request.length, c.account);
+        bytes32 to = Blocks.resolveRecipient(c.request, 0, c.request.length, encodeAccount(c.account));
         uint i = 0;
         while (i < c.state.length) {
             Block memory ref = Blocks.from(c.state, i);

@@ -35,6 +35,7 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
     function liquidateFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(liquidateFromBalanceToBalancesId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
@@ -47,7 +48,7 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
             }
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            liquidateFromBalanceToBalances(c.account, balance, input, writer);
+            liquidateFromBalanceToBalances(account, balance, input, writer);
             i = ref.cursor;
         }
 
@@ -80,6 +81,7 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
     function liquidateFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(liquidateFromCustodyToBalancesId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
@@ -92,7 +94,7 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
             }
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            liquidateFromCustodyToBalances(c.account, custody, input, writer);
+            liquidateFromCustodyToBalances(account, custody, input, writer);
             i = ref.cursor;
         }
 

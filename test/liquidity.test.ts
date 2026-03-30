@@ -17,10 +17,10 @@ describe("Liquidity Commands", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let userAccount: string;
 
-  const addCustodiesMethod = "addLiquidityFromCustodiesToBalances((uint256,bytes32,bytes,bytes))";
-  const removeCustodyMethod = "removeLiquidityFromCustodyToBalances((uint256,bytes32,bytes,bytes))";
-  const addBalancesMethod = "addLiquidityFromBalancesToBalances((uint256,bytes32,bytes,bytes))";
-  const removeBalanceMethod = "removeLiquidityFromBalanceToBalances((uint256,bytes32,bytes,bytes))";
+  const addCustodiesMethod = "addLiquidityFromCustodiesToBalances((uint256,bytes,bytes,bytes))";
+  const removeCustodyMethod = "removeLiquidityFromCustodyToBalances((uint256,bytes,bytes,bytes))";
+  const addBalancesMethod = "addLiquidityFromBalancesToBalances((uint256,bytes,bytes,bytes))";
+  const removeBalanceMethod = "removeLiquidityFromBalanceToBalances((uint256,bytes,bytes,bytes))";
 
   const META = ethers.ZeroHash;
   const HOST_ID = 77n;

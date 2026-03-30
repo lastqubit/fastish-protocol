@@ -62,7 +62,7 @@ library Ids {
 }
 
 library Selectors {
-    string constant CommandArgs = "((uint256,bytes32,bytes,bytes))";
+    string constant CommandArgs = "((uint256,bytes,bytes,bytes))";
     string constant PeerArgs = "(bytes)";
 
     function command(string memory name) internal pure returns (bytes4) {

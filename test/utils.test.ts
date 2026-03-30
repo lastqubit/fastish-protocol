@@ -3,6 +3,16 @@ import { ethers } from "ethers";
 import { deploy, getSigner, getProvider } from "./helpers/setup.js";
 import { commandSelector } from "./helpers/blocks.js";
 
+async function expectCustomError(promise: Promise<unknown>, name: string) {
+  try {
+    await promise;
+    expect.fail(`Expected ${name} revert`);
+  } catch (e) {
+    const err = e as { revert?: { name?: string } };
+    expect(err.revert?.name).to.equal(name);
+  }
+}
+
 describe("Utils", () => {
   let utils: Awaited<ReturnType<typeof deploy>>;
   let signerAddress: string;
@@ -69,7 +79,41 @@ describe("Utils", () => {
 
     it("accountEvmAddr reverts for non-EVM account", async () => {
       const invalid = ethers.zeroPadValue("0x01", 32);
-      await expect(utils.testAccountEvmAddr(invalid)).to.be.revertedWithCustomError(utils, "InvalidAccount");
+      await expectCustomError(utils.testAccountEvmAddr(invalid), "InvalidAccount");
+    });
+
+    it("encode returns inline bytes32 for short accounts", async () => {
+      const raw = "0x123456";
+      const encoded = await utils.testEncodeAccount(raw);
+      expect(encoded).to.equal(ethers.zeroPadBytes(raw, 32));
+      expect(await utils.testIsAccountRef(encoded)).to.be.false;
+    });
+
+    it("encode returns inline bytes32 for 32-byte accounts", async () => {
+      const raw = ethers.hexlify(ethers.randomBytes(32));
+      const encoded = await utils.testEncodeAccount(raw);
+      expect(encoded).to.equal(raw);
+      expect(await utils.testIsAccountRef(encoded)).to.be.false;
+    });
+
+    it("encode returns a ref for accounts longer than 32 bytes", async () => {
+      const raw = ethers.hexlify(ethers.randomBytes(33));
+      const encoded = await utils.testEncodeAccount(raw);
+      const ref = await utils.testToAccountRef(raw);
+      expect(encoded).to.equal(ref);
+      expect(await utils.testIsAccountRef(encoded)).to.be.true;
+      expect((BigInt(encoded) >> 224n) & 0xffffffffn).to.equal(0x20000103n);
+    });
+
+    it("resolve round-trips ref accounts back to the original bytes in the same call", async () => {
+      const raw = ethers.hexlify(ethers.randomBytes(64));
+      expect(await utils.testRoundTripAccount(raw)).to.equal(raw);
+    });
+
+    it("resolve reverts for inline accounts", async () => {
+      const raw = ethers.hexlify(ethers.randomBytes(32));
+      const account = await utils.testEncodeAccount(raw);
+      await expectCustomError(utils.testResolveAccount(account), "InvalidAccount");
     });
   });
 
@@ -116,11 +160,11 @@ describe("Utils", () => {
     });
 
     it("resolveAmount reverts BadAmount when below min", async () => {
-      await expect(utils.testResolveAmount(5n, 10n, 100n)).to.be.revertedWithCustomError(utils, "BadAmount");
+      await expectCustomError(utils.testResolveAmount(5n, 10n, 100n), "BadAmount");
     });
 
     it("ensureAmount reverts ZeroAmount on zero", async () => {
-      await expect(utils.testEnsureAmount(0n)).to.be.revertedWithCustomError(utils, "ZeroAmount");
+      await expectCustomError(utils.testEnsureAmount(0n), "ZeroAmount");
     });
 
     it("ensureAmount returns value when non-zero", async () => {
@@ -128,8 +172,8 @@ describe("Utils", () => {
     });
 
     it("ensureAmount with range reverts BadAmount when out of range", async () => {
-      await expect(utils.testEnsureAmountRange(0n, 1n, 10n)).to.be.revertedWithCustomError(utils, "BadAmount");
-      await expect(utils.testEnsureAmountRange(11n, 1n, 10n)).to.be.revertedWithCustomError(utils, "BadAmount");
+      await expectCustomError(utils.testEnsureAmountRange(0n, 1n, 10n), "BadAmount");
+      await expectCustomError(utils.testEnsureAmountRange(11n, 1n, 10n), "BadAmount");
     });
 
     it("ensureAssetRef returns asset for 32-byte asset with zero meta", async () => {
@@ -141,12 +185,11 @@ describe("Utils", () => {
     it("ensureAssetRef reverts InvalidAsset for 32-byte asset with non-zero meta", async () => {
       const asset = await utils.testToValueAsset();
       const meta = ethers.hexlify(ethers.randomBytes(32));
-      await expect(utils.testEnsureAssetRef(asset, meta)).to.be.revertedWithCustomError(utils, "InvalidAsset");
+      await expectCustomError(utils.testEnsureAssetRef(asset, meta), "InvalidAsset");
     });
 
     it("ensureAssetRef reverts InvalidAsset for zero asset", async () => {
-      await expect(utils.testEnsureAssetRef(ethers.ZeroHash, ethers.ZeroHash))
-        .to.be.revertedWithCustomError(utils, "InvalidAsset");
+      await expectCustomError(utils.testEnsureAssetRef(ethers.ZeroHash, ethers.ZeroHash), "InvalidAsset");
     });
 
     it("ensureAssetRef returns keccak for composite asset", async () => {
@@ -173,12 +216,12 @@ describe("Utils", () => {
 
     it("localErc20Addr reverts InvalidAsset for value asset", async () => {
       const asset = await utils.testToValueAsset();
-      await expect(utils.testLocalErc20Addr(asset)).to.be.revertedWithCustomError(utils, "InvalidAsset");
+      await expectCustomError(utils.testLocalErc20Addr(asset), "InvalidAsset");
     });
 
     it("localErc721Issuer reverts InvalidAsset for value asset", async () => {
       const asset = await utils.testToValueAsset();
-      await expect(utils.testLocalErc721Issuer(asset)).to.be.revertedWithCustomError(utils, "InvalidAsset");
+      await expectCustomError(utils.testLocalErc721Issuer(asset), "InvalidAsset");
     });
   });
 
@@ -223,12 +266,12 @@ describe("Utils", () => {
     it("ensureHost reverts InvalidId for wrong address", async () => {
       const id: bigint = await utils.testToHostId(signerAddress);
       const other = "0x" + "ab".repeat(20);
-      await expect(utils.testEnsureHost(id, other)).to.be.revertedWithCustomError(utils, "InvalidId");
+      await expectCustomError(utils.testEnsureHost(id, other), "InvalidId");
     });
 
     it("ensureCommand reverts InvalidId for host ID", async () => {
       const hid: bigint = await utils.testToHostId(signerAddress);
-      await expect(utils.testEnsureCommand(hid)).to.be.revertedWithCustomError(utils, "InvalidId");
+      await expectCustomError(utils.testEnsureCommand(hid), "InvalidId");
     });
 
     it("ensureCommand succeeds for command ID", async () => {
@@ -245,7 +288,7 @@ describe("Utils", () => {
 
     it("localHostAddr reverts for a foreign-chain host id", async () => {
       const foreignHostId = (0x20010201n << 224n) | (999n << 192n) | BigInt(signerAddress);
-      await expect(utils.testLocalHostAddr(foreignHostId)).to.be.revertedWithCustomError(utils, "InvalidId");
+      await expectCustomError(utils.testLocalHostAddr(foreignHostId), "InvalidId");
     });
   });
 
@@ -277,7 +320,7 @@ describe("Utils", () => {
     });
 
     it("max8 reverts ValueOverflow when too large", async () => {
-      await expect(utils.testMax8(256n)).to.be.revertedWithCustomError(utils, "ValueOverflow");
+      await expectCustomError(utils.testMax8(256n), "ValueOverflow");
     });
 
     it("max160 returns value within range", async () => {
@@ -286,7 +329,7 @@ describe("Utils", () => {
     });
 
     it("max160 reverts for 2^160", async () => {
-      await expect(utils.testMax160(1n << 160n)).to.be.revertedWithCustomError(utils, "ValueOverflow");
+      await expectCustomError(utils.testMax160(1n << 160n), "ValueOverflow");
     });
 
     it("isFamily matches family prefix", async () => {
@@ -330,7 +373,7 @@ describe("Utils", () => {
     });
 
     it("useValue reverts InsufficientValue when amount exceeds remaining", async () => {
-      await expect(utils.testUseValue(101n, 100n)).to.be.revertedWithCustomError(utils, "InsufficientValue");
+      await expectCustomError(utils.testUseValue(101n, 100n), "InsufficientValue");
     });
   });
 

@@ -27,14 +27,14 @@ abstract contract DebitAccount is CommandBase {
     /// @dev Override to customize request parsing or batching for debits.
     /// The default implementation iterates AMOUNT blocks, calls
     /// `debitAccount`, and emits matching BALANCE blocks.
-    function debitAccount(bytes32 from, bytes calldata request) internal virtual returns (bytes memory) {
+    function debitAccount(bytes32 account, bytes calldata request) internal virtual returns (bytes memory) {
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocBalancesFrom(request, q, Keys.Amount);
 
         while (q < end) {
             Block memory ref = Blocks.from(request, q);
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
-            debitAccount(from, asset, meta, amount);
+            debitAccount(account, asset, meta, amount);
             writer.appendBalance(asset, meta, amount);
             q = ref.cursor;
         }
@@ -45,6 +45,6 @@ abstract contract DebitAccount is CommandBase {
     function debitAccount(
         CommandContext calldata c
     ) external payable onlyCommand(debitAccountId, c.target) returns (bytes memory) {
-        return debitAccount(c.account, c.request);
+        return debitAccount(encodeAccount(c.account), c.request);
     }
 }

@@ -28,6 +28,7 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     function borrowAgainstCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(borrowAgainstCustodyToBalanceId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.Custody);
@@ -37,7 +38,7 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
             q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            AssetAmount memory out = borrowAgainstCustodyToBalance(c.account, custody, input);
+            AssetAmount memory out = borrowAgainstCustodyToBalance(account, custody, input);
             writer.appendNonZeroBalance(out);
             i = ref.cursor;
         }
@@ -64,6 +65,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     function borrowAgainstBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(borrowAgainstBalanceToBalanceId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.Balance);
@@ -73,7 +75,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
             q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            AssetAmount memory out = borrowAgainstBalanceToBalance(c.account, balance, input);
+            AssetAmount memory out = borrowAgainstBalanceToBalance(account, balance, input);
             writer.appendNonZeroBalance(out);
             i = ref.cursor;
         }

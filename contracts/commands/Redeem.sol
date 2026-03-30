@@ -35,6 +35,7 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
     function redeemFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(redeemFromBalanceToBalancesId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
@@ -47,7 +48,7 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
             }
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            redeemFromBalanceToBalances(c.account, balance, input, writer);
+            redeemFromBalanceToBalances(account, balance, input, writer);
             i = ref.cursor;
         }
 
@@ -80,6 +81,7 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
     function redeemFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(redeemFromCustodyToBalancesId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
@@ -92,7 +94,7 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
             }
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            redeemFromCustodyToBalances(c.account, custody, input, writer);
+            redeemFromCustodyToBalances(account, custody, input, writer);
             i = ref.cursor;
         }
 

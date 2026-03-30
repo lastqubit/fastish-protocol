@@ -2,6 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { AccessControl } from "./Access.sol";
+import { Accounts } from "../utils/Accounts.sol";
 import { Assets } from "../utils/Assets.sol";
 import { Ids } from "../utils/Ids.sol";
 
@@ -10,6 +11,10 @@ error FailedCall(address addr, uint node, bytes4 selector, bytes err);
 
 abstract contract OperationBase is AccessControl {
     bytes32 public immutable valueAsset = Assets.toValue();
+
+    function encodeAccount(bytes calldata raw) internal pure returns (bytes32 account) {
+        return Accounts.encode(raw);
+    }
 
     function done(uint start, uint end) internal pure returns (bytes memory) {
         if (end <= start) revert NoOperation();

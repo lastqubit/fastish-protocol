@@ -101,9 +101,11 @@ chai.use((chaiLib, utils) => {
         },
         (e: unknown) => {
           const err = e as Record<string, unknown>;
+          const revert = err["revert"] as Record<string, unknown> | undefined;
           const data = getErrorData(e);
           const actualName =
             (typeof err["errorName"] === "string" ? err["errorName"] : null) ??
+            (typeof revert?.["name"] === "string" ? (revert["name"] as string) : null) ??
             (data ? tryDecodeErrorName(contract, data) : null) ??
             extractFromMessage(String(err["message"] ?? ""));
           if (actualName !== errorName) {

@@ -40,6 +40,7 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
     function addLiquidityFromCustodiesToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(addLiquidityFromCustodiesToBalancesId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
@@ -52,7 +53,7 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
             }
             Block memory custodies = Blocks.viewFrom(c.state, i, 2);
             i = custodies.cursor;
-            addLiquidityFromCustodiesToBalances(c.account, custodies, input, writer);
+            addLiquidityFromCustodiesToBalances(account, custodies, input, writer);
         }
 
         return writer.finish();
@@ -85,6 +86,7 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
     function removeLiquidityFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(removeLiquidityFromCustodyToBalancesId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
@@ -97,7 +99,7 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
             }
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            removeLiquidityFromCustodyToBalances(c.account, custody, input, writer);
+            removeLiquidityFromCustodyToBalances(account, custody, input, writer);
             i = ref.cursor;
         }
 
@@ -131,6 +133,7 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
     function addLiquidityFromBalancesToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(addLiquidityFromBalancesToBalancesId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
@@ -143,7 +146,7 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
             }
             Block memory balances = Blocks.viewFrom(c.state, i, 2);
             i = balances.cursor;
-            addLiquidityFromBalancesToBalances(c.account, balances, input, writer);
+            addLiquidityFromBalancesToBalances(account, balances, input, writer);
         }
 
         return writer.finish();
@@ -176,6 +179,7 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
     function removeLiquidityFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(removeLiquidityFromBalanceToBalancesId, c.target) returns (bytes memory) {
+        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
@@ -188,7 +192,7 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
             }
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            removeLiquidityFromBalanceToBalances(c.account, balance, input, writer);
+            removeLiquidityFromBalanceToBalances(account, balance, input, writer);
             i = ref.cursor;
         }
 
