@@ -3,7 +3,6 @@ pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
 import { AssetAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
-import { Schemas } from "../blocks/Schema.sol";
 
 string constant NAME = "reclaimToBalances";
 
@@ -14,19 +13,17 @@ abstract contract ReclaimToBalances is CommandBase {
     uint internal immutable reclaimToBalancesId = commandId(NAME);
     uint private immutable outScale;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = Schemas.route1(maybeRoute, Schemas.Amount);
-        emit Command(host, NAME, schema, reclaimToBalancesId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, input, reclaimToBalancesId, Channels.Setup, Channels.Balances);
     }
 
-    /// @dev Override to reclaim balances described by `rawRoute`.
-    /// `amount` is extracted from the route and implementations may append one
-    /// or more BALANCE blocks to `out`.
+    /// @dev Override to reclaim balances described by `rawInput`.
+    /// Implementations validate and unpack it as needed, and may append one or
+    /// more BALANCE blocks to `out`.
     function reclaimToBalances(
         bytes32 account,
-        AssetAmount memory amount,
-        Block memory rawRoute,
+        Block memory rawInput,
         Writer memory out
     ) internal virtual;
 
@@ -34,14 +31,12 @@ abstract contract ReclaimToBalances is CommandBase {
         CommandContext calldata c
     ) external payable onlyCommand(reclaimToBalancesId, c.target) returns (bytes memory) {
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.request, q, Keys.Route, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalances(c.request, q, outScale);
 
         while (q < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            AssetAmount memory value = route.innerAmountValue();
-            reclaimToBalances(c.account, value, route, writer);
+            Block memory input = Blocks.from(c.request, q);
+            q = input.cursor;
+            reclaimToBalances(c.account, input, writer);
         }
 
         return writer.finish();

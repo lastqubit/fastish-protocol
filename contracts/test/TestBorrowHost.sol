@@ -11,7 +11,7 @@ import { Ids } from "../utils/Ids.sol";
 using Blocks for Block;
 
 contract TestBorrowHost is Host, BorrowAgainstCustodyToBalance {
-    event BorrowCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes routeData);
+    event BorrowCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes inputData);
 
     bytes32 public returnAsset;
     bytes32 public returnMeta;
@@ -30,10 +30,10 @@ contract TestBorrowHost is Host, BorrowAgainstCustodyToBalance {
     function borrowAgainstCustodyToBalance(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawRoute
+        Block memory rawInput
     ) internal override returns (AssetAmount memory) {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, routeData);
+        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+        emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, inputData);
         return AssetAmount({asset: returnAsset, meta: returnMeta, amount: returnAmount});
     }
 

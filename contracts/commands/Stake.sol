@@ -15,17 +15,17 @@ abstract contract StakeBalanceToBalances is CommandBase {
     uint internal immutable stakeBalanceToBalancesId = commandId(SBTB);
     uint private immutable outScale;
 
-    constructor(string memory route, uint scaledRatio) {
+    constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, SBTB, route, stakeBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        emit Command(host, SBTB, input, stakeBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 
     /// @dev Override to stake a balance position and append resulting balances
-    /// to `out`.
+    /// to `out`. Implementations validate and unpack `rawInput` as needed.
     function stakeBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawRoute,
+        Block memory rawInput,
         Writer memory out
     ) internal virtual;
 
@@ -37,12 +37,11 @@ abstract contract StakeBalanceToBalances is CommandBase {
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
 
         while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
+            Block memory input = Blocks.from(c.request, q);
+            q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            stakeBalanceToBalances(c.account, balance, route, writer);
+            stakeBalanceToBalances(c.account, balance, input, writer);
             i = ref.cursor;
         }
 
@@ -54,17 +53,17 @@ abstract contract StakeCustodyToBalances is CommandBase {
     uint internal immutable stakeCustodyToBalancesId = commandId(SCTB);
     uint private immutable outScale;
 
-    constructor(string memory route, uint scaledRatio) {
+    constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, SCTB, route, stakeCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        emit Command(host, SCTB, input, stakeCustodyToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
     /// @dev Override to stake a custody position and append resulting balances
-    /// to `out`.
+    /// to `out`. Implementations validate and unpack `rawInput` as needed.
     function stakeCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawRoute,
+        Block memory rawInput,
         Writer memory out
     ) internal virtual;
 
@@ -76,12 +75,11 @@ abstract contract StakeCustodyToBalances is CommandBase {
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
 
         while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
+            Block memory input = Blocks.from(c.request, q);
+            q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            stakeCustodyToBalances(c.account, custody, route, writer);
+            stakeCustodyToBalances(c.account, custody, input, writer);
             i = ref.cursor;
         }
 
@@ -92,13 +90,13 @@ abstract contract StakeCustodyToBalances is CommandBase {
 abstract contract StakeCustodyToPosition is CommandBase {
     uint internal immutable stakeCustodyToPositionId = commandId(SCTP);
 
-    constructor(string memory route) {
-        emit Command(host, SCTP, route, stakeCustodyToPositionId, Channels.Custodies, Channels.Setup);
+    constructor(string memory input) {
+        emit Command(host, SCTP, input, stakeCustodyToPositionId, Channels.Custodies, Channels.Setup);
     }
 
     /// @dev Override to stake a custody position into a non-balance setup
-    /// target described by `rawRoute`.
-    function stakeCustodyToPosition(bytes32 account, HostAmount memory custody, Block memory rawRoute) internal virtual;
+    /// target described by `rawInput`.
+    function stakeCustodyToPosition(bytes32 account, HostAmount memory custody, Block memory rawInput) internal virtual;
 
     function stakeCustodyToPosition(
         CommandContext calldata c
@@ -109,10 +107,9 @@ abstract contract StakeCustodyToPosition is CommandBase {
             Block memory ref = Blocks.from(c.state, i);
             if (ref.key != Keys.Custody) break;
             HostAmount memory custody = ref.toCustodyValue();
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            stakeCustodyToPosition(c.account, custody, route);
+            Block memory input = Blocks.from(c.request, q);
+            q = input.cursor;
+            stakeCustodyToPosition(c.account, custody, input);
             i = ref.cursor;
         }
 

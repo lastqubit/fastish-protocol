@@ -13,22 +13,22 @@ using Writers for Writer;
 abstract contract RedeemFromBalanceToBalances is CommandBase {
     uint internal immutable redeemFromBalanceToBalancesId = commandId(RDBTB);
     uint private immutable outScale;
-    bool private immutable useRoute;
+    bool private immutable useInput;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory maybeInput, uint scaledRatio) {
         outScale = scaledRatio;
-        useRoute = bytes(maybeRoute).length > 0;
-        emit Command(host, RDBTB, maybeRoute, redeemFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        useInput = bytes(maybeInput).length > 0;
+        emit Command(host, RDBTB, maybeInput, redeemFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 
     /// @dev Override to redeem a balance position into balances.
-    /// `rawRoute` is zero-initialized and should be ignored when
-    /// `maybeRoute` is empty. Implementations may append one or more BALANCE
-    /// blocks to `out`.
+    /// `rawInput` is zero-initialized and should be ignored when
+    /// `maybeInput` is empty. Implementations validate and unpack it as
+    /// needed, and may append one or more BALANCE blocks to `out`.
     function redeemFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawRoute,
+        Block memory rawInput,
         Writer memory out
     ) internal virtual;
 
@@ -40,14 +40,14 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
 
         while (i < end) {
-            Block memory route;
-            if (useRoute) {
-                route = Blocks.routeFrom(c.request, q);
-                q = route.cursor;
+            Block memory input;
+            if (useInput) {
+                input = Blocks.from(c.request, q);
+                q = input.cursor;
             }
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            redeemFromBalanceToBalances(c.account, balance, route, writer);
+            redeemFromBalanceToBalances(c.account, balance, input, writer);
             i = ref.cursor;
         }
 
@@ -58,22 +58,22 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
 abstract contract RedeemFromCustodyToBalances is CommandBase {
     uint internal immutable redeemFromCustodyToBalancesId = commandId(RDCTB);
     uint private immutable outScale;
-    bool private immutable useRoute;
+    bool private immutable useInput;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory maybeInput, uint scaledRatio) {
         outScale = scaledRatio;
-        useRoute = bytes(maybeRoute).length > 0;
-        emit Command(host, RDCTB, maybeRoute, redeemFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        useInput = bytes(maybeInput).length > 0;
+        emit Command(host, RDCTB, maybeInput, redeemFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
     /// @dev Override to redeem a custody position into balances.
-    /// `rawRoute` is zero-initialized and should be ignored when
-    /// `maybeRoute` is empty. Implementations may append one or more BALANCE
-    /// blocks to `out`.
+    /// `rawInput` is zero-initialized and should be ignored when
+    /// `maybeInput` is empty. Implementations validate and unpack it as
+    /// needed, and may append one or more BALANCE blocks to `out`.
     function redeemFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawRoute,
+        Block memory rawInput,
         Writer memory out
     ) internal virtual;
 
@@ -85,14 +85,14 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
 
         while (i < end) {
-            Block memory route;
-            if (useRoute) {
-                route = Blocks.routeFrom(c.request, q);
-                q = route.cursor;
+            Block memory input;
+            if (useInput) {
+                input = Blocks.from(c.request, q);
+                q = input.cursor;
             }
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            redeemFromCustodyToBalances(c.account, custody, route, writer);
+            redeemFromCustodyToBalances(c.account, custody, input, writer);
             i = ref.cursor;
         }
 

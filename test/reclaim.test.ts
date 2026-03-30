@@ -51,13 +51,13 @@ describe("ReclaimToBalances", () => {
       .withArgs(userAccount, ASSET, META, 100n, route);
   });
 
-  it("returns one BALANCE block for a single ROUTE block", async () => {
+  it("returns one BALANCE block for a single input block", async () => {
     const request = encodeRouteBlockWithAmount("0x01", ASSET, META, 100n);
     const result: string = await (host as any)[reclaimMethod].staticCall(ctx({ request }));
     expect(result).to.equal(encodeBalanceBlock(ASSET, META, AMOUNT));
   });
 
-  it("emits ReclaimCalled for each ROUTE block when multiple are present", async () => {
+  it("emits ReclaimCalled for each input block when multiple are present", async () => {
     const asset1 = ethers.zeroPadValue("0xa1", 32);
     const asset2 = ethers.zeroPadValue("0xa2", 32);
     const request = concat(
@@ -69,7 +69,7 @@ describe("ReclaimToBalances", () => {
     await expect(tx).to.emit(host, "ReclaimCalled").withArgs(userAccount, asset2, META, 200n, "0xbbbb");
   });
 
-  it("returns one BALANCE block per ROUTE block", async () => {
+  it("returns one BALANCE block per input block", async () => {
     const request = concat(
       encodeRouteBlockWithAmount("0x01", ASSET, META, 100n),
       encodeRouteBlockWithAmount("0x02", ASSET, META, 200n),
@@ -112,7 +112,7 @@ describe("ReclaimToBalances", () => {
 
   // ── Error cases ────────────────────────────────────────────────────────────
 
-  it("reverts EmptyRequest when request has no ROUTE blocks", async () => {
+  it("reverts EmptyRequest when request has no input blocks", async () => {
     await expect(callAs(0, ctx()))
       .to.be.revertedWithCustomError(host, "EmptyRequest");
   });

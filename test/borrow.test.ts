@@ -54,12 +54,12 @@ describe("BorrowAgainstCustodyToBalance", () => {
   // ── Happy path ─────────────────────────────────────────────────────────────
 
   it("emits BorrowCalled with the account and custody amount", async () => {
-    const route = "0x1234";
+    const inputData = "0x1234";
     const state = custodyState(ASSET, META, 100n);
-    const request = encodeRouteBlock(route);
+    const request = encodeRouteBlock(inputData);
     const tx = await callAs(0, ctx({ state, request }));
     await expect(tx).to.emit(host, "BorrowCalled")
-      .withArgs(userAccount, ASSET, META, 100n, route);
+      .withArgs(userAccount, ASSET, META, 100n, inputData);
   });
 
   it("returns one BALANCE block for a single CUSTODY block", async () => {
@@ -69,7 +69,7 @@ describe("BorrowAgainstCustodyToBalance", () => {
     expect(result).to.equal(encodeBalanceBlock(ASSET, META, AMOUNT));
   });
 
-  it("emits BorrowCalled for each custody-route pair when multiple are present", async () => {
+  it("emits BorrowCalled for each custody-input pair when multiple are present", async () => {
     const asset1 = ethers.zeroPadValue("0xa1", 32);
     const asset2 = ethers.zeroPadValue("0xa2", 32);
     const state = concat(
@@ -85,7 +85,7 @@ describe("BorrowAgainstCustodyToBalance", () => {
     await expect(tx).to.emit(host, "BorrowCalled").withArgs(userAccount, asset2, META, 200n, "0xbbbb");
   });
 
-  it("returns one BALANCE block per custody-route pair", async () => {
+  it("returns one BALANCE block per custody-input pair", async () => {
     const state = concat(
       custodyState(ASSET, META, 100n, HOST_ID),
       custodyState(ASSET, META, 200n, HOST_ID + 1n),
@@ -142,16 +142,17 @@ describe("BorrowAgainstCustodyToBalance", () => {
       .to.be.revertedWithCustomError(host, "EmptyRequest");
   });
 
-  it("reverts InvalidBlock when a custody is missing a matching ROUTE block", async () => {
+  it("uses a zero-initialized input block when a custody is missing a matching request block", async () => {
     const state = custodyState(ASSET, META, 100n);
-    await expect(callAs(0, ctx({ state })))
-      .to.be.revertedWithCustomError(host, "InvalidBlock");
+    const tx = await callAs(0, ctx({ state }));
+    await expect(tx).to.emit(host, "BorrowCalled")
+      .withArgs(userAccount, ASSET, META, 100n, "0x");
   });
 
-  it("reverts InvalidBlock when request does not start with a ROUTE block", async () => {
+  it("forwards non-route request blocks as generic input", async () => {
     const state = custodyState(ASSET, META, 100n);
     const request = encodeBalanceBlock(ASSET, META, 100n);
     await expect(callAs(0, ctx({ state, request })))
-      .to.be.revertedWithCustomError(host, "InvalidBlock");
+      .to.emit(host, "BorrowCalled");
   });
 });

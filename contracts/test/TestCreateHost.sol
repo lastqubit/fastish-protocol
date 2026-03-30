@@ -7,7 +7,7 @@ import { Block } from "../Blocks.sol";
 import { Ids } from "../utils/Ids.sol";
 
 contract TestCreateHost is Host, Create {
-    event CreateCalled(bytes32 account, bytes routeData);
+    event CreateCalled(bytes32 account, bytes inputData);
 
     constructor(address cmdr)
         Host(address(0), 1, "test")
@@ -16,9 +16,9 @@ contract TestCreateHost is Host, Create {
         if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
-    function create(bytes32 account, Block memory rawRoute) internal override {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit CreateCalled(account, routeData);
+    function create(bytes32 account, Block memory rawInput) internal override {
+        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+        emit CreateCalled(account, inputData);
     }
 
     function getCreateId() external view returns (uint) { return createId; }

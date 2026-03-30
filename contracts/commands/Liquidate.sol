@@ -13,22 +13,22 @@ using Writers for Writer;
 abstract contract LiquidateFromBalanceToBalances is CommandBase {
     uint internal immutable liquidateFromBalanceToBalancesId = commandId(LFBTB);
     uint private immutable outScale;
-    bool private immutable useRoute;
+    bool private immutable useInput;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory maybeInput, uint scaledRatio) {
         outScale = scaledRatio;
-        useRoute = bytes(maybeRoute).length > 0;
-        emit Command(host, LFBTB, maybeRoute, liquidateFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        useInput = bytes(maybeInput).length > 0;
+        emit Command(host, LFBTB, maybeInput, liquidateFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 
     /// @dev Override to liquidate using a balance repayment amount.
-    /// `rawRoute` is zero-initialized and should be ignored when
-    /// `maybeRoute` is empty. Implementations may append returned balances to
-    /// `out`.
+    /// `rawInput` is zero-initialized and should be ignored when
+    /// `maybeInput` is empty. Implementations validate and unpack it as
+    /// needed, and may append returned balances to `out`.
     function liquidateFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawRoute,
+        Block memory rawInput,
         Writer memory out
     ) internal virtual;
 
@@ -40,14 +40,14 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
 
         while (i < end) {
-            Block memory route;
-            if (useRoute) {
-                route = Blocks.routeFrom(c.request, q);
-                q = route.cursor;
+            Block memory input;
+            if (useInput) {
+                input = Blocks.from(c.request, q);
+                q = input.cursor;
             }
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            liquidateFromBalanceToBalances(c.account, balance, route, writer);
+            liquidateFromBalanceToBalances(c.account, balance, input, writer);
             i = ref.cursor;
         }
 
@@ -58,22 +58,22 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
 abstract contract LiquidateFromCustodyToBalances is CommandBase {
     uint internal immutable liquidateFromCustodyToBalancesId = commandId(LFCTB);
     uint private immutable outScale;
-    bool private immutable useRoute;
+    bool private immutable useInput;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory maybeInput, uint scaledRatio) {
         outScale = scaledRatio;
-        useRoute = bytes(maybeRoute).length > 0;
-        emit Command(host, LFCTB, maybeRoute, liquidateFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        useInput = bytes(maybeInput).length > 0;
+        emit Command(host, LFCTB, maybeInput, liquidateFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
     /// @dev Override to liquidate using a custody repayment amount.
-    /// `rawRoute` is zero-initialized and should be ignored when
-    /// `maybeRoute` is empty. Implementations may append returned balances to
-    /// `out`.
+    /// `rawInput` is zero-initialized and should be ignored when
+    /// `maybeInput` is empty. Implementations validate and unpack it as
+    /// needed, and may append returned balances to `out`.
     function liquidateFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawRoute,
+        Block memory rawInput,
         Writer memory out
     ) internal virtual;
 
@@ -85,14 +85,14 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
 
         while (i < end) {
-            Block memory route;
-            if (useRoute) {
-                route = Blocks.routeFrom(c.request, q);
-                q = route.cursor;
+            Block memory input;
+            if (useInput) {
+                input = Blocks.from(c.request, q);
+                q = input.cursor;
             }
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            liquidateFromCustodyToBalances(c.account, custody, route, writer);
+            liquidateFromCustodyToBalances(c.account, custody, input, writer);
             i = ref.cursor;
         }
 

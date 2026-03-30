@@ -7,7 +7,7 @@ import { Block } from "../Blocks.sol";
 import { Ids } from "../utils/Ids.sol";
 
 contract TestRemoveHost is Host, Remove {
-    event RemoveCalled(bytes32 account, bytes routeData);
+    event RemoveCalled(bytes32 account, bytes inputData);
 
     constructor(address cmdr)
         Host(address(0), 1, "test")
@@ -16,9 +16,9 @@ contract TestRemoveHost is Host, Remove {
         if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
-    function remove(bytes32 account, Block memory rawRoute) internal override {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit RemoveCalled(account, routeData);
+    function remove(bytes32 account, Block memory rawInput) internal override {
+        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+        emit RemoveCalled(account, inputData);
     }
 
     function getRemoveId() external view returns (uint) { return removeId; }

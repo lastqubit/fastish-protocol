@@ -9,18 +9,18 @@ string constant NAME = "init";
 abstract contract Init is CommandBase {
     uint internal immutable initId = commandId(NAME);
 
-    constructor(string memory route) {
-        emit Command(host, NAME, route, initId, Channels.Setup, Channels.Setup);
+    constructor(string memory input) {
+        emit Command(host, NAME, input, initId, Channels.Setup, Channels.Setup);
     }
 
-    /// @dev Override to run host initialization logic using the decoded route.
-    function init(Block memory rawRoute) internal virtual;
+    /// @dev Override to run host initialization logic using the decoded input.
+    function init(Block memory rawInput) internal virtual;
 
     function init(
         CommandContext calldata c
     ) external payable onlyAdmin(c.account) onlyCommand(initId, c.target) returns (bytes memory) {
-        Block memory route = Blocks.routeFrom(c.request, 0);
-        init(route);
-        return done(0, route.cursor);
+        Block memory input = Blocks.from(c.request, 0);
+        init(input);
+        return done(0, input.cursor);
     }
 }

@@ -10,7 +10,7 @@ import { Ids } from "../utils/Ids.sol";
 using Writers for Writer;
 
 contract TestMintHost is Host, MintToBalances {
-    event MintCalled(bytes32 account, bytes routeData);
+    event MintCalled(bytes32 account, bytes inputData);
 
     bytes32 public returnAsset;
     bytes32 public returnMeta;
@@ -29,9 +29,9 @@ contract TestMintHost is Host, MintToBalances {
         returnAmount = amount;
     }
 
-    function mintToBalances(bytes32 account, Block memory rawRoute, Writer memory out) internal override {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit MintCalled(account, routeData);
+    function mintToBalances(bytes32 account, Block memory rawInput, Writer memory out) internal override {
+        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+        emit MintCalled(account, inputData);
         if (returnAmount > 0) out.appendBalance(returnAsset, returnMeta, returnAmount);
     }
 

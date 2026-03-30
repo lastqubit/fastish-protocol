@@ -35,38 +35,34 @@ describe("Create", () => {
     return (host.connect(signer) as any)[createMethod](...args);
   }
 
-  // ── Happy path ─────────────────────────────────────────────────────────────
-
-  it("emits CreateCalled for a single ROUTE block", async () => {
-    const route = "0xabcd";
-    const request = encodeRouteBlock(route);
+  it("emits CreateCalled for a single input block", async () => {
+    const inputData = "0xabcd";
+    const request = encodeRouteBlock(inputData);
     const tx = await callAs(0, ctx({ request }));
-    await expect(tx).to.emit(host, "CreateCalled").withArgs(userAccount, route);
+    await expect(tx).to.emit(host, "CreateCalled").withArgs(userAccount, inputData);
   });
 
-  it("emits CreateCalled for each ROUTE block when multiple are present", async () => {
-    const route1 = "0x1111";
-    const route2 = "0x2222";
-    const request = concat(encodeRouteBlock(route1), encodeRouteBlock(route2));
+  it("emits CreateCalled for each input block when multiple are present", async () => {
+    const input1 = "0x1111";
+    const input2 = "0x2222";
+    const request = concat(encodeRouteBlock(input1), encodeRouteBlock(input2));
     const tx = await callAs(0, ctx({ request }));
-    await expect(tx).to.emit(host, "CreateCalled").withArgs(userAccount, route1);
-    await expect(tx).to.emit(host, "CreateCalled").withArgs(userAccount, route2);
+    await expect(tx).to.emit(host, "CreateCalled").withArgs(userAccount, input1);
+    await expect(tx).to.emit(host, "CreateCalled").withArgs(userAccount, input2);
   });
 
-  it("returns empty bytes after processing ROUTE blocks", async () => {
+  it("returns empty bytes after processing input blocks", async () => {
     const request = encodeRouteBlock("0x01");
     const result: string = await (host as any)[createMethod].staticCall(ctx({ request }));
     expect(result).to.equal("0x");
   });
 
-  it("stops at the first non-ROUTE block and succeeds if at least one ROUTE was processed", async () => {
-    // ROUTE followed by a non-ROUTE blob — only the ROUTE is processed
+  it("processes all input blocks in the request stream", async () => {
     const request = concat(encodeRouteBlock("0xff"), encodeRouteBlock("0xee"));
     const tx = await callAs(0, ctx({ request }));
-    await expect(tx).to.emit(host, "CreateCalled");
+    await expect(tx).to.emit(host, "CreateCalled").withArgs(userAccount, "0xff");
+    await expect(tx).to.emit(host, "CreateCalled").withArgs(userAccount, "0xee");
   });
-
-  // ── Target / access guards ─────────────────────────────────────────────────
 
   it("accepts the explicit create command id as the target", async () => {
     const target = await host.getCreateId();
@@ -86,8 +82,6 @@ describe("Create", () => {
     await expect(callAs(1, ctx({ request })))
       .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
   });
-
-  // ── Error cases ────────────────────────────────────────────────────────────
 
   it("reverts NoOperation when request is empty", async () => {
     await expect(callAs(0, ctx()))

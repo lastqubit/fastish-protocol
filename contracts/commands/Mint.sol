@@ -11,16 +11,16 @@ abstract contract MintToBalances is CommandBase {
     uint internal immutable mintToBalancesId = commandId(NAME);
     uint private immutable outScale;
 
-    constructor(string memory route, uint scaledRatio) {
+    constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, NAME, route, mintToBalancesId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, input, mintToBalancesId, Channels.Setup, Channels.Balances);
     }
 
-    /// @dev Override to mint balances described by `rawRoute` for `account`.
+    /// @dev Override to mint balances described by `rawInput` for `account`.
     /// Implementations may append one or more BALANCE blocks to `out`.
     function mintToBalances(
         bytes32 account,
-        Block memory rawRoute,
+        Block memory rawInput,
         Writer memory out
     ) internal virtual;
 
@@ -28,13 +28,12 @@ abstract contract MintToBalances is CommandBase {
         CommandContext calldata c
     ) external payable onlyCommand(mintToBalancesId, c.target) returns (bytes memory) {
         uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.request, q, Keys.Route, outScale);
+        (Writer memory writer, uint end) = Writers.allocScaledBalances(c.request, q, outScale);
 
         while (q < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            mintToBalances(c.account, route, writer);
+            Block memory input = Blocks.from(c.request, q);
+            q = input.cursor;
+            mintToBalances(c.account, input, writer);
         }
 
         return writer.finish();

@@ -8,7 +8,7 @@ import { AssetAmount, Block, Blocks } from "../Blocks.sol";
 using Blocks for Block;
 
 contract TestSwapHost is Host, SwapExactBalanceToBalance {
-    event SwapMapped(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes routeData);
+    event SwapMapped(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes inputData);
     event SwapMinimum(bytes32 asset, bytes32 meta, uint amount);
 
     constructor(address fastish)
@@ -19,18 +19,18 @@ contract TestSwapHost is Host, SwapExactBalanceToBalance {
     function swapExactBalanceToBalance(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawRoute
+        Block memory rawInput
     ) internal override returns (AssetAmount memory out) {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit SwapMapped(account, balance.asset, balance.meta, balance.amount, routeData);
-        if (rawRoute.bound < rawRoute.end) {
-            (bytes32 minAsset, bytes32 minMeta, uint minAmount) = rawRoute.innerMinimum();
+        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+        emit SwapMapped(account, balance.asset, balance.meta, balance.amount, inputData);
+        if (rawInput.bound < rawInput.end) {
+            (bytes32 minAsset, bytes32 minMeta, uint minAmount) = rawInput.innerMinimum();
             emit SwapMinimum(minAsset, minMeta, minAmount);
         }
         return AssetAmount({
             asset: balance.asset,
-            meta: bytes32(rawRoute.bound - rawRoute.i),
-            amount: balance.amount + (rawRoute.bound - rawRoute.i)
+            meta: bytes32(rawInput.bound - rawInput.i),
+            amount: balance.amount + (rawInput.bound - rawInput.i)
         });
     }
 

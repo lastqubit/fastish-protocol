@@ -3,7 +3,6 @@ pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
 import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
-import { Schemas } from "../blocks/Schema.sol";
 
 string constant BABTB = "borrowAgainstBalanceToBalance";
 string constant BACTB = "borrowAgainstCustodyToBalance";
@@ -14,18 +13,16 @@ using Writers for Writer;
 abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     uint internal immutable borrowAgainstCustodyToBalanceId = commandId(BACTB);
 
-    constructor(string memory maybeRoute) {
-        string memory schema = Schemas.route1(maybeRoute, Schemas.Amount);
-        emit Command(host, BACTB, schema, borrowAgainstCustodyToBalanceId, Channels.Custodies, Channels.Balances);
+    constructor(string memory input) {
+        emit Command(host, BACTB, input, borrowAgainstCustodyToBalanceId, Channels.Custodies, Channels.Balances);
     }
 
     /// @dev Override to borrow against a custody position.
-    /// Implementations extract the requested borrow amount from
-    /// `rawRoute.innerAmount()`.
+    /// Implementations validate and unpack `rawInput` as needed.
     function borrowAgainstCustodyToBalance(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawRoute
+        Block memory rawInput
     ) internal virtual returns (AssetAmount memory);
 
     function borrowAgainstCustodyToBalance(
@@ -36,12 +33,11 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
         (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.Custody);
 
         while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
+            Block memory input = Blocks.from(c.request, q);
+            q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            AssetAmount memory out = borrowAgainstCustodyToBalance(c.account, custody, route);
+            AssetAmount memory out = borrowAgainstCustodyToBalance(c.account, custody, input);
             writer.appendNonZeroBalance(out);
             i = ref.cursor;
         }
@@ -53,18 +49,16 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
 abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     uint internal immutable borrowAgainstBalanceToBalanceId = commandId(BABTB);
 
-    constructor(string memory maybeRoute) {
-        string memory schema = Schemas.route1(maybeRoute, Schemas.Amount);
-        emit Command(host, BABTB, schema, borrowAgainstBalanceToBalanceId, Channels.Balances, Channels.Balances);
+    constructor(string memory input) {
+        emit Command(host, BABTB, input, borrowAgainstBalanceToBalanceId, Channels.Balances, Channels.Balances);
     }
 
     /// @dev Override to borrow against a balance position.
-    /// Implementations extract the requested borrow amount from
-    /// `rawRoute.innerAmount()`.
+    /// Implementations validate and unpack `rawInput` as needed.
     function borrowAgainstBalanceToBalance(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawRoute
+        Block memory rawInput
     ) internal virtual returns (AssetAmount memory);
 
     function borrowAgainstBalanceToBalance(
@@ -75,12 +69,11 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
         (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.Balance);
 
         while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
+            Block memory input = Blocks.from(c.request, q);
+            q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            AssetAmount memory out = borrowAgainstBalanceToBalance(c.account, balance, route);
+            AssetAmount memory out = borrowAgainstBalanceToBalance(c.account, balance, input);
             writer.appendNonZeroBalance(out);
             i = ref.cursor;
         }

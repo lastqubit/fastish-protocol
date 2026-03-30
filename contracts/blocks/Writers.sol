@@ -66,6 +66,16 @@ library Writers {
         return allocFromScaledCount(blocks, i, source, scaledRatio, BALANCE_BLOCK_LEN);
     }
 
+    function allocScaledBalances(
+        bytes calldata blocks,
+        uint i,
+        uint scaledRatio
+    ) internal pure returns (Writer memory writer, uint next) {
+        uint count;
+        (count, next) = Blocks.count(blocks, i);
+        writer = allocFromScaledCount(count, scaledRatio, BALANCE_BLOCK_LEN);
+    }
+
     function allocTxsFrom(
         bytes calldata blocks,
         uint i,
@@ -100,6 +110,14 @@ library Writers {
     ) internal pure returns (Writer memory writer, uint next) {
         uint count;
         (count, next) = Blocks.count(blocks, i, source);
+        writer = allocFromScaledCount(count, scaledRatio, blockLen);
+    }
+
+    function allocFromScaledCount(
+        uint count,
+        uint scaledRatio,
+        uint blockLen
+    ) internal pure returns (Writer memory writer) {
         if (count == 0) revert EmptyRequest();
         uint scaledCount = count * scaledRatio;
         if (scaledCount % ALLOC_SCALE != 0) revert Blocks.MalformedBlocks();

@@ -42,8 +42,8 @@ contract TestHost is
     event DebitFromCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint returned);
     event SettleCalled(bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount);
     event ProvisionCalled(uint host_, bytes32 account, bytes32 asset, bytes32 meta, uint amount);
-    event InitCalled(bytes routeData);
-    event DestroyCalled(bytes routeData);
+    event InitCalled(bytes inputData);
+    event DestroyCalled(bytes inputData);
     event AllowAssetCalled(bytes32 asset, bytes32 meta);
     event DenyAssetCalled(bytes32 asset, bytes32 meta);
     event AllocateCalled(uint host_, bytes32 asset, bytes32 meta, uint amount);
@@ -81,14 +81,14 @@ contract TestHost is
         emit ProvisionCalled(host_, account, asset, meta, amount);
     }
 
-    function init(Block memory rawRoute) internal override {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit InitCalled(routeData);
+    function init(Block memory rawInput) internal override {
+        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+        emit InitCalled(inputData);
     }
 
-    function destroy(Block memory rawRoute) internal override {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit DestroyCalled(routeData);
+    function destroy(Block memory rawInput) internal override {
+        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+        emit DestroyCalled(inputData);
     }
 
     function allowAsset(bytes32 asset, bytes32 meta) internal override returns (bool) {
