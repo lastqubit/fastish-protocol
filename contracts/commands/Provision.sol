@@ -11,7 +11,7 @@ using Writers for Writer;
 string constant PROVISION = "provision";
 string constant PFB = "provisionFromBalance";
 
-string constant REQUEST = string.concat(Schemas.Amount, ">", Schemas.Node);
+string constant INPUT = string.concat(Schemas.Amount, ">", Schemas.Node);
 
 abstract contract ProvisionHook {
     /// @dev Override this hook to send or provision funds to `host`.
@@ -25,7 +25,7 @@ abstract contract Provision is CommandBase, ProvisionHook {
     uint internal immutable provisionId = commandId(PROVISION);
 
     constructor() {
-        emit Command(host, PROVISION, REQUEST, provisionId, Channels.Setup, Channels.Custodies);
+        emit Command(host, PROVISION, INPUT, provisionId, Channels.Setup, Channels.Custodies);
     }
 
     function provision(

@@ -8,13 +8,13 @@ import { Blocks, Block, Keys } from "../Blocks.sol";
 using Blocks for Block;
 
 string constant NAME = "transfer";
-string constant REQUEST = string.concat(Schemas.Amount, ">", Schemas.Recipient);
+string constant INPUT = string.concat(Schemas.Amount, ">", Schemas.Recipient);
 
 abstract contract Transfer is CommandBase {
     uint internal immutable transferId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, REQUEST, transferId, Channels.Setup, Channels.Setup);
+        emit Command(host, NAME, INPUT, transferId, Channels.Setup, Channels.Setup);
     }
 
     /// @dev Override to transfer funds from `from` to `to`.

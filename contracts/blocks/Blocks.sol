@@ -116,22 +116,22 @@ library Blocks {
         if (ref.end > parent.end) revert MalformedBlocks();
     }
 
-    function memberAt(Block memory ref, uint i) internal pure returns (Block memory out) {
-        if (ref.key != Keys.Bundle && ref.key != Keys.BundleView) revert InvalidBlock();
-        if (i < ref.i || i >= ref.bound) revert MalformedBlocks();
+    function memberAt(Block memory bundle, uint i) internal pure returns (Block memory out) {
+        if (bundle.key != Keys.Bundle && bundle.key != Keys.BundleView) revert InvalidBlock();
+        if (i < bundle.i || i >= bundle.bound) revert MalformedBlocks();
 
         out = at(i);
-        if (out.end > ref.bound) revert MalformedBlocks();
+        if (out.end > bundle.bound) revert MalformedBlocks();
         out.cursor = out.end;
     }
 
-    function member(Block memory ref, uint index) internal pure returns (Block memory out) {
-        if (ref.key != Keys.Bundle && ref.key != Keys.BundleView) revert InvalidBlock();
+    function member(Block memory bundle, uint index) internal pure returns (Block memory out) {
+        if (bundle.key != Keys.Bundle && bundle.key != Keys.BundleView) revert InvalidBlock();
 
-        uint i = ref.i;
+        uint i = bundle.i;
         uint n = 0;
-        while (i < ref.bound) {
-            out = ref.memberAt(i);
+        while (i < bundle.bound) {
+            out = bundle.memberAt(i);
             if (n == index) return out;
             i = out.cursor;
             unchecked {
@@ -140,6 +140,14 @@ library Blocks {
         }
 
         revert MalformedBlocks();
+    }
+
+    function first(Block memory bundle) internal pure returns (Block memory out) {
+        return bundle.memberAt(bundle.i);
+    }
+
+    function nextOf(Block memory bundle, Block memory current) internal pure returns (Block memory out) {
+        return bundle.memberAt(current.cursor);
     }
 
     function findFrom(bytes calldata source, uint i, uint limit, bytes4 key) internal pure returns (Block memory ref) {
