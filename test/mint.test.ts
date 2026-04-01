@@ -7,7 +7,7 @@ import "./helpers/matchers.js";
 describe("MintToBalances", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let userAccount: string;
-  const mintMethod = "mintToBalances((uint256,bytes,bytes,bytes))";
+  const mintMethod = "mintToBalances((uint256,bytes32,bytes,bytes))";
 
   const ASSET  = ethers.zeroPadValue("0xa1", 32);
   const META   = ethers.ZeroHash;

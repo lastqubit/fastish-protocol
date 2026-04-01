@@ -146,7 +146,7 @@ export function concat(...parts: string[]): string {
 }
 
 // Command args suffix appended when computing command selectors
-const COMMAND_ARGS = "((uint256,bytes,bytes,bytes))";
+const COMMAND_ARGS = "((uint256,bytes32,bytes,bytes))";
 
 export function commandSelector(name: string): string {
   return ethers.dataSlice(ethers.id(name + COMMAND_ARGS), 0, 4);

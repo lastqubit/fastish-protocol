@@ -7,7 +7,7 @@ import "./helpers/matchers.js";
 describe("Burn", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let userAccount: string;
-  const burnMethod = "burn((uint256,bytes,bytes,bytes))";
+  const burnMethod = "burn((uint256,bytes32,bytes,bytes))";
 
   before(async () => {
     const signer = await getSigner(0);

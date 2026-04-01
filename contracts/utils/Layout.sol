@@ -12,7 +12,7 @@ library Layout {
 
     uint8 constant Admin = 0x01;
     uint8 constant User = 0x02;
-    uint8 constant Hashed = 0x03;
+    uint8 constant Keccak = 0x03;
 
     uint8 constant Host = 0x01;
     uint8 constant Command = 0x02;

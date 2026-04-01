@@ -82,6 +82,34 @@ describe("Utils", () => {
       await expectCustomError(utils.testAccountEvmAddr(invalid), "InvalidAccount");
     });
 
+    it("isKeccakAccount returns false for user account", async () => {
+      const userAccount = await utils.testToUserAccount(signerAddress);
+      expect(await utils.testIsKeccakAccount(userAccount)).to.be.false;
+    });
+
+    it("toKeccakAccount encodes the opaque account prefix plus truncated keccak payload", async () => {
+      const raw = ethers.hexlify(ethers.randomBytes(96));
+      const account: string = await utils.testToKeccakAccount(raw);
+      const value = BigInt(account);
+      const payloadMask = (1n << 224n) - 1n;
+      const expectedPayload = BigInt(ethers.keccak256(raw)) & payloadMask;
+      expect((value >> 224n) & 0xffffffffn).to.equal(0x20000103n);
+      expect(value & payloadMask).to.equal(expectedPayload);
+      expect(await utils.testIsKeccakAccount(account)).to.be.true;
+    });
+
+    it("matchesKeccakAccount accepts the original long-form payload", async () => {
+      const raw = ethers.hexlify(ethers.randomBytes(80));
+      const account = await utils.testToKeccakAccount(raw);
+      expect(await utils.testMatchesKeccakAccount(account, raw)).to.be.true;
+    });
+
+    it("matchesKeccakAccount rejects a different long-form payload", async () => {
+      const raw = ethers.hexlify(ethers.randomBytes(80));
+      const other = ethers.hexlify(ethers.randomBytes(80));
+      const account = await utils.testToKeccakAccount(raw);
+      expect(await utils.testMatchesKeccakAccount(account, other)).to.be.false;
+    });
   });
 
   // ── Assets ────────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ library Accounts {
     error InvalidAccount();
 
     uint24 constant Family = (uint24(Layout.Evm32) << 8) | uint24(Layout.Account);
-    uint32 constant Hash = (uint32(Layout.Opaque32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.Hashed);
+    uint32 constant Keccak = (uint32(Layout.Opaque32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.Keccak);
     uint32 constant Admin = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.Admin);
     uint32 constant User = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.User);
 
@@ -20,8 +20,8 @@ library Accounts {
         return prefix(account) == Admin;
     }
 
-    function isHashed(bytes32 account) internal pure returns (bool) {
-        return prefix(account) == Hash;
+    function isKeccak(bytes32 account) internal pure returns (bool) {
+        return prefix(account) == Keccak;
     }
 
     function toAdmin(address addr) internal view returns (bytes32) {
@@ -32,12 +32,12 @@ library Accounts {
         return bytes32(toUnspecifiedBase(User) | (uint(uint160(addr)) << 32));
     }
 
-    function toHash(bytes calldata raw) internal pure returns (bytes32) {
-        return bytes32(toUnspecifiedBase(Hash) | uint224(uint256(keccak256(raw))));
+    function toKeccak(bytes calldata raw) internal pure returns (bytes32) {
+        return bytes32(toUnspecifiedBase(Keccak) | uint224(uint256(keccak256(raw))));
     }
 
-    function matchesHash(bytes32 account, bytes calldata raw) internal pure returns (bool) {
-        return account == toHash(raw);
+    function matchesKeccak(bytes32 account, bytes calldata raw) internal pure returns (bool) {
+        return account == toKeccak(raw);
     }
 
     function ensureEvm(bytes32 account) internal pure returns (bytes32) {

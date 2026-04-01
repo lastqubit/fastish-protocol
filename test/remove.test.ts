@@ -7,7 +7,7 @@ import "./helpers/matchers.js";
 describe("Remove", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let userAccount: string;
-  const removeMethod = "remove((uint256,bytes,bytes,bytes))";
+  const removeMethod = "remove((uint256,bytes32,bytes,bytes))";
 
   before(async () => {
     const signer = await getSigner(0);

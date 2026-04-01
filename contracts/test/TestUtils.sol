@@ -28,6 +28,18 @@ contract TestUtils {
         return Accounts.isAdmin(account);
     }
 
+    function testIsKeccakAccount(bytes32 account) external pure returns (bool) {
+        return Accounts.isKeccak(account);
+    }
+
+    function testToKeccakAccount(bytes calldata raw) external pure returns (bytes32) {
+        return Accounts.toKeccak(raw);
+    }
+
+    function testMatchesKeccakAccount(bytes32 account, bytes calldata raw) external pure returns (bool) {
+        return Accounts.matchesKeccak(account, raw);
+    }
+
     function testToValueAsset() external view returns (bytes32) {
         return Assets.toValue();
     }

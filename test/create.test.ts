@@ -7,7 +7,7 @@ import "./helpers/matchers.js";
 describe("Create", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let userAccount: string;
-  const createMethod = "create((uint256,bytes,bytes,bytes))";
+  const createMethod = "create((uint256,bytes32,bytes,bytes))";
 
   before(async () => {
     const signer = await getSigner(0);
