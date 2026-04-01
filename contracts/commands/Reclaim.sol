@@ -30,14 +30,13 @@ abstract contract ReclaimToBalances is CommandBase {
     function reclaimToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(reclaimToBalancesId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalances(c.request, q, outScale);
 
         while (q < end) {
             Block memory input = Blocks.from(c.request, q);
             q = input.cursor;
-            reclaimToBalances(account, input, writer);
+            reclaimToBalances(c.account, input, writer);
         }
 
         return writer.finish();

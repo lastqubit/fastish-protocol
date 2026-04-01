@@ -50,9 +50,8 @@ abstract contract Pipe is CommandBase {
 
     // Any unused value will not be credited back to the account using this path.
     function pipe(CommandContext calldata c) external payable onlyCommand(pipeId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
-        if (Accounts.isAdmin(account)) revert Accounts.InvalidAccount();
+        if (Accounts.isAdmin(c.account)) revert Accounts.InvalidAccount();
         Values.Budget memory budget = Values.fromMsg();
-        return pipe(account, c.state, c.request, budget);
+        return pipe(c.account, c.state, c.request, budget);
     }
 }

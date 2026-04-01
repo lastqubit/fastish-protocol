@@ -28,26 +28,6 @@ contract TestUtils {
         return Accounts.isAdmin(account);
     }
 
-    function testEncodeAccount(bytes calldata raw) external pure returns (bytes32) {
-        return Accounts.encode(raw);
-    }
-
-    function testToAccountRef(bytes calldata raw) external pure returns (bytes32) {
-        return Accounts.toRef(raw);
-    }
-
-    function testIsAccountRef(bytes32 account) external pure returns (bool) {
-        return Accounts.isRef(account);
-    }
-
-    function testResolveAccount(bytes32 account) external pure returns (bytes memory) {
-        return Accounts.resolve(account);
-    }
-
-    function testRoundTripAccount(bytes calldata raw) external pure returns (bytes memory) {
-        return Accounts.resolve(Accounts.encode(raw));
-    }
-
     function testToValueAsset() external view returns (bytes32) {
         return Assets.toValue();
     }
@@ -76,8 +56,8 @@ contract TestUtils {
         return Amounts.ensure(amount, min, max);
     }
 
-    function testEnsureAssetRef(bytes32 asset, bytes32 meta) external pure returns (bytes32) {
-        return Assets.ensureRef(asset, meta);
+    function testAssetKey(bytes32 asset, bytes32 meta) external pure returns (bytes32) {
+        return Assets.key(asset, meta);
     }
 
     function testLocalErc20Addr(bytes32 asset) external view returns (address) {

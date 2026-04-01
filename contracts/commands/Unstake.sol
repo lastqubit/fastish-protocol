@@ -31,7 +31,6 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
     function unstakeBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(unstakeBalanceToBalancesId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
@@ -41,7 +40,7 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
             q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            unstakeBalanceToBalances(account, balance, input, writer);
+            unstakeBalanceToBalances(c.account, balance, input, writer);
             i = ref.cursor;
         }
 

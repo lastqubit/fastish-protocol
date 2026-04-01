@@ -82,39 +82,6 @@ describe("Utils", () => {
       await expectCustomError(utils.testAccountEvmAddr(invalid), "InvalidAccount");
     });
 
-    it("encode returns inline bytes32 for short accounts", async () => {
-      const raw = "0x123456";
-      const encoded = await utils.testEncodeAccount(raw);
-      expect(encoded).to.equal(ethers.zeroPadBytes(raw, 32));
-      expect(await utils.testIsAccountRef(encoded)).to.be.false;
-    });
-
-    it("encode returns inline bytes32 for 32-byte accounts", async () => {
-      const raw = ethers.hexlify(ethers.randomBytes(32));
-      const encoded = await utils.testEncodeAccount(raw);
-      expect(encoded).to.equal(raw);
-      expect(await utils.testIsAccountRef(encoded)).to.be.false;
-    });
-
-    it("encode returns a ref for accounts longer than 32 bytes", async () => {
-      const raw = ethers.hexlify(ethers.randomBytes(33));
-      const encoded = await utils.testEncodeAccount(raw);
-      const ref = await utils.testToAccountRef(raw);
-      expect(encoded).to.equal(ref);
-      expect(await utils.testIsAccountRef(encoded)).to.be.true;
-      expect((BigInt(encoded) >> 224n) & 0xffffffffn).to.equal(0x20000103n);
-    });
-
-    it("resolve round-trips ref accounts back to the original bytes in the same call", async () => {
-      const raw = ethers.hexlify(ethers.randomBytes(64));
-      expect(await utils.testRoundTripAccount(raw)).to.equal(raw);
-    });
-
-    it("resolve reverts for inline accounts", async () => {
-      const raw = ethers.hexlify(ethers.randomBytes(32));
-      const account = await utils.testEncodeAccount(raw);
-      await expectCustomError(utils.testResolveAccount(account), "InvalidAccount");
-    });
   });
 
   // ── Assets ────────────────────────────────────────────────────────────────
@@ -176,26 +143,26 @@ describe("Utils", () => {
       await expectCustomError(utils.testEnsureAmountRange(11n, 1n, 10n), "BadAmount");
     });
 
-    it("ensureAssetRef returns asset for 32-byte asset with zero meta", async () => {
+    it("assetKey returns asset for 32-byte asset with zero meta", async () => {
       const asset = await utils.testToValueAsset();
-      const result = await utils.testEnsureAssetRef(asset, ethers.ZeroHash);
+      const result = await utils.testAssetKey(asset, ethers.ZeroHash);
       expect(result).to.equal(asset);
     });
 
-    it("ensureAssetRef reverts InvalidAsset for 32-byte asset with non-zero meta", async () => {
+    it("assetKey reverts InvalidAsset for 32-byte asset with non-zero meta", async () => {
       const asset = await utils.testToValueAsset();
       const meta = ethers.hexlify(ethers.randomBytes(32));
-      await expectCustomError(utils.testEnsureAssetRef(asset, meta), "InvalidAsset");
+      await expectCustomError(utils.testAssetKey(asset, meta), "InvalidAsset");
     });
 
-    it("ensureAssetRef reverts InvalidAsset for zero asset", async () => {
-      await expectCustomError(utils.testEnsureAssetRef(ethers.ZeroHash, ethers.ZeroHash), "InvalidAsset");
+    it("assetKey reverts InvalidAsset for zero asset", async () => {
+      await expectCustomError(utils.testAssetKey(ethers.ZeroHash, ethers.ZeroHash), "InvalidAsset");
     });
 
-    it("ensureAssetRef returns keccak for composite asset", async () => {
+    it("assetKey returns keccak for composite asset", async () => {
       const asset = ethers.zeroPadValue("0x01", 32); // not starting with 0x20
       const meta = ethers.zeroPadValue("0x02", 32);
-      const result = await utils.testEnsureAssetRef(asset, meta);
+      const result = await utils.testAssetKey(asset, meta);
       const expected = ethers.keccak256(ethers.concat([asset, meta]));
       expect(result).to.equal(expected);
     });

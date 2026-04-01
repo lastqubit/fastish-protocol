@@ -31,7 +31,6 @@ abstract contract Provision is CommandBase, ProvisionHook {
     function provision(
         CommandContext calldata c
     ) external payable onlyCommand(provisionId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocCustodiesFrom(c.request, q, Keys.Amount);
 
@@ -39,7 +38,7 @@ abstract contract Provision is CommandBase, ProvisionHook {
             Block memory ref = Blocks.from(c.request, q);
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
             uint toHost = ref.innerNode();
-            provision(account, toHost, asset, meta, amount);
+            provision(c.account, toHost, asset, meta, amount);
             writer.appendCustody(toHost, asset, meta, amount);
             q = ref.cursor;
         }
@@ -59,7 +58,6 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
     function provisionFromBalance(
         CommandContext calldata c
     ) external payable onlyCommand(provisionFromBalanceId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint toHost = Blocks.resolveNode(c.request, 0, c.request.length, 0);
         uint i = 0;
         (Writer memory writer, uint end) = Writers.allocCustodiesFrom(c.state, i, Keys.Balance);
@@ -67,7 +65,7 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
         while (i < end) {
             Block memory ref = Blocks.from(c.state, i);
             (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance();
-            provision(account, toHost, asset, meta, amount);
+            provision(c.account, toHost, asset, meta, amount);
             writer.appendCustody(toHost, asset, meta, amount);
             i = ref.cursor;
         }

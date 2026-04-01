@@ -35,7 +35,6 @@ abstract contract RepayFromBalanceToBalances is CommandBase {
     function repayFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(repayFromBalanceToBalancesId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
@@ -48,7 +47,7 @@ abstract contract RepayFromBalanceToBalances is CommandBase {
             }
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            repayFromBalanceToBalances(account, balance, input, writer);
+            repayFromBalanceToBalances(c.account, balance, input, writer);
             i = ref.cursor;
         }
 
@@ -81,7 +80,6 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
     function repayFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(repayFromCustodyToBalancesId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
@@ -94,7 +92,7 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
             }
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            repayFromCustodyToBalances(account, custody, input, writer);
+            repayFromCustodyToBalances(c.account, custody, input, writer);
             i = ref.cursor;
         }
 

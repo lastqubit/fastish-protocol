@@ -45,6 +45,6 @@ abstract contract DebitAccount is CommandBase {
     function debitAccount(
         CommandContext calldata c
     ) external payable onlyCommand(debitAccountId, c.target) returns (bytes memory) {
-        return debitAccount(encodeAccount(c.account), c.request);
+        return debitAccount(c.account, c.request);
     }
 }

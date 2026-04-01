@@ -32,7 +32,6 @@ abstract contract StakeBalanceToBalances is CommandBase {
     function stakeBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(stakeBalanceToBalancesId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
@@ -42,7 +41,7 @@ abstract contract StakeBalanceToBalances is CommandBase {
             q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            stakeBalanceToBalances(account, balance, input, writer);
+            stakeBalanceToBalances(c.account, balance, input, writer);
             i = ref.cursor;
         }
 
@@ -71,7 +70,6 @@ abstract contract StakeCustodyToBalances is CommandBase {
     function stakeCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(stakeCustodyToBalancesId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
@@ -81,7 +79,7 @@ abstract contract StakeCustodyToBalances is CommandBase {
             q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            stakeCustodyToBalances(account, custody, input, writer);
+            stakeCustodyToBalances(c.account, custody, input, writer);
             i = ref.cursor;
         }
 
@@ -103,7 +101,6 @@ abstract contract StakeCustodyToPosition is CommandBase {
     function stakeCustodyToPosition(
         CommandContext calldata c
     ) external payable onlyCommand(stakeCustodyToPositionId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         while (i < c.state.length) {
@@ -112,7 +109,7 @@ abstract contract StakeCustodyToPosition is CommandBase {
             HostAmount memory custody = ref.toCustodyValue();
             Block memory input = Blocks.from(c.request, q);
             q = input.cursor;
-            stakeCustodyToPosition(account, custody, input);
+            stakeCustodyToPosition(c.account, custody, input);
             i = ref.cursor;
         }
 

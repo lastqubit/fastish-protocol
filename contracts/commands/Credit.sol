@@ -23,7 +23,7 @@ abstract contract CreditAccount is CommandBase {
     function creditAccount(
         CommandContext calldata c
     ) external payable onlyCommand(creditAccountId, c.target) returns (bytes memory) {
-        bytes32 to = Blocks.resolveRecipient(c.request, 0, c.request.length, encodeAccount(c.account));
+        bytes32 to = Blocks.resolveRecipient(c.request, 0, c.request.length, c.account);
         uint i = 0;
         while (i < c.state.length) {
             Block memory ref = Blocks.from(c.state, i);

@@ -29,7 +29,6 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
     function swapExactBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactBalanceToBalanceId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.Balance);
@@ -39,7 +38,7 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
             q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             AssetAmount memory balance = ref.toBalanceValue();
-            AssetAmount memory out = swapExactBalanceToBalance(account, balance, input);
+            AssetAmount memory out = swapExactBalanceToBalance(c.account, balance, input);
             writer.appendNonZeroBalance(out);
             i = ref.cursor;
         }
@@ -66,7 +65,6 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
     function swapExactCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactCustodyToBalanceId, c.target) returns (bytes memory) {
-        bytes32 account = encodeAccount(c.account);
         uint i = 0;
         uint q = 0;
         (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.Custody);
@@ -76,7 +74,7 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
             q = input.cursor;
             Block memory ref = Blocks.from(c.state, i);
             HostAmount memory custody = ref.toCustodyValue();
-            AssetAmount memory out = swapExactCustodyToBalance(account, custody, input);
+            AssetAmount memory out = swapExactCustodyToBalance(c.account, custody, input);
             writer.appendNonZeroBalance(out);
             i = ref.cursor;
         }

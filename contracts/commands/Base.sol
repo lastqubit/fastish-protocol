@@ -8,7 +8,7 @@ import {Ids, Selectors} from "../utils/Ids.sol";
 
 struct CommandContext {
     uint target;
-    bytes account;
+    bytes32 account;
     bytes state;
     bytes request;
 }
@@ -18,8 +18,8 @@ abstract contract CommandBase is OperationBase, CommandEvent {
     error NotAdmin();
     error UnexpectedEndpoint();
 
-    modifier onlyAdmin(bytes calldata account) {
-        if (bytes32(account) != adminAccount) revert NotAdmin();
+    modifier onlyAdmin(bytes32 account) {
+        if (account != adminAccount) revert NotAdmin();
         _;
     }
 

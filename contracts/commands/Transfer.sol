@@ -41,6 +41,6 @@ abstract contract Transfer is CommandBase {
     function transfer(
         CommandContext calldata c
     ) external payable onlyCommand(transferId, c.target) returns (bytes memory) {
-        return transfer(encodeAccount(c.account), c.request);
+        return transfer(c.account, c.request);
     }
 }
