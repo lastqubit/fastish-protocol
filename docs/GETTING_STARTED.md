@@ -162,10 +162,14 @@ pragma solidity ^0.8.33;
 
 import {Host} from "@rootzero/contracts/Core.sol";
 import {CommandContext} from "@rootzero/contracts/Commands.sol";
+import {Blocks, Cursor, Schemas} from "@rootzero/contracts/Blocks.sol";
 import {toCommandId} from "@rootzero/contracts/Utils.sol";
 
 bytes32 constant NAME = "myCommand";
 string constant ROUTE = "route(uint foo, uint bar)";
+string constant INPUT = string.concat(ROUTE, "&", Schemas.Amount);
+
+using Blocks for Cursor;
 
 contract ExampleHost is Host {
     uint immutable myCommandId = toCommandId(NAME, address(this));
@@ -173,13 +177,16 @@ contract ExampleHost is Host {
     constructor(address rootzero)
         Host(rootzero, 1, "example")
     {
-        emit Command(host, NAME, ROUTE, myCommandId, 0, 0);
+        emit Command(host, NAME, INPUT, myCommandId, 0, 0);
     }
 
     function myCommand(
         CommandContext calldata c
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
-        c.request;
+        Cursor memory input = Blocks.cursorFrom(c.request, 0);
+        uint foo = uint(input.unpackRoute32());
+        (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
+        foo; asset; meta; amount;
         return "";
     }
 }
@@ -191,21 +198,26 @@ There are three important ideas here:
 - you announce it with the `Command` event
 - `onlyCommand(myCommandId, c.target)` ensures the trusted caller hit the right endpoint
 
-## Step 6: Read Route Data Inside A Custom Command
+## Step 6: Read Input With A Cursor
 
-Route blocks are a good fit for command-specific parameters.
+Cursor parsing is the nicest way to read structured command input.
 
-If your request contains a `route(uint foo, uint bar)` block, your command can:
+If your request contains a bundled input like:
 
-- treat it as the command-specific payload
-- decode it however your app expects
-- keep the rest of the rootzero request format unchanged
+- `route(uint foo) & amount(bytes32 asset, bytes32 meta, uint amount)`
+
+your command can:
+
+- open it with `Blocks.cursorFrom(...)`
+- consume the route first
+- then consume the amount
+- keep parsing in bundle/member order without indexing helpers
 
 For simple projects, it is perfectly fine to:
 
-- publish the route schema string in the `Command` event
-- encode the route bytes off-chain
-- decode the route bytes inside the command
+- publish the full input schema string in the `Command` event
+- encode bundled input blocks off-chain
+- decode them sequentially with cursor helpers inside the command
 
 ## Step 7: Return State With Writers
 
@@ -270,6 +282,6 @@ If you want to learn by example, these are the best files to read next:
 1. Deploy a plain `Host`.
 2. Add one built-in command such as `DebitAccount` or `Deposit`.
 3. Use the TypeScript block helpers to build requests.
-4. Only then add a custom command with a route block.
+4. Only then add a custom command with bundled input and cursor parsing.
 
 That path keeps the first integration small and easy to debug.

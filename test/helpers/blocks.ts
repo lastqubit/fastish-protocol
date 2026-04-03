@@ -23,7 +23,6 @@ export const Keys = {
   Auth: blockKey("auth(uint cid, uint deadline, bytes proof)"),
   Bounty: blockKey("bounty(uint amount, bytes32 relayer)"),
   Bundle: blockKey("bundle(bytes data)"),
-  BundleView: blockKey("bundleView(bytes data)"),
   Route: blockKey("route(bytes data)"),
 } as const;
 

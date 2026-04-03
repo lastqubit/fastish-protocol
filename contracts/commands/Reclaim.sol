@@ -2,11 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant NAME = "reclaimToBalances";
 
-using Blocks for Block;
+using Blocks for Cursor;
 using Writers for Writer;
 
 abstract contract ReclaimToBalances is CommandBase {
@@ -18,24 +18,25 @@ abstract contract ReclaimToBalances is CommandBase {
         emit Command(host, NAME, input, reclaimToBalancesId, Channels.Setup, Channels.Balances);
     }
 
-    /// @dev Override to reclaim balances described by `rawInput`.
-    /// Implementations validate and unpack it as needed, and may append one or
-    /// more BALANCE blocks to `out`.
+    /// @dev Override to reclaim balances described by the current `input`
+    /// stream position.
+    /// Implementations validate and unpack as needed, should advance `input`
+    /// past the consumed request blocks, and may append one or more BALANCE
+    /// blocks to `out`.
     function reclaimToBalances(
         bytes32 account,
-        Block memory rawInput,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function reclaimToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(reclaimToBalancesId, c.target) returns (bytes memory) {
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalances(c.request, q, outScale);
+        (Cursor memory inputs, uint count) = Blocks.allFrom(c.request, 0);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
 
-        while (q < end) {
-            Block memory input = Blocks.from(c.request, q);
-            q = input.cursor;
+        while (inputs.i < inputs.end) {
+            Cursor memory input = inputs.take();
             reclaimToBalances(c.account, input, writer);
         }
 

@@ -2,11 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant UBTB = "unstakeBalanceToBalances";
 
-using Blocks for Block;
+using Blocks for Cursor;
 using Writers for Writer;
 
 abstract contract UnstakeBalanceToBalances is CommandBase {
@@ -20,28 +20,26 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
 
     /// @dev Override to unstake or redeem a balance position.
     /// Implementations validate and unpack `rawInput` as needed, and may
-    /// append one or more BALANCE blocks to `out`.
+    /// append BALANCE outputs to `out` within the capacity implied by this
+    /// command's configured `scaledRatio`.
     function unstakeBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawInput,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function unstakeBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(unstakeBalanceToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
+        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory input = Blocks.from(c.request, q);
-            q = input.cursor;
-            Block memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue();
+        while (balances.i < balances.end) {
+            input = Blocks.cursorFrom(c.request, input.cursor);
+            AssetAmount memory balance = balances.toBalanceValue();
             unstakeBalanceToBalances(c.account, balance, input, writer);
-            i = ref.cursor;
         }
 
         return writer.finish();

@@ -5,11 +5,11 @@ import { Host } from "../core/Host.sol";
 import { AddLiquidityFromCustodiesToBalances, RemoveLiquidityFromCustodyToBalances, AddLiquidityFromBalancesToBalances, RemoveLiquidityFromBalanceToBalances } from "../commands/Liquidity.sol";
 import { Blocks } from "../blocks/Blocks.sol";
 import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
-import { Block, Writer, Keys } from "../Blocks.sol";
+import { Block, Cursor, Writer, Keys } from "../Blocks.sol";
 import { Writers } from "../blocks/Writers.sol";
 import { Ids } from "../utils/Ids.sol";
 
-using Blocks for Block;
+using Blocks for Cursor;
 using Writers for Writer;
 
 contract TestLiquidityHost is
@@ -56,16 +56,20 @@ contract TestLiquidityHost is
 
     function addLiquidityFromCustodiesToBalances(
         bytes32 account,
-        Block memory custodiesView,
-        Block memory rawBundle,
+        Cursor memory custodies,
+        Cursor memory input,
         Writer memory out
     ) internal override {
-        HostAmount memory a = custodiesView.member(0).toCustodyValue();
-        HostAmount memory b = custodiesView.member(1).toCustodyValue();
-        bytes calldata bundleData = msg.data[rawBundle.i:rawBundle.bound];
-        uint bundleLen = rawBundle.bound - rawBundle.i;
-        emit AddCustodiesMapped(account, a.asset, a.amount, b.asset, b.amount, bundleData);
-        emitMinimum(rawBundle);
+        HostAmount memory a = custodies.toCustodyValue();
+        HostAmount memory b = custodies.toCustodyValue();
+        uint bundleLen = 0;
+        if (input.i < input.end) {
+            bundleLen = input.end - input.i;
+            emit AddCustodiesMapped(account, a.asset, a.amount, b.asset, b.amount, msg.data[input.i:input.end]);
+            emitMinimum(input);
+        } else {
+            emit AddCustodiesMapped(account, a.asset, a.amount, b.asset, b.amount, "");
+        }
 
         out.appendBalance(a.asset, a.meta, a.amount + bundleLen);
         out.appendBalance(b.asset, b.meta, b.amount + bundleLen + 1);
@@ -75,13 +79,17 @@ contract TestLiquidityHost is
     function removeLiquidityFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawBundle,
+        Cursor memory input,
         Writer memory out
     ) internal override {
-        bytes calldata bundleData = msg.data[rawBundle.i:rawBundle.bound];
-        uint bundleLen = rawBundle.bound - rawBundle.i;
-        emit RemoveCustodyMapped(account, custody.asset, custody.amount, bundleData);
-        emitMinimum(rawBundle);
+        uint bundleLen = 0;
+        if (input.i < input.end) {
+            bundleLen = input.end - input.i;
+            emit RemoveCustodyMapped(account, custody.asset, custody.amount, msg.data[input.i:input.end]);
+            emitMinimum(input);
+        } else {
+            emit RemoveCustodyMapped(account, custody.asset, custody.amount, "");
+        }
 
         out.appendBalance(custody.asset, custody.meta, custody.amount + bundleLen);
         out.appendBalance(REDEEM_FROM_CUSTODY_ASSET, bytes32(bundleLen), custody.amount + 10);
@@ -89,16 +97,20 @@ contract TestLiquidityHost is
 
     function addLiquidityFromBalancesToBalances(
         bytes32 account,
-        Block memory balancesView,
-        Block memory rawBundle,
+        Cursor memory balances,
+        Cursor memory input,
         Writer memory out
     ) internal override {
-        AssetAmount memory a = balancesView.member(0).toBalanceValue();
-        AssetAmount memory b = balancesView.member(1).toBalanceValue();
-        bytes calldata bundleData = msg.data[rawBundle.i:rawBundle.bound];
-        uint bundleLen = rawBundle.bound - rawBundle.i;
-        emit AddBalancesMapped(account, a.asset, a.amount, b.asset, b.amount, bundleData);
-        emitMinimum(rawBundle);
+        AssetAmount memory a = balances.toBalanceValue();
+        AssetAmount memory b = balances.toBalanceValue();
+        uint bundleLen = 0;
+        if (input.i < input.end) {
+            bundleLen = input.end - input.i;
+            emit AddBalancesMapped(account, a.asset, a.amount, b.asset, b.amount, msg.data[input.i:input.end]);
+            emitMinimum(input);
+        } else {
+            emit AddBalancesMapped(account, a.asset, a.amount, b.asset, b.amount, "");
+        }
 
         out.appendBalance(a.asset, a.meta, a.amount + bundleLen);
         out.appendBalance(b.asset, b.meta, b.amount + bundleLen + 2);
@@ -108,28 +120,33 @@ contract TestLiquidityHost is
     function removeLiquidityFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawBundle,
+        Cursor memory input,
         Writer memory out
     ) internal override {
-        bytes calldata bundleData = msg.data[rawBundle.i:rawBundle.bound];
-        uint bundleLen = rawBundle.bound - rawBundle.i;
-        emit RemoveBalanceMapped(account, balance.asset, balance.amount, bundleData);
-        emitMinimum(rawBundle);
+        uint bundleLen = 0;
+        if (input.i < input.end) {
+            bundleLen = input.end - input.i;
+            emit RemoveBalanceMapped(account, balance.asset, balance.amount, msg.data[input.i:input.end]);
+            emitMinimum(input);
+        } else {
+            emit RemoveBalanceMapped(account, balance.asset, balance.amount, "");
+        }
 
         out.appendBalance(balance.asset, balance.meta, balance.amount + bundleLen);
         out.appendBalance(REDEEM_FROM_BALANCE_ASSET, bytes32(bundleLen), balance.amount + 20);
     }
 
-    function emitMinimum(Block memory rawBundle) internal {
-        uint i = rawBundle.i;
-        while (i < rawBundle.bound) {
-            Block memory member = rawBundle.memberAt(i);
+    function emitMinimum(Cursor memory input) internal {
+        uint i = input.i;
+        while (i < input.end) {
+            Block memory member = Blocks.at(i);
+            if (member.end > input.end) revert Blocks.MalformedBlocks();
             if (member.key == Keys.Minimum) {
-                (bytes32 asset, bytes32 meta, uint amount) = member.unpackMinimum();
+                (bytes32 asset, bytes32 meta, uint amount) = Blocks.unpackMinimum(member);
                 emit MinimumObserved(asset, meta, amount);
                 return;
             }
-            i = member.cursor;
+            i = member.end;
         }
     }
 

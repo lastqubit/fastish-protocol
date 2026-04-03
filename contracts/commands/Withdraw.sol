@@ -2,10 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Keys } from "../Blocks.sol";
-using Blocks for Block;
+import { Blocks, Cursor, Keys, Schemas } from "../Blocks.sol";
+using Blocks for Cursor;
 
 string constant NAME = "withdraw";
 
@@ -25,15 +23,12 @@ abstract contract Withdraw is CommandBase {
         CommandContext calldata c
     ) external payable onlyCommand(withdrawId, c.target) returns (bytes memory) {
         bytes32 to = Blocks.resolveRecipient(c.request, 0, c.request.length, c.account);
-        uint i = 0;
-        while (i < c.state.length) {
-            Block memory ref = Blocks.from(c.state, i);
-            if (ref.key != Keys.Balance) break;
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance();
+        (Cursor memory balances, ) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        while (balances.i < balances.end) {
+            (bytes32 asset, bytes32 meta, uint amount) = balances.unpackBalance();
             withdraw(to, asset, meta, amount);
-            i = ref.cursor;
         }
 
-        return done(0, i);
+        return done(balances);
     }
 }

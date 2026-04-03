@@ -2,15 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Writer } from "../Blocks.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Keys } from "../Blocks.sol";
-import { Writers } from "../blocks/Writers.sol";
+import { Blocks, Cursor, Keys, Schemas, Writer, Writers } from "../Blocks.sol";
 
 string constant NAME = "debitAccount";
 
-using Blocks for Block;
+using Blocks for Cursor;
 using Writers for Writer;
 
 abstract contract DebitAccount is CommandBase {
@@ -28,15 +24,13 @@ abstract contract DebitAccount is CommandBase {
     /// The default implementation iterates AMOUNT blocks, calls
     /// `debitAccount`, and emits matching BALANCE blocks.
     function debitAccount(bytes32 account, bytes calldata request) internal virtual returns (bytes memory) {
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocBalancesFrom(request, q, Keys.Amount);
+        (Cursor memory inputs, uint count) = Blocks.matchingFrom(request, 0, Keys.Amount);
+        Writer memory writer = Writers.allocBalances(count);
 
-        while (q < end) {
-            Block memory ref = Blocks.from(request, q);
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
+        while (inputs.i < inputs.end) {
+            (bytes32 asset, bytes32 meta, uint amount) = inputs.unpackAmount();
             debitAccount(account, asset, meta, amount);
             writer.appendBalance(asset, meta, amount);
-            q = ref.cursor;
         }
 
         return writer.done();

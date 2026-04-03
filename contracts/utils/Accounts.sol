@@ -8,9 +8,9 @@ library Accounts {
     error InvalidAccount();
 
     uint24 constant Family = (uint24(Layout.Evm32) << 8) | uint24(Layout.Account);
-    uint32 constant Keccak = (uint32(Layout.Opaque32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.Keccak);
     uint32 constant Admin = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.Admin);
     uint32 constant User = (uint32(Layout.Evm32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.User);
+    uint32 constant Keccak = (uint32(Layout.Opaque32) << 16) | (uint32(Layout.Account) << 8) | uint32(Layout.Keccak);
 
     function prefix(bytes32 account) internal pure returns (uint32) {
         return uint32(uint(account) >> 224);

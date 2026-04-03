@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "../Base.sol";
-import { Blocks, Block } from "../../Blocks.sol";
+import { Blocks, Cursor } from "../../Blocks.sol";
 
 string constant NAME = "destroy";
 
@@ -15,12 +15,12 @@ abstract contract Destroy is CommandBase {
 
     /// @dev Override to run host teardown or destruction logic using the
     /// decoded input.
-    function destroy(Block memory rawInput) internal virtual;
+    function destroy(Cursor memory input) internal virtual;
 
     function destroy(
         CommandContext calldata c
     ) external payable onlyAdmin(c.account) onlyCommand(destroyId, c.target) returns (bytes memory) {
-        Block memory input = Blocks.from(c.request, 0);
+        Cursor memory input = Blocks.cursorFrom(c.request, 0);
         destroy(input);
         return done(0, input.cursor);
     }

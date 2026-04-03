@@ -16,7 +16,9 @@ import { Destroy } from "../commands/admin/Destroy.sol";
 import { Init } from "../commands/admin/Init.sol";
 import { Allocate } from "../commands/admin/Allocate.sol";
 import { Tx } from "../blocks/Schema.sol";
-import { Block } from "../Blocks.sol";
+import { Blocks, Block, Cursor } from "../Blocks.sol";
+
+using Blocks for Block;
 
 contract TestHost is
     Host,
@@ -81,13 +83,15 @@ contract TestHost is
         emit ProvisionCalled(host_, account, asset, meta, amount);
     }
 
-    function init(Block memory rawInput) internal override {
-        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+    function init(Cursor memory input) internal override {
+        Block memory ref = Blocks.at(input.i);
+        bytes calldata inputData = msg.data[ref.i:ref.bound];
         emit InitCalled(inputData);
     }
 
-    function destroy(Block memory rawInput) internal override {
-        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+    function destroy(Cursor memory input) internal override {
+        Block memory ref = Blocks.at(input.i);
+        bytes calldata inputData = msg.data[ref.i:ref.bound];
         emit DestroyCalled(inputData);
     }
 

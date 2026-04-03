@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { AssetAmount, HostAmount, Tx } from "../blocks/Schema.sol";
-import { Block, Writer } from "../Blocks.sol";
+import { Block, Cursor, Writer } from "../Blocks.sol";
 import { MemRef } from "../blocks/Mem.sol";
 import { Blocks, Keys } from "../blocks/Blocks.sol";
 import { Mem } from "../blocks/Mem.sol";
@@ -217,17 +217,30 @@ contract TestBlockHelper {
         return (ref.key, ref.i - base, ref.bound - base, ref.end - base, ref.cursor);
     }
 
-    function testViewFrom(bytes calldata source, uint i, uint n)
+    function testCursorFrom(bytes calldata source, uint i)
         external
         pure
-        returns (bytes4 key, uint start, uint bound, uint end, uint cursor)
+        returns (uint start, uint end, uint cursor)
     {
         uint base;
         assembly ("memory-safe") {
             base := source.offset
         }
-        Block memory ref = Blocks.viewFrom(source, i, n);
-        return (ref.key, ref.i - base, ref.bound - base, ref.end - base, ref.cursor);
+        Cursor memory cur = Blocks.cursorFrom(source, i);
+        return (cur.i - base, cur.end - base, cur.cursor);
+    }
+
+    function testCursorFromN(bytes calldata source, uint i, uint n)
+        external
+        pure
+        returns (uint start, uint end, uint cursor)
+    {
+        uint base;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        Cursor memory cur = Blocks.cursorFrom(source, i, n);
+        return (cur.i - base, cur.end - base, cur.cursor);
     }
 
     function testMember(bytes calldata source, uint i, uint index)
@@ -239,8 +252,20 @@ contract TestBlockHelper {
         assembly ("memory-safe") {
             base := source.offset
         }
-        Block memory ref = Blocks.bundleFrom(source, i).member(index);
-        return (ref.key, ref.i - base, ref.bound - base, ref.end - base, ref.cursor - base);
+        Cursor memory input = Blocks.cursorFrom(source, i);
+        uint n;
+        Block memory ref;
+        while (input.i < input.end) {
+            ref = Blocks.at(input.i);
+            if (ref.end > input.end) revert Blocks.MalformedBlocks();
+            ref.cursor = ref.end;
+            if (n == index) return (ref.key, ref.i - base, ref.bound - base, ref.end - base, ref.cursor - base);
+            input.i = ref.end;
+            unchecked {
+                ++n;
+            }
+        }
+        revert Blocks.MalformedBlocks();
     }
 
     function testMemberAt(bytes calldata source, uint i, uint at_)
@@ -252,7 +277,12 @@ contract TestBlockHelper {
         assembly ("memory-safe") {
             base := source.offset
         }
-        Block memory ref = Blocks.bundleFrom(source, i).memberAt(base + at_);
+        Cursor memory input = Blocks.cursorFrom(source, i);
+        uint atAbs = base + at_;
+        if (atAbs < input.i || atAbs >= input.end) revert Blocks.MalformedBlocks();
+        Block memory ref = Blocks.at(atAbs);
+        if (ref.end > input.end) revert Blocks.MalformedBlocks();
+        ref.cursor = ref.end;
         return (ref.key, ref.i - base, ref.bound - base, ref.end - base, ref.cursor - base);
     }
 
@@ -277,8 +307,8 @@ contract TestBlockHelper {
         pure
         returns (bytes32 hash, uint deadline, bytes calldata proof)
     {
-        Block memory ref = Blocks.from(source, i);
-        return Blocks.verifyAuth(ref, expectedCid);
+        Cursor memory input = Blocks.cursorFrom(source, i);
+        return Blocks.resolveAuth(input, expectedCid);
     }
 
     function testMemParseBalance(bytes memory source, uint i)

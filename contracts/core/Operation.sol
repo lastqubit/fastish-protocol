@@ -2,6 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { AccessControl } from "./Access.sol";
+import { Cursor } from "../blocks/Blocks.sol";
 import { Assets } from "../utils/Assets.sol";
 import { Ids } from "../utils/Ids.sol";
 
@@ -16,8 +17,18 @@ abstract contract OperationBase is AccessControl {
         return "";
     }
 
+    function done(Cursor memory cur) internal pure returns (bytes memory) {
+        if (cur.i <= cur.start) revert NoOperation();
+        return "";
+    }
+
     function done(bytes memory state, uint start, uint end) internal pure returns (bytes memory) {
         if (end <= start) revert NoOperation();
+        return state;
+    }
+
+    function done(bytes memory state, Cursor memory cur) internal pure returns (bytes memory) {
+        if (cur.i <= cur.start) revert NoOperation();
         return state;
     }
 

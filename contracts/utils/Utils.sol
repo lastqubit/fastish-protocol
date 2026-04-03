@@ -86,6 +86,13 @@ function bytes32ToString(bytes32 value) pure returns (string memory result) {
     }
 }
 
+function hash32(bytes32 value) pure returns (bytes32 hash) {
+    assembly ("memory-safe") {
+        mstore(0x00, value)
+        hash := keccak256(0x00, 0x20)
+    }
+}
+
 function toLocalBase(uint32 prefix) view returns (uint) {
     return (uint(prefix) << 224) | (uint(max32(block.chainid)) << 192);
 }

@@ -4,8 +4,10 @@ pragma solidity ^0.8.33;
 import { Host } from "../core/Host.sol";
 import { PeerPull } from "../peer/Pull.sol";
 import { PeerPush } from "../peer/Push.sol";
-import { Block } from "../Blocks.sol";
+import { Blocks, Block, Cursor } from "../Blocks.sol";
 import { Ids } from "../utils/Ids.sol";
+
+using Blocks for Block;
 
 contract TestPeerHost is Host, PeerPull, PeerPush {
     event PeerPullCalled(bytes inputData);
@@ -19,13 +21,15 @@ contract TestPeerHost is Host, PeerPull, PeerPush {
         if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
-    function peerPull(Block memory rawInput) internal override {
-        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+    function peerPull(Cursor memory input) internal override {
+        Block memory ref = Blocks.at(input.i);
+        bytes calldata inputData = msg.data[ref.i:ref.bound];
         emit PeerPullCalled(inputData);
     }
 
-    function peerPush(Block memory rawInput) internal override {
-        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+    function peerPush(Cursor memory input) internal override {
+        Block memory ref = Blocks.at(input.i);
+        bytes calldata inputData = msg.data[ref.i:ref.bound];
         emit PeerPushCalled(inputData);
     }
 

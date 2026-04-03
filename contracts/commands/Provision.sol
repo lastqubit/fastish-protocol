@@ -2,16 +2,14 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
-using Blocks for Block;
+import { Blocks, Cursor, Keys, Schemas, Writer, Writers } from "../Blocks.sol";
+using Blocks for Cursor;
 using Writers for Writer;
 
 string constant PROVISION = "provision";
 string constant PFB = "provisionFromBalance";
 
-string constant INPUT = string.concat(Schemas.Amount, ">", Schemas.Node);
+string constant INPUT = string.concat(Schemas.Node, "&", Schemas.Amount);
 
 abstract contract ProvisionHook {
     /// @dev Override this hook to send or provision funds to `host`.
@@ -31,16 +29,15 @@ abstract contract Provision is CommandBase, ProvisionHook {
     function provision(
         CommandContext calldata c
     ) external payable onlyCommand(provisionId, c.target) returns (bytes memory) {
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(c.request, q, Keys.Amount);
+        (Cursor memory inputs, uint count) = Blocks.matchingFrom(c.request, 0, Keys.Bundle);
+        Writer memory writer = Writers.allocCustodies(count);
 
-        while (q < end) {
-            Block memory ref = Blocks.from(c.request, q);
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
-            uint toHost = ref.innerNode();
+        while (inputs.i < inputs.end) {
+            Cursor memory cur = inputs.take();
+            uint toHost = cur.unpackNode();
+            (bytes32 asset, bytes32 meta, uint amount) = cur.unpackAmount();
             provision(c.account, toHost, asset, meta, amount);
             writer.appendCustody(toHost, asset, meta, amount);
-            q = ref.cursor;
         }
 
         return writer.done();
@@ -59,15 +56,13 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
         CommandContext calldata c
     ) external payable onlyCommand(provisionFromBalanceId, c.target) returns (bytes memory) {
         uint toHost = Blocks.resolveNode(c.request, 0, c.request.length, 0);
-        uint i = 0;
-        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(c.state, i, Keys.Balance);
+        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        Writer memory writer = Writers.allocCustodies(count);
 
-        while (i < end) {
-            Block memory ref = Blocks.from(c.state, i);
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance();
+        while (balances.i < balances.end) {
+            (bytes32 asset, bytes32 meta, uint amount) = balances.unpackBalance();
             provision(c.account, toHost, asset, meta, amount);
             writer.appendCustody(toHost, asset, meta, amount);
-            i = ref.cursor;
         }
 
         return writer.done();

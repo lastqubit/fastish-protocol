@@ -14,9 +14,9 @@ pragma solidity ^0.8.33;
 // host, and returns a CUSTODY block confirming the held asset.
 
 import { CommandBase, CommandContext, Channels } from "../contracts/Commands.sol";
-import { Block, Blocks, Schemas } from "../contracts/Blocks.sol";
+import { Blocks, Cursor, Schemas } from "../contracts/Blocks.sol";
 
-using Blocks for Block;
+using Blocks for Cursor;
 
 string constant NAME = "myCommand";
 
@@ -41,14 +41,14 @@ abstract contract MyCommand is CommandBase {
     function myCommand(
         CommandContext calldata c
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
-        // Read the outer bundle block from the request starting at offset 0.
-        Block memory bundle = Blocks.bundleFrom(c.request, 0);
+        // Open the bundled request as a cursor over its member stream.
+        Cursor memory input = Blocks.cursorFrom(c.request, 0);
 
         // The first bundled member is the ROUTE block.
-        uint host = bundle.member(0).unpackRouteUint();
+        uint host = input.unpackRouteUint();
 
         // The second bundled member is the AMOUNT block.
-        (bytes32 asset, bytes32 meta, uint amount) = bundle.member(1).unpackAmount();
+        (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
 
         // Delegate to the implementer to move the asset to the target host.
         sendToHost(host, asset, meta, amount);

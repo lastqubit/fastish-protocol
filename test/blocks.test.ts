@@ -15,14 +15,6 @@ function encodeUint32(value: number): string {
   return ethers.toBeHex(value, 4);
 }
 
-function blockWithChildren(key: string, payload: string, children: string): string {
-  const payloadBytes = ethers.getBytes(payload);
-  const childrenBytes = ethers.getBytes(children);
-  const selfLen = payloadBytes.length;
-  const totalLen = selfLen + childrenBytes.length;
-  return ethers.concat([key, encodeUint32(selfLen), encodeUint32(totalLen), payload, children]);
-}
-
 describe("Blocks", () => {
   let helper: Awaited<ReturnType<typeof deploy>>;
 
@@ -421,9 +413,8 @@ describe("Blocks", () => {
       const sig = "0x" + "22".repeat(65);
       const proof = ethers.concat([signer, sig]);
       const auth = encodeAuthBlock(cid, deadline, proof);
-      const parent = blockWithChildren(
-        Keys.Amount,
-        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+      const parent = encodeBundleBlock(
+        encodeAmountBlock(asset, meta, amount),
         auth
       );
 
@@ -431,7 +422,8 @@ describe("Blocks", () => {
       expect(outDeadline).to.equal(deadline);
       expect(outProof).to.equal(proof);
 
-      const parentBytes = ethers.getBytes(parent);
+      const memberStream = concat(encodeAmountBlock(asset, meta, amount), auth);
+      const parentBytes = ethers.getBytes(memberStream);
       const expectedHash = ethers.keccak256(parentBytes.slice(0, parentBytes.length - 85));
       expect(hash).to.equal(expectedHash);
     });
@@ -439,9 +431,8 @@ describe("Blocks", () => {
     it("verifyAuth reverts MalformedBlocks when cid mismatches", async () => {
       const proof = ethers.concat(["0x" + "11".repeat(20), "0x" + "22".repeat(65)]);
       const auth = encodeAuthBlock(77n, 123456n, proof);
-      const parent = blockWithChildren(
-        Keys.Amount,
-        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+      const parent = encodeBundleBlock(
+        encodeAmountBlock(asset, meta, amount),
         auth
       );
 
@@ -450,7 +441,7 @@ describe("Blocks", () => {
     });
 
     it("verifyAuth reverts MalformedBlocks when trailing auth is missing", async () => {
-      const parent = encodeAmountBlock(asset, meta, amount);
+      const parent = encodeBundleBlock(encodeAmountBlock(asset, meta, amount));
 
       await expect(helper.testVerifyAuth(parent, 0n, 77n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
@@ -458,9 +449,8 @@ describe("Blocks", () => {
 
     it("verifyAuth reverts MalformedBlocks when trailing bytes are too short for AUTH", async () => {
       const truncatedAuthTail = ethers.hexlify(ethers.getBytes(encodeAuthBlock(77n, 123456n, ethers.concat(["0x" + "11".repeat(20), "0x" + "22".repeat(65)]))).slice(0, 100));
-      const parent = blockWithChildren(
-        Keys.Amount,
-        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+      const parent = encodeBundleBlock(
+        encodeAmountBlock(asset, meta, amount),
         truncatedAuthTail
       );
 
@@ -523,17 +513,23 @@ describe("Blocks", () => {
         expect(cursor).to.equal(BigInt(ethers.getBytes(bundle).length));
       });
 
-      it("viewFrom creates a BundleView over n consecutive blocks", async () => {
+      it("cursorFrom creates a cursor over one block", async () => {
+        const a = encodeBalanceBlock(asset, meta, 1n);
+        const [start, end, cursor] = await helper.testCursorFrom(a, 0n);
+        expect(start).to.equal(0n);
+        expect(end).to.equal(BigInt(ethers.getBytes(a).length));
+        expect(cursor).to.equal(end);
+      });
+
+      it("cursorFrom with n creates a cursor over n consecutive blocks", async () => {
         const a = encodeBalanceBlock(asset, meta, 1n);
         const b = encodeBalanceBlock(asset, meta, 2n);
         const c = encodeBalanceBlock(asset, meta, 3n);
         const source = concat(a, b, c);
-        const [key, start, bound, end, cursor] = await helper.testViewFrom(source, 0n, 2n);
-        expect(key).to.equal(Keys.BundleView);
+        const [start, end, cursor] = await helper.testCursorFromN(source, 0n, 2n);
         expect(start).to.equal(0n);
-        expect(bound).to.equal(BigInt(ethers.getBytes(concat(a, b)).length));
-        expect(end).to.equal(bound);
-        expect(cursor).to.equal(bound);
+        expect(end).to.equal(BigInt(ethers.getBytes(concat(a, b)).length));
+        expect(cursor).to.equal(end);
       });
 
       it("member returns the indexed member inside a bundle", async () => {
@@ -570,10 +566,14 @@ describe("Blocks", () => {
           .to.be.revertedWithCustomError(helper, "MalformedBlocks");
       });
 
-      it("memberAt reverts InvalidBlock when called on a non-bundle block", async () => {
+      it("memberAt-style helper can address a non-bundle cursor position", async () => {
         const amountBlock = encodeAmountBlock(asset, meta, amount);
-        await expect(helper.testMemberAt(amountBlock, 0n, 12n))
-          .to.be.revertedWithCustomError(helper, "InvalidBlock");
+        const [key, start, bound, end, cursor] = await helper.testMemberAt(amountBlock, 0n, 0n);
+        expect(key).to.equal(Keys.Amount);
+        expect(start).to.equal(12n);
+        expect(bound).to.equal(108n);
+        expect(end).to.equal(108n);
+        expect(cursor).to.equal(108n);
       });
     });
   });

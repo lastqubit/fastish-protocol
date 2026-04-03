@@ -3,9 +3,10 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { SwapExactBalanceToBalance } from "../commands/Swap.sol";
-import { AssetAmount, Block, Blocks } from "../Blocks.sol";
+import { AssetAmount, Block, Cursor, Blocks, Keys } from "../Blocks.sol";
 
 using Blocks for Block;
+using Blocks for Cursor;
 
 contract TestSwapHost is Host, SwapExactBalanceToBalance {
     event SwapMapped(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes inputData);
@@ -19,18 +20,31 @@ contract TestSwapHost is Host, SwapExactBalanceToBalance {
     function swapExactBalanceToBalance(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawInput
+        Cursor memory input
     ) internal override returns (AssetAmount memory out) {
-        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
+        if (input.i == input.end) revert Blocks.InvalidBlock();
+
+        Block memory ref = Blocks.at(input.i);
+        bytes calldata inputData = msg.data[ref.i:ref.bound];
         emit SwapMapped(account, balance.asset, balance.meta, balance.amount, inputData);
-        if (rawInput.bound < rawInput.end) {
-            (bytes32 minAsset, bytes32 minMeta, uint minAmount) = rawInput.innerMinimum();
+
+        if (ref.bound < ref.end) {
+            Cursor memory inner = Blocks.cursorFrom(msg.data[ref.bound:ref.end], 0);
+            (bytes32 minAsset, bytes32 minMeta, uint minAmount) = inner.unpackMinimum();
             emit SwapMinimum(minAsset, minMeta, minAmount);
+        } else {
+            Cursor memory cur = input;
+            if (cur.isAt(Keys.Route)) cur.unpackRoute();
+            if (cur.i < cur.end && cur.isAt(Keys.Minimum)) {
+                (bytes32 minAsset, bytes32 minMeta, uint minAmount) = cur.unpackMinimum();
+                emit SwapMinimum(minAsset, minMeta, minAmount);
+            }
         }
+
         return AssetAmount({
             asset: balance.asset,
-            meta: bytes32(rawInput.bound - rawInput.i),
-            amount: balance.amount + (rawInput.bound - rawInput.i)
+            meta: bytes32(inputData.length),
+            amount: balance.amount + inputData.length
         });
     }
 

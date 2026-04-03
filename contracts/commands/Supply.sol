@@ -2,10 +2,10 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Blocks, Block, HostAmount, Keys } from "../Blocks.sol";
+import { Blocks, Cursor, HostAmount, Keys } from "../Blocks.sol";
 string constant NAME = "supply";
 
-using Blocks for Block;
+using Blocks for Cursor;
 
 abstract contract Supply is CommandBase {
     uint internal immutable supplyId = commandId(NAME);
@@ -19,15 +19,12 @@ abstract contract Supply is CommandBase {
     function supply(bytes32 account, HostAmount memory value) internal virtual;
 
     function supply(CommandContext calldata c) external payable onlyCommand(supplyId, c.target) returns (bytes memory) {
-        uint i = 0;
-        while (i < c.state.length) {
-            Block memory ref = Blocks.from(c.state, i);
-            if (ref.key != Keys.Custody) break;
-            HostAmount memory value = ref.toCustodyValue();
+        (Cursor memory custodies, ) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        while (custodies.i < custodies.end) {
+            HostAmount memory value = custodies.toCustodyValue();
             supply(c.account, value);
-            i = ref.cursor;
         }
 
-        return done(0, i);
+        return done(custodies);
     }
 }

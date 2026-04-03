@@ -2,12 +2,12 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, HostAmount, Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant RFBTB = "repayFromBalanceToBalances";
 string constant RFCTB = "repayFromCustodyToBalances";
 
-using Blocks for Block;
+using Blocks for Cursor;
 using Writers for Writer;
 
 abstract contract RepayFromBalanceToBalances is CommandBase {
@@ -22,33 +22,30 @@ abstract contract RepayFromBalanceToBalances is CommandBase {
     }
 
     /// @dev Override to repay debt using a balance amount.
-    /// `rawInput` is zero-initialized and should be ignored when
+    /// `input` is zero-initialized and should be ignored when
     /// `maybeInput` is empty. Implementations validate and unpack it as
-    /// needed, and may append returned balances to `out`.
+    /// needed, and may append BALANCE outputs to `out` within the capacity
+    /// implied by this command's configured `scaledRatio`.
     function repayFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawInput,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function repayFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(repayFromBalanceToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
+        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory input;
+        while (balances.i < balances.end) {
             if (useInput) {
-                input = Blocks.from(c.request, q);
-                q = input.cursor;
+                input = Blocks.cursorFrom(c.request, input.cursor);
             }
-            Block memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue();
+            AssetAmount memory balance = balances.toBalanceValue();
             repayFromBalanceToBalances(c.account, balance, input, writer);
-            i = ref.cursor;
         }
 
         return writer.finish();
@@ -67,33 +64,30 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
     }
 
     /// @dev Override to repay debt using a custody amount.
-    /// `rawInput` is zero-initialized and should be ignored when
+    /// `input` is zero-initialized and should be ignored when
     /// `maybeInput` is empty. Implementations validate and unpack it as
-    /// needed, and may append returned balances to `out`.
+    /// needed, and may append BALANCE outputs to `out` within the capacity
+    /// implied by this command's configured `scaledRatio`.
     function repayFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawInput,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function repayFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(repayFromCustodyToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
+        (Cursor memory custodies, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory input;
+        while (custodies.i < custodies.end) {
             if (useInput) {
-                input = Blocks.from(c.request, q);
-                q = input.cursor;
+                input = Blocks.cursorFrom(c.request, input.cursor);
             }
-            Block memory ref = Blocks.from(c.state, i);
-            HostAmount memory custody = ref.toCustodyValue();
+            HostAmount memory custody = custodies.toCustodyValue();
             repayFromCustodyToBalances(c.account, custody, input, writer);
-            i = ref.cursor;
         }
 
         return writer.finish();

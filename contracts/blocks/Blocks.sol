@@ -12,7 +12,15 @@ struct Block {
     uint cursor;
 }
 
+struct Cursor {
+    uint start;
+    uint i;
+    uint end;
+    uint cursor;
+}
+
 using Blocks for Block;
+using Blocks for Cursor;
 
 library Blocks {
     error MalformedBlocks();
@@ -65,7 +73,41 @@ library Blocks {
         if (ref.bound > ref.end || ref.end > eos) revert MalformedBlocks();
     }
 
-    function viewFrom(bytes calldata source, uint i, uint n) internal pure returns (Block memory ref) {
+    function expect(
+        Cursor memory cur,
+        bytes4 key,
+        uint min,
+        uint max
+    ) internal pure returns (uint i, uint bound, uint end) {
+        if (cur.i + 12 > cur.end) revert MalformedBlocks();
+        if (bytes4(msg.data[cur.i:cur.i + 4]) != key) revert InvalidBlock();
+
+        unchecked {
+            i = cur.i + 12;
+        }
+        bound = i + uint32(bytes4(msg.data[cur.i + 4:cur.i + 8]));
+        end = i + uint32(bytes4(msg.data[cur.i + 8:i]));
+
+        if (bound > end || end > cur.end) revert MalformedBlocks();
+
+        uint len = bound - i;
+        if (len < min || (max != 0 && len > max)) revert InvalidBlock();
+        cur.i = end;
+    }
+
+    function cursorFrom(bytes calldata source, uint i) internal pure returns (Cursor memory cur) {
+        uint base;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        Block memory ref = from(source, i);
+        cur.start = ref.key == Keys.Bundle ? ref.i : base + i;
+        cur.end = ref.end;
+        cur.cursor = ref.cursor;
+        cur.i = cur.start;
+    }
+
+    function cursorFrom(bytes calldata source, uint i, uint n) internal pure returns (Cursor memory cur) {
         if (n == 0) revert InvalidBlock();
 
         uint next = i;
@@ -81,11 +123,60 @@ library Blocks {
             base := source.offset
         }
 
-        ref.key = Keys.BundleView;
-        ref.i = base + i;
-        ref.bound = base + next;
-        ref.end = ref.bound;
-        ref.cursor = next;
+        cur.start = base + i;
+        cur.i = cur.start;
+        cur.end = base + next;
+        cur.cursor = next;
+    }
+
+    function streamFrom(bytes calldata source, uint i) internal pure returns (Cursor memory cur) {
+        uint base;
+        uint end = source.length;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        if (i > end) revert MalformedBlocks();
+        cur.start = base + i;
+        cur.i = cur.start;
+        cur.end = base + end;
+        cur.cursor = end;
+    }
+
+    function take(Cursor memory cur) internal pure returns (Cursor memory out) {
+        Block memory ref = at(cur.i);
+        if (ref.end > cur.end) revert MalformedBlocks();
+
+        uint base = cur.end - cur.cursor;
+        out.start = ref.key == Keys.Bundle ? ref.i : cur.i;
+        out.i = out.start;
+        out.end = ref.end;
+        out.cursor = ref.end - base;
+
+        cur.i = ref.end;
+    }
+
+    function matchingFrom(bytes calldata source, uint i, bytes4 key) internal pure returns (Cursor memory cur, uint count_) {
+        uint cursor_;
+        (count_, cursor_) = count(source, i, key);
+        cur = streamFrom(source, i);
+        uint base;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        cur.end = base + cursor_;
+        cur.cursor = cursor_;
+    }
+
+    function allFrom(bytes calldata source, uint i) internal pure returns (Cursor memory cur, uint count_) {
+        uint cursor_;
+        (count_, cursor_) = count(source, i);
+        cur = streamFrom(source, i);
+        uint base;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        cur.end = base + cursor_;
+        cur.cursor = cursor_;
     }
 
     function count(bytes calldata source, uint i, bytes4 key) internal pure returns (uint total, uint cursor) {
@@ -110,44 +201,9 @@ library Blocks {
         }
     }
 
-    function childAt(Block memory parent, uint i) internal pure returns (Block memory ref) {
-        if (i < parent.bound || i >= parent.end) revert MalformedBlocks();
-        ref = at(i);
-        if (ref.end > parent.end) revert MalformedBlocks();
-    }
-
-    function memberAt(Block memory bundle, uint i) internal pure returns (Block memory out) {
-        if (bundle.key != Keys.Bundle && bundle.key != Keys.BundleView) revert InvalidBlock();
-        if (i < bundle.i || i >= bundle.bound) revert MalformedBlocks();
-
-        out = at(i);
-        if (out.end > bundle.bound) revert MalformedBlocks();
-        out.cursor = out.end;
-    }
-
-    function member(Block memory bundle, uint index) internal pure returns (Block memory out) {
-        if (bundle.key != Keys.Bundle && bundle.key != Keys.BundleView) revert InvalidBlock();
-
-        uint i = bundle.i;
-        uint n = 0;
-        while (i < bundle.bound) {
-            out = bundle.memberAt(i);
-            if (n == index) return out;
-            i = out.cursor;
-            unchecked {
-                ++n;
-            }
-        }
-
-        revert MalformedBlocks();
-    }
-
-    function first(Block memory bundle) internal pure returns (Block memory out) {
-        return bundle.memberAt(bundle.i);
-    }
-
-    function nextOf(Block memory bundle, Block memory current) internal pure returns (Block memory out) {
-        return bundle.memberAt(current.cursor);
+    function isAt(Cursor memory cur, bytes4 key) internal pure returns (bool) {
+        if (cur.i + 4 > cur.end) return false;
+        return bytes4(msg.data[cur.i:cur.i + 4]) == key;
     }
 
     function findFrom(bytes calldata source, uint i, uint limit, bytes4 key) internal pure returns (Block memory ref) {
@@ -160,10 +216,6 @@ library Blocks {
         }
 
         return Block(bytes4(0), limit, limit, limit, limit);
-    }
-
-    function findChild(Block memory parent, bytes4 key) internal pure returns (Block memory ref) {
-        return findFrom(msg.data, parent.bound, parent.end, key);
     }
 
     function create32(bytes4 key, bytes32 value) internal pure returns (bytes memory) {
@@ -194,14 +246,6 @@ library Blocks {
         return create128(Keys.Custody, bytes32(host), asset, meta, bytes32(amount));
     }
 
-    function isBalance(Block memory ref) internal pure returns (bool) {
-        return ref.key == Keys.Balance;
-    }
-
-    function isCustody(Block memory ref) internal pure returns (bool) {
-        return ref.key == Keys.Custody;
-    }
-
     function resolveRecipient(
         bytes calldata source,
         uint i,
@@ -221,15 +265,19 @@ library Blocks {
         return node;
     }
 
-    function verifyAuth(
-        Block memory ref,
+    function resolveAuth(
+        Cursor memory input,
         uint expectedCid
     ) internal pure returns (bytes32 hash, uint deadline, bytes calldata proof) {
-        if (ref.end - ref.bound < AUTH_TOTAL_LEN) revert MalformedBlocks();
-        uint cid;
-        (cid, deadline, proof) = innerAuthAt(ref, ref.end - AUTH_TOTAL_LEN);
-        if (cid != expectedCid) revert MalformedBlocks();
-        hash = keccak256(msg.data[ref.i - 12:ref.end - AUTH_PROOF_LEN]);
+        if (input.end - input.i < AUTH_TOTAL_LEN) revert MalformedBlocks();
+
+        uint authStart = input.end - AUTH_TOTAL_LEN;
+        Block memory auth = at(authStart);
+        if (auth.end != input.end) revert MalformedBlocks();
+
+        (deadline, proof) = auth.expectAuth(expectedCid);
+
+        hash = keccak256(msg.data[input.i:input.end - AUTH_PROOF_LEN]);
     }
 
     function ensure(Block memory ref, bytes4 key) internal pure {
@@ -349,273 +397,7 @@ library Blocks {
 
     // ── inner* ────────────────────────────────────────────────────────────────
 
-    function innerBundle(Block memory parent) internal pure returns (Block memory ref) {
-        ref = childAt(parent, parent.bound);
-        ensure(ref, Keys.Bundle);
-    }
-
-    function innerRoute(Block memory parent) internal pure returns (bytes calldata data) {
-        return unpackRoute(childAt(parent, parent.bound));
-    }
-
-    function innerNode(Block memory parent) internal pure returns (uint id) {
-        return unpackNode(childAt(parent, parent.bound));
-    }
-
-    function innerRecipient(Block memory parent) internal pure returns (bytes32 account) {
-        return unpackRecipient(childAt(parent, parent.bound));
-    }
-
-    function innerParty(Block memory parent) internal pure returns (bytes32 account) {
-        return unpackParty(childAt(parent, parent.bound));
-    }
-
-    function innerRate(Block memory parent) internal pure returns (uint value) {
-        return unpackRate(childAt(parent, parent.bound));
-    }
-
-    function innerQuantity(Block memory parent) internal pure returns (uint amount) {
-        return unpackQuantity(childAt(parent, parent.bound));
-    }
-
-    function innerAsset(Block memory parent) internal pure returns (bytes32 asset, bytes32 meta) {
-        return unpackAsset(childAt(parent, parent.bound));
-    }
-
-    function innerFunding(Block memory parent) internal pure returns (uint host, uint amount) {
-        return unpackFunding(childAt(parent, parent.bound));
-    }
-
-    function innerBounty(Block memory parent) internal pure returns (uint amount, bytes32 relayer) {
-        return unpackBounty(childAt(parent, parent.bound));
-    }
-
-    function innerAmount(Block memory parent) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return unpackAmount(childAt(parent, parent.bound));
-    }
-
-    function innerAmountValue(Block memory parent) internal pure returns (AssetAmount memory) {
-        return toAmountValue(childAt(parent, parent.bound));
-    }
-
-    function innerBalance(Block memory parent) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return unpackBalance(childAt(parent, parent.bound));
-    }
-
-    function innerMinimum(Block memory parent) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return unpackMinimum(childAt(parent, parent.bound));
-    }
-
-    function innerMaximum(Block memory parent) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return unpackMaximum(childAt(parent, parent.bound));
-    }
-
-    function innerListing(Block memory parent) internal pure returns (uint host, bytes32 asset, bytes32 meta) {
-        return unpackListing(childAt(parent, parent.bound));
-    }
-
-    function innerStep(Block memory parent) internal pure returns (uint target, uint value, bytes calldata req) {
-        return unpackStep(childAt(parent, parent.bound));
-    }
-
-    function innerAuth(Block memory parent) internal pure returns (uint cid, uint deadline, bytes calldata proof) {
-        return unpackAuth(childAt(parent, parent.bound));
-    }
-
-    function innerCustody(Block memory parent) internal pure returns (HostAmount memory value) {
-        return toCustodyValue(childAt(parent, parent.bound));
-    }
-
-    function innerAllocation(Block memory parent) internal pure returns (HostAmount memory value) {
-        return toAllocationValue(childAt(parent, parent.bound));
-    }
-
-    function innerTx(Block memory parent) internal pure returns (Tx memory value) {
-        return toTxValue(childAt(parent, parent.bound));
-    }
-
     // ── inner*At ──────────────────────────────────────────────────────────────
-
-    function innerBundleAt(Block memory parent, uint i) internal pure returns (Block memory ref) {
-        ref = childAt(parent, i);
-        ensure(ref, Keys.Bundle);
-    }
-
-    function innerRouteAt(Block memory parent, uint i) internal pure returns (bytes calldata data) {
-        return unpackRoute(childAt(parent, i));
-    }
-
-    function innerNodeAt(Block memory parent, uint i) internal pure returns (uint id) {
-        return unpackNode(childAt(parent, i));
-    }
-
-    function innerRecipientAt(Block memory parent, uint i) internal pure returns (bytes32 account) {
-        return unpackRecipient(childAt(parent, i));
-    }
-
-    function innerPartyAt(Block memory parent, uint i) internal pure returns (bytes32 account) {
-        return unpackParty(childAt(parent, i));
-    }
-
-    function innerRateAt(Block memory parent, uint i) internal pure returns (uint value) {
-        return unpackRate(childAt(parent, i));
-    }
-
-    function innerQuantityAt(Block memory parent, uint i) internal pure returns (uint amount) {
-        return unpackQuantity(childAt(parent, i));
-    }
-
-    function innerAssetAt(Block memory parent, uint i) internal pure returns (bytes32 asset, bytes32 meta) {
-        return unpackAsset(childAt(parent, i));
-    }
-
-    function innerFundingAt(Block memory parent, uint i) internal pure returns (uint host, uint amount) {
-        return unpackFunding(childAt(parent, i));
-    }
-
-    function innerBountyAt(Block memory parent, uint i) internal pure returns (uint amount, bytes32 relayer) {
-        return unpackBounty(childAt(parent, i));
-    }
-
-    function innerAmountAt(
-        Block memory parent,
-        uint i
-    ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return unpackAmount(childAt(parent, i));
-    }
-
-    function innerBalanceAt(
-        Block memory parent,
-        uint i
-    ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return unpackBalance(childAt(parent, i));
-    }
-
-    function innerMinimumAt(
-        Block memory parent,
-        uint i
-    ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return unpackMinimum(childAt(parent, i));
-    }
-
-    function innerMaximumAt(
-        Block memory parent,
-        uint i
-    ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return unpackMaximum(childAt(parent, i));
-    }
-
-    function innerListingAt(
-        Block memory parent,
-        uint i
-    ) internal pure returns (uint host, bytes32 asset, bytes32 meta) {
-        return unpackListing(childAt(parent, i));
-    }
-
-    function innerStepAt(
-        Block memory parent,
-        uint i
-    ) internal pure returns (uint target, uint value, bytes calldata req) {
-        return unpackStep(childAt(parent, i));
-    }
-
-    function innerAuthAt(
-        Block memory parent,
-        uint i
-    ) internal pure returns (uint cid, uint deadline, bytes calldata proof) {
-        return unpackAuth(childAt(parent, i));
-    }
-
-    function innerCustodyAt(Block memory parent, uint i) internal pure returns (HostAmount memory value) {
-        return toCustodyValue(childAt(parent, i));
-    }
-
-    function innerAllocationAt(Block memory parent, uint i) internal pure returns (HostAmount memory value) {
-        return toAllocationValue(childAt(parent, i));
-    }
-
-    function innerTxAt(Block memory parent, uint i) internal pure returns (Tx memory value) {
-        return toTxValue(childAt(parent, i));
-    }
-
-    function unpackNodeAt(bytes calldata source, uint i) internal pure returns (uint id) {
-        return nodeFrom(source, i).unpackNode();
-    }
-
-    function unpackRecipientAt(bytes calldata source, uint i) internal pure returns (bytes32 account) {
-        return recipientFrom(source, i).unpackRecipient();
-    }
-
-    function unpackPartyAt(bytes calldata source, uint i) internal pure returns (bytes32 account) {
-        return partyFrom(source, i).unpackParty();
-    }
-
-    function unpackRateAt(bytes calldata source, uint i) internal pure returns (uint value) {
-        return rateFrom(source, i).unpackRate();
-    }
-
-    function unpackQuantityAt(bytes calldata source, uint i) internal pure returns (uint amount) {
-        return quantityFrom(source, i).unpackQuantity();
-    }
-
-    function unpackAssetAt(bytes calldata source, uint i) internal pure returns (bytes32 asset, bytes32 meta) {
-        return assetFrom(source, i).unpackAsset();
-    }
-
-    function unpackFundingAt(bytes calldata source, uint i) internal pure returns (uint host, uint amount) {
-        return fundingFrom(source, i).unpackFunding();
-    }
-
-    function unpackBountyAt(bytes calldata source, uint i) internal pure returns (uint amount, bytes32 relayer) {
-        return bountyFrom(source, i).unpackBounty();
-    }
-
-    function unpackAmountAt(
-        bytes calldata source,
-        uint i
-    ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return amountFrom(source, i).unpackAmount();
-    }
-
-    function unpackBalanceAt(
-        bytes calldata source,
-        uint i
-    ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return balanceFrom(source, i).unpackBalance();
-    }
-
-    function unpackMinimumAt(
-        bytes calldata source,
-        uint i
-    ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return minimumFrom(source, i).unpackMinimum();
-    }
-
-    function unpackMaximumAt(
-        bytes calldata source,
-        uint i
-    ) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        return maximumFrom(source, i).unpackMaximum();
-    }
-
-    function unpackListingAt(
-        bytes calldata source,
-        uint i
-    ) internal pure returns (uint host, bytes32 asset, bytes32 meta) {
-        return listingFrom(source, i).unpackListing();
-    }
-
-    function unpackCustodyAt(bytes calldata source, uint i) internal pure returns (HostAmount memory value) {
-        return custodyFrom(source, i).toCustodyValue();
-    }
-
-    function unpackAllocationAt(bytes calldata source, uint i) internal pure returns (HostAmount memory value) {
-        return allocationFrom(source, i).toAllocationValue();
-    }
-
-    function unpackTxAt(bytes calldata source, uint i) internal pure returns (Tx memory value) {
-        return txFrom(source, i).toTxValue();
-    }
 
     // ── unpack* ───────────────────────────────────────────────────────────────
 
@@ -623,6 +405,7 @@ library Blocks {
         ensure(ref, Keys.Route);
         return msg.data[ref.i:ref.bound];
     }
+
 
     function unpackRouteUint(Block memory ref) internal pure returns (uint) {
         ensure(ref, Keys.Route, 32);
@@ -647,6 +430,7 @@ library Blocks {
         return bytes32(msg.data[ref.i:ref.i + 32]);
     }
 
+
     function unpackRoute64(Block memory ref) internal pure returns (bytes32 a, bytes32 b) {
         ensure(ref, Keys.Route, 64);
         a = bytes32(msg.data[ref.i:ref.i + 32]);
@@ -665,10 +449,12 @@ library Blocks {
         return uint(bytes32(msg.data[ref.i:ref.i + 32]));
     }
 
+
     function unpackRecipient(Block memory ref) internal pure returns (bytes32 account) {
         ensure(ref, Keys.Recipient, 32);
         return bytes32(msg.data[ref.i:ref.i + 32]);
     }
+
 
     function unpackParty(Block memory ref) internal pure returns (bytes32 account) {
         ensure(ref, Keys.Party, 32);
@@ -690,11 +476,13 @@ library Blocks {
         return (bytes32(msg.data[ref.i:ref.i + 32]), bytes32(msg.data[ref.i + 32:ref.i + 64]));
     }
 
+
     function unpackFunding(Block memory ref) internal pure returns (uint host, uint amount) {
         ensure(ref, Keys.Funding, 64);
         host = uint(bytes32(msg.data[ref.i:ref.i + 32]));
         amount = uint(bytes32(msg.data[ref.i + 32:ref.i + 64]));
     }
+
 
     function unpackBounty(Block memory ref) internal pure returns (uint amount, bytes32 relayer) {
         ensure(ref, Keys.Bounty, 64);
@@ -709,6 +497,7 @@ library Blocks {
         amount = uint(bytes32(msg.data[ref.i + 64:ref.i + 96]));
     }
 
+
     function unpackBalance(Block memory ref) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
         ensure(ref, Keys.Balance, 96);
         asset = bytes32(msg.data[ref.i:ref.i + 32]);
@@ -716,12 +505,14 @@ library Blocks {
         amount = uint(bytes32(msg.data[ref.i + 64:ref.i + 96]));
     }
 
+
     function unpackMinimum(Block memory ref) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
         ensure(ref, Keys.Minimum, 96);
         asset = bytes32(msg.data[ref.i:ref.i + 32]);
         meta = bytes32(msg.data[ref.i + 32:ref.i + 64]);
         amount = uint(bytes32(msg.data[ref.i + 64:ref.i + 96]));
     }
+
 
     function unpackMaximum(Block memory ref) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
         ensure(ref, Keys.Maximum, 96);
@@ -744,12 +535,13 @@ library Blocks {
         req = msg.data[ref.i + 64:ref.bound];
     }
 
-    function unpackAuth(Block memory ref) internal pure returns (uint cid, uint deadline, bytes calldata proof) {
+    function expectAuth(Block memory ref, uint expectedCid) internal pure returns (uint deadline, bytes calldata proof) {
         ensure(ref, Keys.Auth, 149);
-        cid = uint(bytes32(msg.data[ref.i:ref.i + 32]));
+        if (uint(bytes32(msg.data[ref.i:ref.i + 32])) != expectedCid) revert MalformedBlocks();
         deadline = uint(bytes32(msg.data[ref.i + 32:ref.i + 64]));
         proof = msg.data[ref.i + 64:ref.bound];
     }
+
 
     // ── expect* ───────────────────────────────────────────────────────────────
 
@@ -834,6 +626,7 @@ library Blocks {
         value.amount = uint(bytes32(msg.data[ref.i + 96:ref.i + 128]));
     }
 
+
     function toAllocationValue(Block memory ref) internal pure returns (HostAmount memory value) {
         ensure(ref, Keys.Allocation, 128);
         value.host = uint(bytes32(msg.data[ref.i:ref.i + 32]));
@@ -841,6 +634,7 @@ library Blocks {
         value.meta = bytes32(msg.data[ref.i + 64:ref.i + 96]);
         value.amount = uint(bytes32(msg.data[ref.i + 96:ref.i + 128]));
     }
+
 
     function toTxValue(Block memory ref) internal pure returns (Tx memory value) {
         ensure(ref, Keys.Transaction, 160);
@@ -850,4 +644,275 @@ library Blocks {
         value.meta = bytes32(msg.data[ref.i + 96:ref.i + 128]);
         value.amount = uint(bytes32(msg.data[ref.i + 128:ref.i + 160]));
     }
+
+    // cursor unpack*
+
+    function unpackRoute(Cursor memory cur) internal pure returns (bytes calldata data) {
+        (uint i, uint bound, uint end) = expect(cur, Keys.Route, 0, 0);
+        data = msg.data[i:bound];
+        cur.i = end;
+    }
+
+    function unpackRouteUint(Cursor memory cur) internal pure returns (uint value) {
+        (uint i, , uint end) = expect(cur, Keys.Route, 32, 32);
+        value = uint(bytes32(msg.data[i:i + 32]));
+        cur.i = end;
+    }
+
+    function unpackRoute2Uint(Cursor memory cur) internal pure returns (uint a, uint b) {
+        (uint i, , uint end) = expect(cur, Keys.Route, 64, 64);
+        a = uint(bytes32(msg.data[i:i + 32]));
+        b = uint(bytes32(msg.data[i + 32:i + 64]));
+        cur.i = end;
+    }
+
+    function unpackRoute3Uint(Cursor memory cur) internal pure returns (uint a, uint b, uint c) {
+        (uint i, , uint end) = expect(cur, Keys.Route, 96, 96);
+        a = uint(bytes32(msg.data[i:i + 32]));
+        b = uint(bytes32(msg.data[i + 32:i + 64]));
+        c = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function unpackRoute32(Cursor memory cur) internal pure returns (bytes32 value) {
+        (uint i, , uint end) = expect(cur, Keys.Route, 32, 32);
+        value = bytes32(msg.data[i:i + 32]);
+        cur.i = end;
+    }
+
+    function unpackRoute64(Cursor memory cur) internal pure returns (bytes32 a, bytes32 b) {
+        (uint i, , uint end) = expect(cur, Keys.Route, 64, 64);
+        a = bytes32(msg.data[i:i + 32]);
+        b = bytes32(msg.data[i + 32:i + 64]);
+        cur.i = end;
+    }
+
+    function unpackRoute96(Cursor memory cur) internal pure returns (bytes32 a, bytes32 b, bytes32 c) {
+        (uint i, , uint end) = expect(cur, Keys.Route, 96, 96);
+        a = bytes32(msg.data[i:i + 32]);
+        b = bytes32(msg.data[i + 32:i + 64]);
+        c = bytes32(msg.data[i + 64:i + 96]);
+        cur.i = end;
+    }
+
+    function unpackNode(Cursor memory cur) internal pure returns (uint id) {
+        (uint i, , uint end) = expect(cur, Keys.Node, 32, 32);
+        id = uint(bytes32(msg.data[i:i + 32]));
+        cur.i = end;
+    }
+
+    function unpackRecipient(Cursor memory cur) internal pure returns (bytes32 account) {
+        (uint i, , uint end) = expect(cur, Keys.Recipient, 32, 32);
+        account = bytes32(msg.data[i:i + 32]);
+        cur.i = end;
+    }
+
+    function unpackParty(Cursor memory cur) internal pure returns (bytes32 account) {
+        (uint i, , uint end) = expect(cur, Keys.Party, 32, 32);
+        account = bytes32(msg.data[i:i + 32]);
+        cur.i = end;
+    }
+
+    function unpackRate(Cursor memory cur) internal pure returns (uint value) {
+        (uint i, , uint end) = expect(cur, Keys.Rate, 32, 32);
+        value = uint(bytes32(msg.data[i:i + 32]));
+        cur.i = end;
+    }
+
+    function unpackQuantity(Cursor memory cur) internal pure returns (uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Quantity, 32, 32);
+        amount = uint(bytes32(msg.data[i:i + 32]));
+        cur.i = end;
+    }
+
+    function unpackAsset(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta) {
+        (uint i, , uint end) = expect(cur, Keys.Asset, 64, 64);
+        asset = bytes32(msg.data[i:i + 32]);
+        meta = bytes32(msg.data[i + 32:i + 64]);
+        cur.i = end;
+    }
+
+    function unpackFunding(Cursor memory cur) internal pure returns (uint host, uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Funding, 64, 64);
+        host = uint(bytes32(msg.data[i:i + 32]));
+        amount = uint(bytes32(msg.data[i + 32:i + 64]));
+        cur.i = end;
+    }
+
+    function unpackBounty(Cursor memory cur) internal pure returns (uint amount, bytes32 relayer) {
+        (uint i, , uint end) = expect(cur, Keys.Bounty, 64, 64);
+        amount = uint(bytes32(msg.data[i:i + 32]));
+        relayer = bytes32(msg.data[i + 32:i + 64]);
+        cur.i = end;
+    }
+
+    function unpackAmount(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Amount, 96, 96);
+        asset = bytes32(msg.data[i:i + 32]);
+        meta = bytes32(msg.data[i + 32:i + 64]);
+        amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function unpackBalance(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Balance, 96, 96);
+        asset = bytes32(msg.data[i:i + 32]);
+        meta = bytes32(msg.data[i + 32:i + 64]);
+        amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function unpackMinimum(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Minimum, 96, 96);
+        asset = bytes32(msg.data[i:i + 32]);
+        meta = bytes32(msg.data[i + 32:i + 64]);
+        amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function unpackMaximum(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Maximum, 96, 96);
+        asset = bytes32(msg.data[i:i + 32]);
+        meta = bytes32(msg.data[i + 32:i + 64]);
+        amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function unpackListing(Cursor memory cur) internal pure returns (uint host, bytes32 asset, bytes32 meta) {
+        (uint i, , uint end) = expect(cur, Keys.Listing, 96, 96);
+        host = uint(bytes32(msg.data[i:i + 32]));
+        asset = bytes32(msg.data[i + 32:i + 64]);
+        meta = bytes32(msg.data[i + 64:i + 96]);
+        cur.i = end;
+    }
+
+    function unpackStep(Cursor memory cur) internal pure returns (uint target, uint value, bytes calldata req) {
+        (uint i, uint bound, uint end) = expect(cur, Keys.Step, 64, 0);
+        target = uint(bytes32(msg.data[i:i + 32]));
+        value = uint(bytes32(msg.data[i + 32:i + 64]));
+        req = msg.data[i + 64:bound];
+        cur.i = end;
+    }
+
+    // cursor expect*
+
+    function expectAuth(Cursor memory cur, uint expectedCid) internal pure returns (uint deadline, bytes calldata proof) {
+        (uint i, uint bound, uint end) = expect(cur, Keys.Auth, 149, 0);
+        if (uint(bytes32(msg.data[i:i + 32])) != expectedCid) revert MalformedBlocks();
+        deadline = uint(bytes32(msg.data[i + 32:i + 64]));
+        proof = msg.data[i + 64:bound];
+        cur.i = end;
+    }
+
+    function expectAmount(Cursor memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Amount, 96, 96);
+        if (bytes32(msg.data[i:i + 32]) != asset) revert UnexpectedValue();
+        if (bytes32(msg.data[i + 32:i + 64]) != meta) revert UnexpectedValue();
+        amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function expectBalance(Cursor memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Balance, 96, 96);
+        if (bytes32(msg.data[i:i + 32]) != asset) revert UnexpectedValue();
+        if (bytes32(msg.data[i + 32:i + 64]) != meta) revert UnexpectedValue();
+        amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function expectMinimum(Cursor memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Minimum, 96, 96);
+        if (bytes32(msg.data[i:i + 32]) != asset) revert UnexpectedValue();
+        if (bytes32(msg.data[i + 32:i + 64]) != meta) revert UnexpectedValue();
+        amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function expectMaximum(Cursor memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
+        (uint i, , uint end) = expect(cur, Keys.Maximum, 96, 96);
+        if (bytes32(msg.data[i:i + 32]) != asset) revert UnexpectedValue();
+        if (bytes32(msg.data[i + 32:i + 64]) != meta) revert UnexpectedValue();
+        amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function expectCustody(Cursor memory cur, uint host) internal pure returns (AssetAmount memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Custody, 128, 128);
+        if (uint(bytes32(msg.data[i:i + 32])) != host) revert UnexpectedValue();
+        value.asset = bytes32(msg.data[i + 32:i + 64]);
+        value.meta = bytes32(msg.data[i + 64:i + 96]);
+        value.amount = uint(bytes32(msg.data[i + 96:i + 128]));
+        cur.i = end;
+    }
+
+    // cursor to*Value
+
+    function toAmountValue(Cursor memory cur) internal pure returns (AssetAmount memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Amount, 96, 96);
+        value.asset = bytes32(msg.data[i:i + 32]);
+        value.meta = bytes32(msg.data[i + 32:i + 64]);
+        value.amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function toBalanceValue(Cursor memory cur) internal pure returns (AssetAmount memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Balance, 96, 96);
+        value.asset = bytes32(msg.data[i:i + 32]);
+        value.meta = bytes32(msg.data[i + 32:i + 64]);
+        value.amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function toMinimumValue(Cursor memory cur) internal pure returns (AssetAmount memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Minimum, 96, 96);
+        value.asset = bytes32(msg.data[i:i + 32]);
+        value.meta = bytes32(msg.data[i + 32:i + 64]);
+        value.amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function toMaximumValue(Cursor memory cur) internal pure returns (AssetAmount memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Maximum, 96, 96);
+        value.asset = bytes32(msg.data[i:i + 32]);
+        value.meta = bytes32(msg.data[i + 32:i + 64]);
+        value.amount = uint(bytes32(msg.data[i + 64:i + 96]));
+        cur.i = end;
+    }
+
+    function toListingValue(Cursor memory cur) internal pure returns (HostAsset memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Listing, 96, 96);
+        value.host = uint(bytes32(msg.data[i:i + 32]));
+        value.asset = bytes32(msg.data[i + 32:i + 64]);
+        value.meta = bytes32(msg.data[i + 64:i + 96]);
+        cur.i = end;
+    }
+
+    function toCustodyValue(Cursor memory cur) internal pure returns (HostAmount memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Custody, 128, 128);
+        value.host = uint(bytes32(msg.data[i:i + 32]));
+        value.asset = bytes32(msg.data[i + 32:i + 64]);
+        value.meta = bytes32(msg.data[i + 64:i + 96]);
+        value.amount = uint(bytes32(msg.data[i + 96:i + 128]));
+        cur.i = end;
+    }
+
+    function toAllocationValue(Cursor memory cur) internal pure returns (HostAmount memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Allocation, 128, 128);
+        value.host = uint(bytes32(msg.data[i:i + 32]));
+        value.asset = bytes32(msg.data[i + 32:i + 64]);
+        value.meta = bytes32(msg.data[i + 64:i + 96]);
+        value.amount = uint(bytes32(msg.data[i + 96:i + 128]));
+        cur.i = end;
+    }
+
+    function toTxValue(Cursor memory cur) internal pure returns (Tx memory value) {
+        (uint i, , uint end) = expect(cur, Keys.Transaction, 160, 160);
+        value.from = bytes32(msg.data[i:i + 32]);
+        value.to = bytes32(msg.data[i + 32:i + 64]);
+        value.asset = bytes32(msg.data[i + 64:i + 96]);
+        value.meta = bytes32(msg.data[i + 96:i + 128]);
+        value.amount = uint(bytes32(msg.data[i + 128:i + 160]));
+        cur.i = end;
+    }
+
 }

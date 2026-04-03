@@ -27,7 +27,7 @@ library Assets {
         return bytes32(toLocalBase(Erc721) | (uint(uint160(issuer)) << 32));
     }
 
-    function ensureRef(bytes32 asset, bytes32 meta) internal pure returns (bytes32) {
+    function key(bytes32 asset, bytes32 meta) internal pure returns (bytes32) {
         if (asset == 0 || (bytes1(asset) == 0x20 && meta != 0)) revert InvalidAsset();
         return bytes1(asset) == 0x20 ? asset : keccak256(bytes.concat(asset, meta));
     }
@@ -61,9 +61,9 @@ library Amounts {
         return amount;
     }
 
-    function ensureRef(bytes32 asset, bytes32 meta, uint amount) internal pure returns (bytes32 ref) {
+    function ensureKey(bytes32 asset, bytes32 meta, uint amount) internal pure returns (bytes32 key_) {
         ensure(amount);
-        return Assets.ensureRef(asset, meta);
+        return Assets.key(asset, meta);
     }
 
     function resolve(uint available, uint min, uint max) internal pure returns (uint) {

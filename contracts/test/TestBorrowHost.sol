@@ -4,11 +4,12 @@ pragma solidity ^0.8.33;
 import { Host } from "../core/Host.sol";
 import { BorrowAgainstCustodyToBalance } from "../commands/Borrow.sol";
 import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
-import { Block } from "../Blocks.sol";
+import { Block, Cursor } from "../Blocks.sol";
 import { Blocks } from "../blocks/Blocks.sol";
 import { Ids } from "../utils/Ids.sol";
 
 using Blocks for Block;
+using Blocks for Cursor;
 
 contract TestBorrowHost is Host, BorrowAgainstCustodyToBalance {
     event BorrowCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes inputData);
@@ -30,10 +31,14 @@ contract TestBorrowHost is Host, BorrowAgainstCustodyToBalance {
     function borrowAgainstCustodyToBalance(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawInput
+        Cursor memory input
     ) internal override returns (AssetAmount memory) {
-        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
-        emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, inputData);
+        if (input.i < input.end) {
+            Block memory ref = Blocks.at(input.i);
+            emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, msg.data[ref.i:ref.bound]);
+        } else {
+            emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, "");
+        }
         return AssetAmount({asset: returnAsset, meta: returnMeta, amount: returnAmount});
     }
 

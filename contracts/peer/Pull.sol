@@ -2,8 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { PeerBase } from "./Base.sol";
-import { Blocks, Block } from "../Blocks.sol";
-using Blocks for Block;
+import { Blocks, Cursor } from "../Blocks.sol";
 
 string constant NAME = "peerPull";
 
@@ -14,12 +13,12 @@ abstract contract PeerPull is PeerBase {
         emit Peer(host, NAME, input, peerPullId);
     }
 
-    function peerPull(Block memory rawInput) internal virtual;
+    function peerPull(Cursor memory input) internal virtual;
 
     function peerPull(bytes calldata request) external payable onlyPeer returns (bytes memory) {
         uint q = 0;
         while (q < request.length) {
-            Block memory input = Blocks.from(request, q);
+            Cursor memory input = Blocks.cursorFrom(request, q);
             peerPull(input);
             q = input.cursor;
         }

@@ -18,15 +18,15 @@ import { Assets } from "../contracts/Utils.sol";
 
 contract ExampleHost is Host, DebitAccount {
     // Internal balance ledger: account -> asset key -> amount
-    mapping(bytes32 account => mapping(bytes32 assetRef => uint amount)) internal balances;
+    mapping(bytes32 account => mapping(bytes32 assetKey => uint amount)) internal balances;
 
     constructor(address rootzero) Host(rootzero, 1, "example") {}
 
     // debitAccount is the hook DebitAccount calls for each AMOUNT block.
     // Implement this with whatever storage your app uses.
     function debitAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
-        // ensureAssetRef combines asset + meta into a single composite storage key.
-        bytes32 ref = Assets.ensureRef(asset, meta);
-        balances[account][ref] -= amount;
+        // key combines asset + meta into a single composite storage key.
+        bytes32 key = Assets.key(asset, meta);
+        balances[account][key] -= amount;
     }
 }

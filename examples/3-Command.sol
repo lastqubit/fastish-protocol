@@ -12,9 +12,9 @@ pragma solidity ^0.8.33;
 //   3. The onlyCommand modifier on the entrypoint to enforce the trusted caller and target.
 
 import {CommandBase, CommandContext, Channels} from "../contracts/Commands.sol";
-import {Blocks, Block, Schemas} from "../contracts/Blocks.sol";
+import {Blocks, Cursor, Schemas} from "../contracts/Blocks.sol";
 
-using Blocks for Block;
+using Blocks for Cursor;
 
 // NAME is the human-readable command name. It is used to derive the command ID
 // and is published in the Command event so off-chain tooling can discover it.
@@ -38,9 +38,9 @@ abstract contract MyCommand is CommandBase {
         // onlyCommand checks that msg.sender is the trusted rootzero runtime and that
         // c.target matches this command's ID (or is 0, meaning "any command").
 
-        // Decode the first AMOUNT block from the request at offset 0.
-        Block memory ref = Blocks.amountFrom(c.request, 0);
-        (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
+        // Open the first request block as a cursor and decode the AMOUNT.
+        Cursor memory input = Blocks.cursorFrom(c.request, 0);
+        (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
 
         // Apply your app logic here (e.g. debit the account), then return a BALANCE block.
         return Blocks.toBalanceBlock(asset, meta, amount);

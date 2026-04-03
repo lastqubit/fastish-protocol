@@ -41,76 +41,28 @@ library Writers {
         writer.i = next;
     }
 
-    function allocBalancesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source
-    ) internal pure returns (Writer memory writer, uint cursor) {
-        return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, BALANCE_BLOCK_LEN);
+    function allocBalances(uint count) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, ALLOC_SCALE, BALANCE_BLOCK_LEN);
     }
 
-    function allocPairedBalancesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source
-    ) internal pure returns (Writer memory writer, uint cursor) {
-        return allocFromScaledCount(blocks, i, source, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
+    function allocPairedBalances(uint count) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
     }
 
-    function allocScaledBalancesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source,
-        uint scaledRatio
-    ) internal pure returns (Writer memory writer, uint cursor) {
-        return allocFromScaledCount(blocks, i, source, scaledRatio, BALANCE_BLOCK_LEN);
+    function allocScaledBalances(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, scaledRatio, BALANCE_BLOCK_LEN);
     }
 
-    function allocScaledBalances(
-        bytes calldata blocks,
-        uint i,
-        uint scaledRatio
-    ) internal pure returns (Writer memory writer, uint cursor) {
-        uint count;
-        (count, cursor) = Blocks.count(blocks, i);
-        writer = allocFromScaledCount(count, scaledRatio, BALANCE_BLOCK_LEN);
+    function allocTxs(uint count) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, ALLOC_SCALE, TX_BLOCK_LEN);
     }
 
-    function allocTxsFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source
-    ) internal pure returns (Writer memory writer, uint cursor) {
-        return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, TX_BLOCK_LEN);
+    function allocCustodies(uint count) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
     }
 
-    function allocCustodiesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source
-    ) internal pure returns (Writer memory writer, uint cursor) {
-        return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
-    }
-
-    function allocScaledCustodiesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source,
-        uint scaledRatio
-    ) internal pure returns (Writer memory writer, uint cursor) {
-        return allocFromScaledCount(blocks, i, source, scaledRatio, CUSTODY_BLOCK_LEN);
-    }
-
-    function allocFromScaledCount(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source,
-        uint scaledRatio,
-        uint blockLen
-    ) internal pure returns (Writer memory writer, uint cursor) {
-        uint count;
-        (count, cursor) = Blocks.count(blocks, i, source);
-        writer = allocFromScaledCount(count, scaledRatio, blockLen);
+    function allocScaledCustodies(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, scaledRatio, CUSTODY_BLOCK_LEN);
     }
 
     function allocFromScaledCount(

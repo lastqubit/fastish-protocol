@@ -2,13 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext } from "./Base.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Schemas } from "../blocks/Schema.sol";
-import { Blocks, Block, Keys } from "../Blocks.sol";
+import { Blocks, Cursor, Keys, Schemas } from "../Blocks.sol";
 import { Accounts } from "../utils/Accounts.sol";
 import { Values } from "../utils/Value.sol";
 
-using Blocks for Block;
+using Blocks for Cursor;
 
 string constant NAME = "pipe";
 
@@ -19,7 +17,7 @@ abstract contract Pipe is CommandBase {
         emit Command(host, NAME, Schemas.Step, pipeId, 0, 0);
     }
 
-    /// @dev Override to execute a single STEP target and return the next
+    /// @dev Override to execute a single STEP request and return the next
     /// threaded state for the pipe.
     function dispatchStep(
         uint target,
@@ -35,17 +33,14 @@ abstract contract Pipe is CommandBase {
         bytes calldata steps,
         Values.Budget memory budget
     ) internal returns (bytes memory) {
-        uint i = 0;
-        while (i < steps.length) {
-            Block memory ref = Blocks.from(steps, i);
-            if (ref.key != Keys.Step) break;
-            (uint target, uint value, bytes calldata request) = ref.unpackStep();
+        (Cursor memory input, ) = Blocks.matchingFrom(steps, 0, Keys.Step);
+        while (input.i < input.end) {
+            (uint target, uint value, bytes calldata request) = input.unpackStep();
             uint spend = Values.use(budget, value);
             state = dispatchStep(target, account, state, request, spend);
-            i = ref.cursor;
         }
 
-        return done(state, 0, i);
+        return done(state, input);
     }
 
     // Any unused value will not be credited back to the account using this path.

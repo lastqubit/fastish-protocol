@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "../Base.sol";
-import { Blocks, Block } from "../../Blocks.sol";
+import { Blocks, Cursor } from "../../Blocks.sol";
 
 string constant NAME = "init";
 
@@ -14,12 +14,12 @@ abstract contract Init is CommandBase {
     }
 
     /// @dev Override to run host initialization logic using the decoded input.
-    function init(Block memory rawInput) internal virtual;
+    function init(Cursor memory input) internal virtual;
 
     function init(
         CommandContext calldata c
     ) external payable onlyAdmin(c.account) onlyCommand(initId, c.target) returns (bytes memory) {
-        Block memory input = Blocks.from(c.request, 0);
+        Cursor memory input = Blocks.cursorFrom(c.request, 0);
         init(input);
         return done(0, input.cursor);
     }

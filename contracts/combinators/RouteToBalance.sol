@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import {Blocks, Cursor, Writers, Writer, Keys} from "../Blocks.sol";
 
+using Blocks for Cursor;
 using Writers for Writer;
 
 abstract contract RouteToBalance {
     function routeToBalance(
         bytes32 account,
-        Block memory rawRoute
+        Cursor memory route
     ) internal virtual returns (bytes32 asset, bytes32 meta, uint amount);
 
     function routesToBalances(bytes calldata blocks, uint i, bytes32 account) internal returns (bytes memory) {
-        (Writer memory writer, uint end) = Writers.allocBalancesFrom(blocks, i, Keys.Route);
+        (Cursor memory scan, uint count) = Blocks.matchingFrom(blocks, i, Keys.Route);
+        Writer memory writer = Writers.allocBalances(count);
 
-        while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(blocks, i);
-            i = route.cursor;
+        while (scan.i < scan.end) {
+            Cursor memory route = scan.take();
             (bytes32 asset, bytes32 meta, uint amount) = routeToBalance(account, route);
             if (amount > 0) writer.appendBalance(asset, meta, amount);
         }

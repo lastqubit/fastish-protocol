@@ -2,13 +2,13 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, HostAmount, Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
 
 string constant SBTB = "stakeBalanceToBalances";
 string constant SCTB = "stakeCustodyToBalances";
 string constant SCTP = "stakeCustodyToPosition";
 
-using Blocks for Block;
+using Blocks for Cursor;
 using Writers for Writer;
 
 abstract contract StakeBalanceToBalances is CommandBase {
@@ -25,24 +25,21 @@ abstract contract StakeBalanceToBalances is CommandBase {
     function stakeBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawInput,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function stakeBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(stakeBalanceToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
+        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory input = Blocks.from(c.request, q);
-            q = input.cursor;
-            Block memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue();
+        while (balances.i < balances.end) {
+            input = Blocks.cursorFrom(c.request, input.cursor);
+            AssetAmount memory balance = balances.toBalanceValue();
             stakeBalanceToBalances(c.account, balance, input, writer);
-            i = ref.cursor;
         }
 
         return writer.finish();
@@ -63,24 +60,21 @@ abstract contract StakeCustodyToBalances is CommandBase {
     function stakeCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawInput,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function stakeCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(stakeCustodyToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
+        (Cursor memory custodies, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory input = Blocks.from(c.request, q);
-            q = input.cursor;
-            Block memory ref = Blocks.from(c.state, i);
-            HostAmount memory custody = ref.toCustodyValue();
+        while (custodies.i < custodies.end) {
+            input = Blocks.cursorFrom(c.request, input.cursor);
+            HostAmount memory custody = custodies.toCustodyValue();
             stakeCustodyToBalances(c.account, custody, input, writer);
-            i = ref.cursor;
         }
 
         return writer.finish();
@@ -96,23 +90,19 @@ abstract contract StakeCustodyToPosition is CommandBase {
 
     /// @dev Override to stake a custody position into a non-balance setup
     /// target described by `rawInput`.
-    function stakeCustodyToPosition(bytes32 account, HostAmount memory custody, Block memory rawInput) internal virtual;
+    function stakeCustodyToPosition(bytes32 account, HostAmount memory custody, Cursor memory input) internal virtual;
 
     function stakeCustodyToPosition(
         CommandContext calldata c
     ) external payable onlyCommand(stakeCustodyToPositionId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        while (i < c.state.length) {
-            Block memory ref = Blocks.from(c.state, i);
-            if (ref.key != Keys.Custody) break;
-            HostAmount memory custody = ref.toCustodyValue();
-            Block memory input = Blocks.from(c.request, q);
-            q = input.cursor;
+        (Cursor memory custodies, ) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        Cursor memory input;
+        while (custodies.i < custodies.end) {
+            HostAmount memory custody = custodies.toCustodyValue();
+            input = Blocks.cursorFrom(c.request, input.cursor);
             stakeCustodyToPosition(c.account, custody, input);
-            i = ref.cursor;
         }
 
-        return done(0, i);
+        return done(custodies);
     }
 }

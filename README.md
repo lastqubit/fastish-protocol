@@ -70,20 +70,28 @@ Extend `CommandBase` when you want a rootzero command mixin that runs inside the
 pragma solidity ^0.8.33;
 
 import {CommandBase, CommandContext} from "@rootzero/contracts/Commands.sol";
+import {Blocks, Cursor, Schemas} from "@rootzero/contracts/Blocks.sol";
 
 string constant NAME = "myCommand";
 string constant ROUTE = "route(uint foo, uint bar)";
+string constant INPUT = string.concat(ROUTE, "&", Schemas.Amount);
+
+using Blocks for Cursor;
 
 abstract contract ExampleCommand is CommandBase {
     uint internal immutable myCommandId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, ROUTE, myCommandId, 0, 0);
+        emit Command(host, NAME, INPUT, myCommandId, 0, 0);
     }
 
     function myCommand(
         CommandContext calldata c
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
+        Cursor memory input = Blocks.cursorFrom(c.request, 0);
+        uint foo = uint(input.unpackRoute32());
+        (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
+        foo; asset; meta; amount;
         return "";
     }
 }

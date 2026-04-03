@@ -2,7 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
+using Blocks for Cursor;
 using Writers for Writer;
 
 string constant NAME = "mintToBalances";
@@ -16,23 +17,25 @@ abstract contract MintToBalances is CommandBase {
         emit Command(host, NAME, input, mintToBalancesId, Channels.Setup, Channels.Balances);
     }
 
-    /// @dev Override to mint balances described by `rawInput` for `account`.
-    /// Implementations may append one or more BALANCE blocks to `out`.
+    /// @dev Override to mint balances described by the current `input` stream
+    /// position for `account`.
+    /// Implementations should consume the request blocks they handle by
+    /// advancing `input`, and may append BALANCE outputs to `out` within the
+    /// capacity implied by this command's configured `scaledRatio`.
     function mintToBalances(
         bytes32 account,
-        Block memory rawInput,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function mintToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(mintToBalancesId, c.target) returns (bytes memory) {
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalances(c.request, q, outScale);
+        (Cursor memory inputs, uint count) = Blocks.allFrom(c.request, 0);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
 
-        while (q < end) {
-            Block memory input = Blocks.from(c.request, q);
-            q = input.cursor;
+        while (inputs.i < inputs.end) {
+            Cursor memory input = inputs.take();
             mintToBalances(c.account, input, writer);
         }
 

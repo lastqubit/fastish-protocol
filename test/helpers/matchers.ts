@@ -54,8 +54,11 @@ function makeEmitPromise(
   contract: BaseContract,
   eventName: string
 ): Promise<void> & { withArgs(...args: unknown[]): Promise<void> } {
+  const guardedTxPromise = Promise.resolve(txPromise);
+  guardedTxPromise.catch(() => {});
+
   const check = async (args?: unknown[]) => {
-    const tx = await txPromise;
+    const tx = await guardedTxPromise;
     const receipt = await tx.wait();
     if (!receipt) throw new chai.AssertionError(`No receipt returned for '${eventName}'`);
 
@@ -83,16 +86,23 @@ function makeEmitPromise(
     }
   };
 
-  const p = check() as Promise<void> & { withArgs(...args: unknown[]): Promise<void> };
-  p.withArgs = (...args: unknown[]) => check(args);
-  return p;
+  const thenable = {
+    withArgs: (...args: unknown[]) => check(args),
+    then: (onFulfilled?: ((value: void) => unknown) | null, onRejected?: ((reason: unknown) => unknown) | null) =>
+      check().then(onFulfilled, onRejected),
+    catch: (onRejected?: ((reason: unknown) => unknown) | null) => check().catch(onRejected),
+    finally: (onFinally?: (() => void) | null) => check().finally(onFinally ?? undefined),
+  };
+
+  return thenable as Promise<void> & { withArgs(...args: unknown[]): Promise<void> };
 }
 
 chai.use((chaiLib, utils) => {
   chaiLib.Assertion.addMethod(
     "revertedWithCustomError",
     function (this: object, contract: BaseContract, errorName: string) {
-      const promise: Promise<unknown> = utils.flag(this, "object");
+      const promise: Promise<unknown> = Promise.resolve(utils.flag(this, "object"));
+      promise.catch(() => {});
       return promise.then(
         () => {
           throw new chai.AssertionError(

@@ -3,12 +3,13 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { ReclaimToBalances } from "../commands/Reclaim.sol";
-import { AssetAmount, Block, Writer } from "../Blocks.sol";
+import { AssetAmount, Block, Cursor, Writer } from "../Blocks.sol";
 import { Blocks } from "../blocks/Blocks.sol";
 import { Writers } from "../blocks/Writers.sol";
 import { Ids } from "../utils/Ids.sol";
 
 using Blocks for Block;
+using Blocks for Cursor;
 using Writers for Writer;
 
 contract TestReclaimHost is Host, ReclaimToBalances {
@@ -33,12 +34,14 @@ contract TestReclaimHost is Host, ReclaimToBalances {
 
     function reclaimToBalances(
         bytes32 account,
-        Block memory rawInput,
+        Cursor memory input,
         Writer memory out
     ) internal override {
-        AssetAmount memory amount = rawInput.innerAmountValue();
-        bytes calldata inputData = msg.data[rawInput.i:rawInput.bound];
-        emit ReclaimCalled(account, amount.asset, amount.meta, amount.amount, inputData);
+        Block memory ref = Blocks.at(input.i);
+        Cursor memory inner = Blocks.cursorFrom(msg.data[ref.bound:ref.end], 0);
+        (bytes32 asset, bytes32 meta, uint amount_) = inner.unpackAmount();
+        bytes calldata inputData = msg.data[ref.i:ref.bound];
+        emit ReclaimCalled(account, asset, meta, amount_, inputData);
         if (returnAmount > 0) out.appendBalance(returnAsset, returnMeta, returnAmount);
     }
 

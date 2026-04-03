@@ -2,10 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Tx } from "../blocks/Schema.sol";
-import { Keys } from "../blocks/Keys.sol";
-import { Blocks, Block, Keys } from "../Blocks.sol";
-using Blocks for Block;
+import { Blocks, Cursor, Keys, Tx } from "../Blocks.sol";
+using Blocks for Cursor;
 
 string constant NAME = "settle";
 
@@ -21,14 +19,11 @@ abstract contract Settle is CommandBase {
     function settle(Tx memory value) internal virtual;
 
     function settle(CommandContext calldata c) external payable onlyCommand(settleId, c.target) returns (bytes memory) {
-        uint i = 0;
-        while (i < c.state.length) {
-            Block memory ref = Blocks.from(c.state, i);
-            if (ref.key != Keys.Transaction) break;
-            Tx memory value = ref.toTxValue();
+        (Cursor memory txs, ) = Blocks.matchingFrom(c.state, 0, Keys.Transaction);
+        while (txs.i < txs.end) {
+            Tx memory value = txs.toTxValue();
             settle(value);
-            i = ref.cursor;
         }
-        return done(0, i);
+        return done(txs);
     }
 }
