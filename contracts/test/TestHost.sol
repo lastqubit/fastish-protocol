@@ -85,13 +85,13 @@ contract TestHost is
 
     function init(Cursor memory input) internal override {
         Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.bound];
+        bytes calldata inputData = msg.data[ref.i:ref.end];
         emit InitCalled(inputData);
     }
 
     function destroy(Cursor memory input) internal override {
         Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.bound];
+        bytes calldata inputData = msg.data[ref.i:ref.end];
         emit DestroyCalled(inputData);
     }
 

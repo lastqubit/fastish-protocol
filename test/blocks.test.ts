@@ -29,25 +29,25 @@ describe("Blocks", () => {
     const meta  = ethers.zeroPadValue("0x02", 32);
     const amount = 12345n;
 
-    it("toBlockHeader packs key/selfLen/totalLen into upper bits", async () => {
+    it("toBlockHeader packs key/payloadLen into upper bits", async () => {
       const key = Keys.Balance;
-      const header: bigint = await helper.testBlockHeader(key, 96n, 96n);
+      const header: bigint = await helper.testBlockHeader(key, 96n);
       // Key in bits 224-255
       const keyFromHeader = (header >> 224n) & 0xffffffffn;
       expect(keyFromHeader.toString(16)).to.equal(key.slice(2).toLowerCase());
-      // selfLen in bits 192-223
-      const selfLen = (header >> 192n) & 0xffffffffn;
-      expect(selfLen).to.equal(96n);
+      // payloadLen in bits 192-223
+      const payloadLen = (header >> 192n) & 0xffffffffn;
+      expect(payloadLen).to.equal(96n);
     });
 
-    it("toBlockHeader reverts MalformedBlocks when selfLen > totalLen", async () => {
-      await expect(helper.testBlockHeader(Keys.Balance, 96n, 64n))
+    it("toBlockHeader reverts MalformedBlocks when payloadLen exceeds uint32", async () => {
+      await expect(helper.testBlockHeader(Keys.Balance, 0x1_0000_0000n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
-    it("writeBalanceBlock produces 108-byte output", async () => {
+    it("writeBalanceBlock produces 104-byte output", async () => {
       const data: string = await helper.testWriteBalanceBlock(asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(108);
+      expect(ethers.getBytes(data).length).to.equal(104);
     });
 
     it("writeBalanceBlock starts with Keys.Balance", async () => {
@@ -64,17 +64,17 @@ describe("Blocks", () => {
       expect(v).to.equal(amount);
     });
 
-    it("writeCustodyBlock produces 140-byte output", async () => {
+    it("writeCustodyBlock produces 136-byte output", async () => {
       const hostId = 1234n;
       const data: string = await helper.testWriteCustodyBlock(hostId, asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(140);
+      expect(ethers.getBytes(data).length).to.equal(136);
     });
 
-    it("writeTxBlock produces 172-byte output", async () => {
+    it("writeTxBlock produces 168-byte output", async () => {
       const from_ = ethers.zeroPadValue("0x03", 32);
       const to_   = ethers.zeroPadValue("0x04", 32);
       const data: string = await helper.testWriteTxBlock(from_, to_, asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(172);
+      expect(ethers.getBytes(data).length).to.equal(168);
     });
 
     it("writeTxBlock round-trips correctly", async () => {
@@ -95,7 +95,7 @@ describe("Blocks", () => {
 
     it("finish truncates to actual written length", async () => {
       const data: string = await helper.testWriterFinish(asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(108); // one balance block
+      expect(ethers.getBytes(data).length).to.equal(104); // one balance block
     });
   });
 
@@ -117,12 +117,11 @@ describe("Blocks", () => {
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
-    it("from parses block key, bound, end correctly", async () => {
+    it("from parses block key and end correctly", async () => {
       const data = encodeAmountBlock(asset, meta, amount);
-      const [key, bound, end] = await helper.testParseBlock(data, 0n);
+      const [key, end] = await helper.testParseBlock(data, 0n);
       expect(key).to.equal(Keys.Amount);
       expect(end).to.equal(BigInt(ethers.getBytes(data).length));
-      expect(bound).to.equal(end); // no children
     });
 
     it("from reverts MalformedBlocks when total length runs past the source", async () => {
@@ -473,20 +472,11 @@ describe("Blocks", () => {
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
-    it("from reverts MalformedBlocks when selfLen > totalLen in parsed block", async () => {
+    it("from reverts MalformedBlocks when payloadLen exceeds source length", async () => {
       const data = encodeAmountBlock(asset, meta, amount);
       const bytes_ = ethers.getBytes(data);
-      // bytes [4..7] = selfLen; set to 200 while totalLen stays 96 → selfLen > totalLen
+      // bytes [4..7] = payloadLen; set to 200 so ref.end exceeds source length
       bytes_[4] = 0x00; bytes_[5] = 0x00; bytes_[6] = 0x00; bytes_[7] = 0xC8;
-      await expect(helper.testParseBlock(ethers.hexlify(bytes_), 0n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
-
-    it("from reverts MalformedBlocks when totalLen exceeds source length", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      const bytes_ = ethers.getBytes(data);
-      // bytes [8..11] = totalLen; set to 9999 so ref.end = 12 + 9999 > source.length
-      bytes_[8] = 0x00; bytes_[9] = 0x00; bytes_[10] = 0x27; bytes_[11] = 0x0F;
       await expect(helper.testParseBlock(ethers.hexlify(bytes_), 0n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
@@ -505,11 +495,10 @@ describe("Blocks", () => {
         const memberA = encodeRouteBlock("0x1234");
         const memberB = encodeMinimumBlock(asset, meta, amount);
         const bundle = encodeBundleBlock(memberA, memberB);
-        const [key, start, bound, end, cursor] = await helper.testBundleFrom(bundle, 0n);
+        const [key, start, end, cursor] = await helper.testBundleFrom(bundle, 0n);
         expect(key).to.equal(Keys.Bundle);
-        expect(start).to.equal(12n);
-        expect(bound).to.equal(BigInt(ethers.getBytes(bundle).length));
-        expect(end).to.equal(bound);
+        expect(start).to.equal(8n);
+        expect(end).to.equal(BigInt(ethers.getBytes(bundle).length));
         expect(cursor).to.equal(BigInt(ethers.getBytes(bundle).length));
       });
 
@@ -536,28 +525,26 @@ describe("Blocks", () => {
         const memberA = encodeRouteBlock("0x1234");
         const memberB = encodeMinimumBlock(asset, meta, amount);
         const bundle = encodeBundleBlock(memberA, memberB);
-        const [key, start, bound, end, cursor] = await helper.testMember(bundle, 0n, 1n);
-        const expectedBlockStart = BigInt(ethers.getBytes(memberA).length) + 12n;
-        const expectedStart = expectedBlockStart + 12n;
+        const [key, start, end, cursor] = await helper.testMember(bundle, 0n, 1n);
+        const expectedBlockStart = BigInt(ethers.getBytes(memberA).length) + 8n;
+        const expectedStart = expectedBlockStart + 8n;
         expect(key).to.equal(Keys.Minimum);
         expect(start).to.equal(expectedStart);
-        expect(bound).to.equal(expectedStart + 96n);
-        expect(end).to.equal(bound);
-        expect(cursor).to.equal(bound);
+        expect(end).to.equal(expectedStart + 96n);
+        expect(cursor).to.equal(end);
       });
 
       it("memberAt returns the member at an exact inner position", async () => {
         const memberA = encodeRouteBlock("0x1234");
         const memberB = encodeMinimumBlock(asset, meta, amount);
         const bundle = encodeBundleBlock(memberA, memberB);
-        const secondStart = BigInt(ethers.getBytes(memberA).length) + 12n;
-        const [key, start, bound, end, cursor] = await helper.testMemberAt(bundle, 0n, secondStart);
-        const expectedStart = secondStart + 12n;
+        const secondStart = BigInt(ethers.getBytes(memberA).length) + 8n;
+        const [key, start, end, cursor] = await helper.testMemberAt(bundle, 0n, secondStart);
+        const expectedStart = secondStart + 8n;
         expect(key).to.equal(Keys.Minimum);
         expect(start).to.equal(expectedStart);
-        expect(bound).to.equal(expectedStart + 96n);
-        expect(end).to.equal(bound);
-        expect(cursor).to.equal(bound);
+        expect(end).to.equal(expectedStart + 96n);
+        expect(cursor).to.equal(end);
       });
 
       it("member reverts MalformedBlocks when the indexed member is out of range", async () => {
@@ -568,12 +555,11 @@ describe("Blocks", () => {
 
       it("memberAt-style helper can address a non-bundle cursor position", async () => {
         const amountBlock = encodeAmountBlock(asset, meta, amount);
-        const [key, start, bound, end, cursor] = await helper.testMemberAt(amountBlock, 0n, 0n);
+        const [key, start, end, cursor] = await helper.testMemberAt(amountBlock, 0n, 0n);
         expect(key).to.equal(Keys.Amount);
-        expect(start).to.equal(12n);
-        expect(bound).to.equal(108n);
-        expect(end).to.equal(108n);
-        expect(cursor).to.equal(108n);
+        expect(start).to.equal(8n);
+        expect(end).to.equal(104n);
+        expect(cursor).to.equal(104n);
       });
     });
   });
@@ -606,8 +592,8 @@ describe("Blocks", () => {
     it("slice extracts sub-array", async () => {
       const data = encodeBalanceBlock(asset, meta, amount);
       const fullBytes = ethers.getBytes(data);
-      const sliced: string = await helper.testMemSlice(data, 12n, BigInt(fullBytes.length));
-      expect(ethers.getBytes(sliced).length).to.equal(fullBytes.length - 12);
+      const sliced: string = await helper.testMemSlice(data, 8n, BigInt(fullBytes.length));
+      expect(ethers.getBytes(sliced).length).to.equal(fullBytes.length - 8);
     });
 
     it("slice reverts MalformedBlocks for invalid bounds", async () => {
@@ -629,11 +615,11 @@ describe("Blocks", () => {
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
-    it("from reverts MalformedBlocks when Mem totalLen exceeds source", async () => {
+    it("from reverts MalformedBlocks when Mem payloadLen exceeds source", async () => {
       const data = encodeBalanceBlock(asset, meta, amount);
       const bytes_ = ethers.getBytes(data);
-      // bytes [8..11] = totalLen; set to 9999 so ref.end > source.length
-      bytes_[8] = 0x00; bytes_[9] = 0x00; bytes_[10] = 0x27; bytes_[11] = 0x0F;
+      // bytes [4..7] = payloadLen; set to 9999 so ref.end > source.length
+      bytes_[4] = 0x00; bytes_[5] = 0x00; bytes_[6] = 0x27; bytes_[7] = 0x0F;
       await expect(helper.testMemParseBalance(ethers.hexlify(bytes_), 0n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });

@@ -23,13 +23,13 @@ contract TestPeerHost is Host, PeerPull, PeerPush {
 
     function peerPull(Cursor memory input) internal override {
         Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.bound];
+        bytes calldata inputData = msg.data[ref.i:ref.end];
         emit PeerPullCalled(inputData);
     }
 
     function peerPush(Cursor memory input) internal override {
         Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.bound];
+        bytes calldata inputData = msg.data[ref.i:ref.end];
         emit PeerPushCalled(inputData);
     }
 

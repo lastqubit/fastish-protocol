@@ -33,7 +33,7 @@ contract TestMintHost is Host, MintToBalances {
 
     function mintToBalances(bytes32 account, Cursor memory input, Writer memory out) internal override {
         Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.bound];
+        bytes calldata inputData = msg.data[ref.i:ref.end];
         emit MintCalled(account, inputData);
         if (returnAmount > 0) out.appendBalance(returnAsset, returnMeta, returnAmount);
     }

@@ -7,7 +7,6 @@ import {BALANCE_BLOCK_LEN, BOUNTY_BLOCK_LEN, CUSTODY_BLOCK_LEN, TX_BLOCK_LEN, Wr
 struct Block {
     bytes4 key;
     uint i;
-    uint bound;
     uint end;
     uint cursor;
 }
@@ -33,18 +32,16 @@ library Blocks {
 
     function at(uint i) internal pure returns (Block memory ref) {
         uint eod = msg.data.length;
-        if (i == eod) return Block(bytes4(0), 0, 0, i, i);
+        if (i == eod) return Block(bytes4(0), i, i, i);
         if (i > eod) revert MalformedBlocks();
 
         unchecked {
-            ref.i = i + 12;
+            ref.i = i + 8;
         }
         if (ref.i > eod) revert MalformedBlocks();
         ref.key = bytes4(msg.data[i:i + 4]);
-        ref.bound = ref.i + uint32(bytes4(msg.data[i + 4:i + 8]));
-        ref.end = ref.i + uint32(bytes4(msg.data[i + 8:ref.i]));
-
-        if (ref.bound > ref.end || ref.end > eod) revert MalformedBlocks();
+        ref.end = ref.i + uint32(bytes4(msg.data[i + 4:i + 8]));
+        if (ref.end > eod) revert MalformedBlocks();
     }
 
     function from(bytes calldata source, uint i) internal pure returns (Block memory ref) {
@@ -54,23 +51,22 @@ library Blocks {
             base := source.offset
         }
 
-        if (i == eod) return Block(bytes4(0), 0, 0, base + i, i);
+        if (i == eod) return Block(bytes4(0), base + i, base + i, i);
         if (i > eod) revert MalformedBlocks();
 
         uint start;
         unchecked {
-            start = i + 12;
+            start = i + 8;
         }
         if (start > eod) revert MalformedBlocks();
 
         ref.key = bytes4(source[i:i + 4]);
         ref.i = base + start;
-        ref.bound = ref.i + uint32(bytes4(source[i + 4:i + 8]));
-        ref.end = ref.i + uint32(bytes4(source[i + 8:start]));
-        ref.cursor = i + (ref.end - ref.i) + 12;
+        ref.end = ref.i + uint32(bytes4(source[i + 4:i + 8]));
+        ref.cursor = i + (ref.end - ref.i) + 8;
 
         uint eos = base + eod;
-        if (ref.bound > ref.end || ref.end > eos) revert MalformedBlocks();
+        if (ref.end > eos) revert MalformedBlocks();
     }
 
     function expect(
@@ -78,19 +74,16 @@ library Blocks {
         bytes4 key,
         uint min,
         uint max
-    ) internal pure returns (uint i, uint bound, uint end) {
-        if (cur.i + 12 > cur.end) revert MalformedBlocks();
+    ) internal pure returns (uint i, uint end) {
+        if (cur.i + 8 > cur.end) revert MalformedBlocks();
         if (bytes4(msg.data[cur.i:cur.i + 4]) != key) revert InvalidBlock();
 
         unchecked {
-            i = cur.i + 12;
+            i = cur.i + 8;
         }
-        bound = i + uint32(bytes4(msg.data[cur.i + 4:cur.i + 8]));
-        end = i + uint32(bytes4(msg.data[cur.i + 8:i]));
-
-        if (bound > end || end > cur.end) revert MalformedBlocks();
-
-        uint len = bound - i;
+        end = i + uint32(bytes4(msg.data[cur.i + 4:i]));
+        if (end > cur.end) revert MalformedBlocks();
+        uint len = end - i;
         if (len < min || (max != 0 && len > max)) revert InvalidBlock();
         cur.i = end;
     }
@@ -215,7 +208,7 @@ library Blocks {
             i = ref.cursor;
         }
 
-        return Block(bytes4(0), limit, limit, limit, limit);
+        return Block(bytes4(0), limit, limit, limit);
     }
 
     function create32(bytes4 key, bytes32 value) internal pure returns (bytes memory) {
@@ -285,11 +278,11 @@ library Blocks {
     }
 
     function ensure(Block memory ref, bytes4 key, uint len) internal pure {
-        if (key == 0 || key != ref.key || len != (ref.bound - ref.i)) revert InvalidBlock();
+        if (key == 0 || key != ref.key || len != (ref.end - ref.i)) revert InvalidBlock();
     }
 
     function ensure(Block memory ref, bytes4 key, uint min, uint max) internal pure {
-        uint len = ref.bound - ref.i;
+        uint len = ref.end - ref.i;
         if (key == 0 || key != ref.key || len < min || (max != 0 && len > max)) revert InvalidBlock();
     }
 
@@ -403,7 +396,7 @@ library Blocks {
 
     function unpackRoute(Block memory ref) internal pure returns (bytes calldata data) {
         ensure(ref, Keys.Route);
-        return msg.data[ref.i:ref.bound];
+        return msg.data[ref.i:ref.end];
     }
 
 
@@ -532,14 +525,14 @@ library Blocks {
         ensure(ref, Keys.Step, 64, 0);
         target = uint(bytes32(msg.data[ref.i:ref.i + 32]));
         value = uint(bytes32(msg.data[ref.i + 32:ref.i + 64]));
-        req = msg.data[ref.i + 64:ref.bound];
+        req = msg.data[ref.i + 64:ref.end];
     }
 
     function expectAuth(Block memory ref, uint expectedCid) internal pure returns (uint deadline, bytes calldata proof) {
         ensure(ref, Keys.Auth, 149);
         if (uint(bytes32(msg.data[ref.i:ref.i + 32])) != expectedCid) revert MalformedBlocks();
         deadline = uint(bytes32(msg.data[ref.i + 32:ref.i + 64]));
-        proof = msg.data[ref.i + 64:ref.bound];
+        proof = msg.data[ref.i + 64:ref.end];
     }
 
 
@@ -648,26 +641,26 @@ library Blocks {
     // cursor unpack*
 
     function unpackRoute(Cursor memory cur) internal pure returns (bytes calldata data) {
-        (uint i, uint bound, uint end) = expect(cur, Keys.Route, 0, 0);
-        data = msg.data[i:bound];
+        (uint i, uint end) = expect(cur, Keys.Route, 0, 0);
+        data = msg.data[i:end];
         cur.i = end;
     }
 
     function unpackRouteUint(Cursor memory cur) internal pure returns (uint value) {
-        (uint i, , uint end) = expect(cur, Keys.Route, 32, 32);
+        (uint i, uint end) = expect(cur, Keys.Route, 32, 32);
         value = uint(bytes32(msg.data[i:i + 32]));
         cur.i = end;
     }
 
     function unpackRoute2Uint(Cursor memory cur) internal pure returns (uint a, uint b) {
-        (uint i, , uint end) = expect(cur, Keys.Route, 64, 64);
+        (uint i, uint end) = expect(cur, Keys.Route, 64, 64);
         a = uint(bytes32(msg.data[i:i + 32]));
         b = uint(bytes32(msg.data[i + 32:i + 64]));
         cur.i = end;
     }
 
     function unpackRoute3Uint(Cursor memory cur) internal pure returns (uint a, uint b, uint c) {
-        (uint i, , uint end) = expect(cur, Keys.Route, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Route, 96, 96);
         a = uint(bytes32(msg.data[i:i + 32]));
         b = uint(bytes32(msg.data[i + 32:i + 64]));
         c = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -675,20 +668,20 @@ library Blocks {
     }
 
     function unpackRoute32(Cursor memory cur) internal pure returns (bytes32 value) {
-        (uint i, , uint end) = expect(cur, Keys.Route, 32, 32);
+        (uint i, uint end) = expect(cur, Keys.Route, 32, 32);
         value = bytes32(msg.data[i:i + 32]);
         cur.i = end;
     }
 
     function unpackRoute64(Cursor memory cur) internal pure returns (bytes32 a, bytes32 b) {
-        (uint i, , uint end) = expect(cur, Keys.Route, 64, 64);
+        (uint i, uint end) = expect(cur, Keys.Route, 64, 64);
         a = bytes32(msg.data[i:i + 32]);
         b = bytes32(msg.data[i + 32:i + 64]);
         cur.i = end;
     }
 
     function unpackRoute96(Cursor memory cur) internal pure returns (bytes32 a, bytes32 b, bytes32 c) {
-        (uint i, , uint end) = expect(cur, Keys.Route, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Route, 96, 96);
         a = bytes32(msg.data[i:i + 32]);
         b = bytes32(msg.data[i + 32:i + 64]);
         c = bytes32(msg.data[i + 64:i + 96]);
@@ -696,58 +689,58 @@ library Blocks {
     }
 
     function unpackNode(Cursor memory cur) internal pure returns (uint id) {
-        (uint i, , uint end) = expect(cur, Keys.Node, 32, 32);
+        (uint i, uint end) = expect(cur, Keys.Node, 32, 32);
         id = uint(bytes32(msg.data[i:i + 32]));
         cur.i = end;
     }
 
     function unpackRecipient(Cursor memory cur) internal pure returns (bytes32 account) {
-        (uint i, , uint end) = expect(cur, Keys.Recipient, 32, 32);
+        (uint i, uint end) = expect(cur, Keys.Recipient, 32, 32);
         account = bytes32(msg.data[i:i + 32]);
         cur.i = end;
     }
 
     function unpackParty(Cursor memory cur) internal pure returns (bytes32 account) {
-        (uint i, , uint end) = expect(cur, Keys.Party, 32, 32);
+        (uint i, uint end) = expect(cur, Keys.Party, 32, 32);
         account = bytes32(msg.data[i:i + 32]);
         cur.i = end;
     }
 
     function unpackRate(Cursor memory cur) internal pure returns (uint value) {
-        (uint i, , uint end) = expect(cur, Keys.Rate, 32, 32);
+        (uint i, uint end) = expect(cur, Keys.Rate, 32, 32);
         value = uint(bytes32(msg.data[i:i + 32]));
         cur.i = end;
     }
 
     function unpackQuantity(Cursor memory cur) internal pure returns (uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Quantity, 32, 32);
+        (uint i, uint end) = expect(cur, Keys.Quantity, 32, 32);
         amount = uint(bytes32(msg.data[i:i + 32]));
         cur.i = end;
     }
 
     function unpackAsset(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta) {
-        (uint i, , uint end) = expect(cur, Keys.Asset, 64, 64);
+        (uint i, uint end) = expect(cur, Keys.Asset, 64, 64);
         asset = bytes32(msg.data[i:i + 32]);
         meta = bytes32(msg.data[i + 32:i + 64]);
         cur.i = end;
     }
 
     function unpackFunding(Cursor memory cur) internal pure returns (uint host, uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Funding, 64, 64);
+        (uint i, uint end) = expect(cur, Keys.Funding, 64, 64);
         host = uint(bytes32(msg.data[i:i + 32]));
         amount = uint(bytes32(msg.data[i + 32:i + 64]));
         cur.i = end;
     }
 
     function unpackBounty(Cursor memory cur) internal pure returns (uint amount, bytes32 relayer) {
-        (uint i, , uint end) = expect(cur, Keys.Bounty, 64, 64);
+        (uint i, uint end) = expect(cur, Keys.Bounty, 64, 64);
         amount = uint(bytes32(msg.data[i:i + 32]));
         relayer = bytes32(msg.data[i + 32:i + 64]);
         cur.i = end;
     }
 
     function unpackAmount(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Amount, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Amount, 96, 96);
         asset = bytes32(msg.data[i:i + 32]);
         meta = bytes32(msg.data[i + 32:i + 64]);
         amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -755,7 +748,7 @@ library Blocks {
     }
 
     function unpackBalance(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Balance, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Balance, 96, 96);
         asset = bytes32(msg.data[i:i + 32]);
         meta = bytes32(msg.data[i + 32:i + 64]);
         amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -763,7 +756,7 @@ library Blocks {
     }
 
     function unpackMinimum(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Minimum, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Minimum, 96, 96);
         asset = bytes32(msg.data[i:i + 32]);
         meta = bytes32(msg.data[i + 32:i + 64]);
         amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -771,7 +764,7 @@ library Blocks {
     }
 
     function unpackMaximum(Cursor memory cur) internal pure returns (bytes32 asset, bytes32 meta, uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Maximum, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Maximum, 96, 96);
         asset = bytes32(msg.data[i:i + 32]);
         meta = bytes32(msg.data[i + 32:i + 64]);
         amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -779,7 +772,7 @@ library Blocks {
     }
 
     function unpackListing(Cursor memory cur) internal pure returns (uint host, bytes32 asset, bytes32 meta) {
-        (uint i, , uint end) = expect(cur, Keys.Listing, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Listing, 96, 96);
         host = uint(bytes32(msg.data[i:i + 32]));
         asset = bytes32(msg.data[i + 32:i + 64]);
         meta = bytes32(msg.data[i + 64:i + 96]);
@@ -787,25 +780,25 @@ library Blocks {
     }
 
     function unpackStep(Cursor memory cur) internal pure returns (uint target, uint value, bytes calldata req) {
-        (uint i, uint bound, uint end) = expect(cur, Keys.Step, 64, 0);
+        (uint i, uint end) = expect(cur, Keys.Step, 64, 0);
         target = uint(bytes32(msg.data[i:i + 32]));
         value = uint(bytes32(msg.data[i + 32:i + 64]));
-        req = msg.data[i + 64:bound];
+        req = msg.data[i + 64:end];
         cur.i = end;
     }
 
     // cursor expect*
 
     function expectAuth(Cursor memory cur, uint expectedCid) internal pure returns (uint deadline, bytes calldata proof) {
-        (uint i, uint bound, uint end) = expect(cur, Keys.Auth, 149, 0);
+        (uint i, uint end) = expect(cur, Keys.Auth, 149, 0);
         if (uint(bytes32(msg.data[i:i + 32])) != expectedCid) revert MalformedBlocks();
         deadline = uint(bytes32(msg.data[i + 32:i + 64]));
-        proof = msg.data[i + 64:bound];
+        proof = msg.data[i + 64:end];
         cur.i = end;
     }
 
     function expectAmount(Cursor memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Amount, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Amount, 96, 96);
         if (bytes32(msg.data[i:i + 32]) != asset) revert UnexpectedValue();
         if (bytes32(msg.data[i + 32:i + 64]) != meta) revert UnexpectedValue();
         amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -813,7 +806,7 @@ library Blocks {
     }
 
     function expectBalance(Cursor memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Balance, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Balance, 96, 96);
         if (bytes32(msg.data[i:i + 32]) != asset) revert UnexpectedValue();
         if (bytes32(msg.data[i + 32:i + 64]) != meta) revert UnexpectedValue();
         amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -821,7 +814,7 @@ library Blocks {
     }
 
     function expectMinimum(Cursor memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Minimum, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Minimum, 96, 96);
         if (bytes32(msg.data[i:i + 32]) != asset) revert UnexpectedValue();
         if (bytes32(msg.data[i + 32:i + 64]) != meta) revert UnexpectedValue();
         amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -829,7 +822,7 @@ library Blocks {
     }
 
     function expectMaximum(Cursor memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
-        (uint i, , uint end) = expect(cur, Keys.Maximum, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Maximum, 96, 96);
         if (bytes32(msg.data[i:i + 32]) != asset) revert UnexpectedValue();
         if (bytes32(msg.data[i + 32:i + 64]) != meta) revert UnexpectedValue();
         amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -837,7 +830,7 @@ library Blocks {
     }
 
     function expectCustody(Cursor memory cur, uint host) internal pure returns (AssetAmount memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Custody, 128, 128);
+        (uint i, uint end) = expect(cur, Keys.Custody, 128, 128);
         if (uint(bytes32(msg.data[i:i + 32])) != host) revert UnexpectedValue();
         value.asset = bytes32(msg.data[i + 32:i + 64]);
         value.meta = bytes32(msg.data[i + 64:i + 96]);
@@ -848,7 +841,7 @@ library Blocks {
     // cursor to*Value
 
     function toAmountValue(Cursor memory cur) internal pure returns (AssetAmount memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Amount, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Amount, 96, 96);
         value.asset = bytes32(msg.data[i:i + 32]);
         value.meta = bytes32(msg.data[i + 32:i + 64]);
         value.amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -856,7 +849,7 @@ library Blocks {
     }
 
     function toBalanceValue(Cursor memory cur) internal pure returns (AssetAmount memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Balance, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Balance, 96, 96);
         value.asset = bytes32(msg.data[i:i + 32]);
         value.meta = bytes32(msg.data[i + 32:i + 64]);
         value.amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -864,7 +857,7 @@ library Blocks {
     }
 
     function toMinimumValue(Cursor memory cur) internal pure returns (AssetAmount memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Minimum, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Minimum, 96, 96);
         value.asset = bytes32(msg.data[i:i + 32]);
         value.meta = bytes32(msg.data[i + 32:i + 64]);
         value.amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -872,7 +865,7 @@ library Blocks {
     }
 
     function toMaximumValue(Cursor memory cur) internal pure returns (AssetAmount memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Maximum, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Maximum, 96, 96);
         value.asset = bytes32(msg.data[i:i + 32]);
         value.meta = bytes32(msg.data[i + 32:i + 64]);
         value.amount = uint(bytes32(msg.data[i + 64:i + 96]));
@@ -880,7 +873,7 @@ library Blocks {
     }
 
     function toListingValue(Cursor memory cur) internal pure returns (HostAsset memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Listing, 96, 96);
+        (uint i, uint end) = expect(cur, Keys.Listing, 96, 96);
         value.host = uint(bytes32(msg.data[i:i + 32]));
         value.asset = bytes32(msg.data[i + 32:i + 64]);
         value.meta = bytes32(msg.data[i + 64:i + 96]);
@@ -888,7 +881,7 @@ library Blocks {
     }
 
     function toCustodyValue(Cursor memory cur) internal pure returns (HostAmount memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Custody, 128, 128);
+        (uint i, uint end) = expect(cur, Keys.Custody, 128, 128);
         value.host = uint(bytes32(msg.data[i:i + 32]));
         value.asset = bytes32(msg.data[i + 32:i + 64]);
         value.meta = bytes32(msg.data[i + 64:i + 96]);
@@ -897,7 +890,7 @@ library Blocks {
     }
 
     function toAllocationValue(Cursor memory cur) internal pure returns (HostAmount memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Allocation, 128, 128);
+        (uint i, uint end) = expect(cur, Keys.Allocation, 128, 128);
         value.host = uint(bytes32(msg.data[i:i + 32]));
         value.asset = bytes32(msg.data[i + 32:i + 64]);
         value.meta = bytes32(msg.data[i + 64:i + 96]);
@@ -906,7 +899,7 @@ library Blocks {
     }
 
     function toTxValue(Cursor memory cur) internal pure returns (Tx memory value) {
-        (uint i, , uint end) = expect(cur, Keys.Transaction, 160, 160);
+        (uint i, uint end) = expect(cur, Keys.Transaction, 160, 160);
         value.from = bytes32(msg.data[i:i + 32]);
         value.to = bytes32(msg.data[i + 32:i + 64]);
         value.asset = bytes32(msg.data[i + 64:i + 96]);

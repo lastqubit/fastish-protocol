@@ -20,7 +20,7 @@ contract TestCreateHost is Host, Create {
 
     function create(bytes32 account, Cursor memory input) internal override {
         Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.bound];
+        bytes calldata inputData = msg.data[ref.i:ref.end];
         emit CreateCalled(account, inputData);
     }
 

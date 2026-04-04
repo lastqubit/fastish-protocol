@@ -35,7 +35,7 @@ contract TestBorrowHost is Host, BorrowAgainstCustodyToBalance {
     ) internal override returns (AssetAmount memory) {
         if (input.i < input.end) {
             Block memory ref = Blocks.at(input.i);
-            emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, msg.data[ref.i:ref.bound]);
+            emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, msg.data[ref.i:ref.end]);
         } else {
             emit BorrowCalled(account, custody.asset, custody.meta, custody.amount, "");
         }

@@ -25,20 +25,14 @@ contract TestSwapHost is Host, SwapExactBalanceToBalance {
         if (input.i == input.end) revert Blocks.InvalidBlock();
 
         Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.bound];
+        bytes calldata inputData = msg.data[ref.i:ref.end];
         emit SwapMapped(account, balance.asset, balance.meta, balance.amount, inputData);
 
-        if (ref.bound < ref.end) {
-            Cursor memory inner = Blocks.cursorFrom(msg.data[ref.bound:ref.end], 0);
-            (bytes32 minAsset, bytes32 minMeta, uint minAmount) = inner.unpackMinimum();
+        Cursor memory cur = input;
+        if (cur.isAt(Keys.Route)) cur.unpackRoute();
+        if (cur.i < cur.end && cur.isAt(Keys.Minimum)) {
+            (bytes32 minAsset, bytes32 minMeta, uint minAmount) = cur.unpackMinimum();
             emit SwapMinimum(minAsset, minMeta, minAmount);
-        } else {
-            Cursor memory cur = input;
-            if (cur.isAt(Keys.Route)) cur.unpackRoute();
-            if (cur.i < cur.end && cur.isAt(Keys.Minimum)) {
-                (bytes32 minAsset, bytes32 minMeta, uint minAmount) = cur.unpackMinimum();
-                emit SwapMinimum(minAsset, minMeta, minAmount);
-            }
         }
 
         return AssetAmount({

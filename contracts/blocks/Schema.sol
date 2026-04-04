@@ -35,9 +35,8 @@ library Schemas {
 }
 
 // Block stream:
-// - encoding is [bytes4 key][bytes4 selfLen][bytes4 totalLen][self payload]
-// - `selfLen` covers only the block payload
-// - `totalLen` covers the whole block encoding after the header
+// - encoding is [bytes4 key][bytes4 payloadLen][payload]
+// - `payloadLen` covers only the block payload
 // - payload layout is block-specific
 //
 // Extensible payloads:
@@ -70,7 +69,7 @@ library Schemas {
 // - current helpers assume proof layout `[bytes20 signer][bytes65 sig]`
 
 uint constant AUTH_PROOF_LEN = 85;
-uint constant AUTH_TOTAL_LEN = 161;
+uint constant AUTH_TOTAL_LEN = 157;
 
 struct AssetAmount {
     bytes32 asset;

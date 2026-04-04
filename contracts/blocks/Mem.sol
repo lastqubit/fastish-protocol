@@ -7,18 +7,17 @@ import { Blocks } from "./Blocks.sol";
 struct MemRef {
     bytes4 key;
     uint i;
-    uint bound;
     uint end;
 }
 
 library Mem {
     function from(bytes memory source, uint i) internal pure returns (MemRef memory ref) {
         uint eod = source.length;
-        if (i == eod) return MemRef(bytes4(0), 0, 0, i);
+        if (i == eod) return MemRef(bytes4(0), i, i);
         if (i > eod) revert Blocks.MalformedBlocks();
 
         unchecked {
-            ref.i = i + 12;
+            ref.i = i + 8;
         }
         if (ref.i > eod) revert Blocks.MalformedBlocks();
 
@@ -28,10 +27,8 @@ library Mem {
         }
 
         ref.key = bytes4(w);
-        ref.bound = ref.i + uint32(bytes4(w << 32));
-        ref.end = ref.i + uint32(bytes4(w << 64));
-
-        if (ref.bound > ref.end || ref.end > eod) revert Blocks.MalformedBlocks();
+        ref.end = ref.i + uint32(bytes4(w << 32));
+        if (ref.end > eod) revert Blocks.MalformedBlocks();
     }
 
     function slice(bytes memory source, uint start, uint end) internal pure returns (bytes memory out) {
@@ -66,7 +63,7 @@ library Mem {
             i = ref.end;
         }
 
-        return MemRef(bytes4(0), limit, limit, limit);
+        return MemRef(bytes4(0), limit, limit);
     }
 
     function ensure(MemRef memory ref, bytes4 key) internal pure {
@@ -74,11 +71,11 @@ library Mem {
     }
 
     function ensure(MemRef memory ref, bytes4 key, uint len) internal pure {
-        if (key == 0 || key != ref.key || len != (ref.bound - ref.i)) revert Blocks.InvalidBlock();
+        if (key == 0 || key != ref.key || len != (ref.end - ref.i)) revert Blocks.InvalidBlock();
     }
 
     function ensure(MemRef memory ref, bytes4 key, uint min, uint max) internal pure {
-        uint len = ref.bound - ref.i;
+        uint len = ref.end - ref.i;
         if (key == 0 || key != ref.key || len < min || (max != 0 && len > max)) revert Blocks.InvalidBlock();
     }
 

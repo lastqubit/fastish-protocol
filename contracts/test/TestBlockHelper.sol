@@ -13,8 +13,8 @@ using Writers for Writer;
 using Mem for MemRef;
 
 contract TestBlockHelper {
-    function testBlockHeader(bytes4 key, uint selfLen, uint totalLen) external pure returns (uint) {
-        return Writers.toBlockHeader(key, selfLen, totalLen);
+    function testBlockHeader(bytes4 key, uint len) external pure returns (uint) {
+        return Writers.toBlockHeader(key, len);
     }
 
     function testWriteBalanceBlock(bytes32 asset, bytes32 meta, uint amount) external pure returns (bytes memory) {
@@ -71,14 +71,14 @@ contract TestBlockHelper {
         return Writers.finish(w);
     }
 
-    function testParseBlock(bytes calldata source, uint i) external pure returns (bytes4 key, uint bound, uint end) {
+    function testParseBlock(bytes calldata source, uint i) external pure returns (bytes4 key, uint end) {
         uint base;
         assembly ("memory-safe") {
             base := source.offset
         }
         Block memory ref = Blocks.from(source, i);
-        if (ref.key == 0) return (bytes4(0), ref.cursor, ref.cursor);
-        return (ref.key, ref.bound - base, ref.end - base);
+        if (ref.key == 0) return (bytes4(0), ref.cursor);
+        return (ref.key, ref.end - base);
     }
 
     function testUnpackAmount(bytes calldata source, uint i)
@@ -207,14 +207,14 @@ contract TestBlockHelper {
     function testBundleFrom(bytes calldata source, uint i)
         external
         pure
-        returns (bytes4 key, uint start, uint bound, uint end, uint cursor)
+        returns (bytes4 key, uint start, uint end, uint cursor)
     {
         uint base;
         assembly ("memory-safe") {
             base := source.offset
         }
         Block memory ref = Blocks.bundleFrom(source, i);
-        return (ref.key, ref.i - base, ref.bound - base, ref.end - base, ref.cursor);
+        return (ref.key, ref.i - base, ref.end - base, ref.cursor);
     }
 
     function testCursorFrom(bytes calldata source, uint i)
@@ -246,7 +246,7 @@ contract TestBlockHelper {
     function testMember(bytes calldata source, uint i, uint index)
         external
         pure
-        returns (bytes4 key, uint start, uint bound, uint end, uint cursor)
+        returns (bytes4 key, uint start, uint end, uint cursor)
     {
         uint base;
         assembly ("memory-safe") {
@@ -259,7 +259,7 @@ contract TestBlockHelper {
             ref = Blocks.at(input.i);
             if (ref.end > input.end) revert Blocks.MalformedBlocks();
             ref.cursor = ref.end;
-            if (n == index) return (ref.key, ref.i - base, ref.bound - base, ref.end - base, ref.cursor - base);
+            if (n == index) return (ref.key, ref.i - base, ref.end - base, ref.cursor - base);
             input.i = ref.end;
             unchecked {
                 ++n;
@@ -271,7 +271,7 @@ contract TestBlockHelper {
     function testMemberAt(bytes calldata source, uint i, uint at_)
         external
         pure
-        returns (bytes4 key, uint start, uint bound, uint end, uint cursor)
+        returns (bytes4 key, uint start, uint end, uint cursor)
     {
         uint base;
         assembly ("memory-safe") {
@@ -283,7 +283,7 @@ contract TestBlockHelper {
         Block memory ref = Blocks.at(atAbs);
         if (ref.end > input.end) revert Blocks.MalformedBlocks();
         ref.cursor = ref.end;
-        return (ref.key, ref.i - base, ref.bound - base, ref.end - base, ref.cursor - base);
+        return (ref.key, ref.i - base, ref.end - base, ref.cursor - base);
     }
 
     function testResolveRecipient(bytes calldata source, uint i, uint limit, bytes32 backup)
