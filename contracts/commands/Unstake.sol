@@ -33,7 +33,7 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
     function unstakeBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(unstakeBalanceToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openKeyed(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -46,6 +46,7 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
         return writer.finish();
     }
 }
+
 
 
 

@@ -29,7 +29,7 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     function borrowAgainstCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(borrowAgainstCustodyToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Cursors.openKeyed(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openRun(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocBalances(count);
         Cursor memory input;
 
@@ -63,7 +63,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     function borrowAgainstBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(borrowAgainstBalanceToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openKeyed(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocBalances(count);
         Cursor memory input;
 
@@ -77,6 +77,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
         return writer.finish();
     }
 }
+
 
 
 

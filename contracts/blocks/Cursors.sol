@@ -73,7 +73,7 @@ library Cursors {
         cur.next = next;
     }
 
-    function openKeyed(
+    function openRun(
         bytes calldata source,
         uint i,
         bytes4 key
@@ -105,7 +105,7 @@ library Cursors {
 
     function openInput(bytes calldata source, uint i) internal pure returns (Cursor memory cur, uint total) {
         if (i == source.length) return (openStream(source, i), 0);
-        return openKeyed(source, i, bytes4(source[i:i + 4]));
+        return openRun(source, i, bytes4(source[i:i + 4]));
     }
 
     function isAt(Cursor memory cur, bytes4 key) internal pure returns (bool) {
@@ -533,4 +533,5 @@ library Cursors {
         cur.i = end;
     }
 }
+
 

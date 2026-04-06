@@ -13,7 +13,7 @@ abstract contract RouteToBalance {
     ) internal virtual returns (bytes32 asset, bytes32 meta, uint amount);
 
     function routesToBalances(bytes calldata blocks, uint i, bytes32 account) internal returns (bytes memory) {
-        (Cursor memory scan, uint count) = Cursors.openKeyed(blocks, i, Keys.Route);
+        (Cursor memory scan, uint count) = Cursors.openRun(blocks, i, Keys.Route);
         Writer memory writer = Writers.allocBalances(count);
 
         while (scan.i < scan.end) {
@@ -25,6 +25,7 @@ abstract contract RouteToBalance {
         return writer.finish();
     }
 }
+
 
 
 

@@ -9,13 +9,14 @@ abstract contract EachRoute {
     function eachRoute(Cursor memory route) internal virtual;
 
     function forEachRoute(bytes calldata blocks, uint i) internal returns (uint) {
-        (Cursor memory routes, ) = Cursors.openKeyed(blocks, i, Keys.Route);
+        (Cursor memory routes, ) = Cursors.openRun(blocks, i, Keys.Route);
         while (routes.i < routes.end) {
             eachRoute(routes.take());
         }
         return routes.next;
     }
 }
+
 
 
 

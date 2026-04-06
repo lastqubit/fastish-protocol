@@ -10,7 +10,7 @@ abstract contract MapCustody {
     function mapCustody(bytes32 account, HostAmount memory custody) internal virtual returns (HostAmount memory out);
 
     function mapCustodies(bytes calldata state, uint i, bytes32 account) internal returns (bytes memory) {
-        (Cursor memory scan, uint count) = Cursors.openKeyed(state, i, Keys.Custody);
+        (Cursor memory scan, uint count) = Cursors.openRun(state, i, Keys.Custody);
         Writer memory writer = Writers.allocCustodies(count);
 
         while (scan.i < scan.end) {
@@ -22,6 +22,7 @@ abstract contract MapCustody {
         return writer.finish();
     }
 }
+
 
 
 

@@ -29,7 +29,7 @@ abstract contract Deposit is CommandBase {
     function deposit(
         CommandContext calldata c
     ) external payable onlyCommand(depositId, c.target) returns (bytes memory) {
-        (Cursor memory inputs, uint count) = Cursors.openKeyed(c.request, 0, Keys.Amount);
+        (Cursor memory inputs, uint count) = Cursors.openRun(c.request, 0, Keys.Amount);
         Writer memory writer = Writers.allocBalances(count);
 
         while (inputs.i < inputs.end) {
@@ -41,6 +41,7 @@ abstract contract Deposit is CommandBase {
         return writer.done();
     }
 }
+
 
 
 

@@ -21,7 +21,7 @@ abstract contract DenyAssets is CommandBase {
     function denyAssets(
         CommandContext calldata c
     ) external payable onlyAdmin(c.account) onlyCommand(denyAssetsId, c.target) returns (bytes memory) {
-        (Cursor memory input, ) = Cursors.openKeyed(c.request, 0, Keys.Asset);
+        (Cursor memory input, ) = Cursors.openRun(c.request, 0, Keys.Asset);
 
         while (input.i < input.end) {
             (bytes32 asset, bytes32 meta) = input.unpackAsset();
@@ -31,6 +31,7 @@ abstract contract DenyAssets is CommandBase {
         return done(input);
     }
 }
+
 
 
 

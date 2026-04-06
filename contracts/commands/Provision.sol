@@ -29,7 +29,7 @@ abstract contract Provision is CommandBase, ProvisionHook {
     function provision(
         CommandContext calldata c
     ) external payable onlyCommand(provisionId, c.target) returns (bytes memory) {
-        (Cursor memory inputs, uint count) = Cursors.openKeyed(c.request, 0, Keys.Bundle);
+        (Cursor memory inputs, uint count) = Cursors.openRun(c.request, 0, Keys.Bundle);
         Writer memory writer = Writers.allocCustodies(count);
 
         while (inputs.i < inputs.end) {
@@ -56,7 +56,7 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
         CommandContext calldata c
     ) external payable onlyCommand(provisionFromBalanceId, c.target) returns (bytes memory) {
         uint toHost = Cursors.resolveNode(c.request, 0, c.request.length, 0);
-        (Cursor memory balances, uint count) = Cursors.openKeyed(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocCustodies(count);
 
         while (balances.i < balances.end) {
@@ -68,6 +68,7 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
         return writer.done();
     }
 }
+
 
 
 

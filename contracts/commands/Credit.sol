@@ -22,7 +22,7 @@ abstract contract CreditAccount is CommandBase {
         CommandContext calldata c
     ) external payable onlyCommand(creditAccountId, c.target) returns (bytes memory) {
         bytes32 to = Cursors.resolveRecipient(c.request, 0, c.request.length, c.account);
-        (Cursor memory balances, ) = Cursors.openKeyed(c.state, 0, Keys.Balance);
+        (Cursor memory balances, ) = Cursors.openRun(c.state, 0, Keys.Balance);
         while (balances.i < balances.end) {
             (bytes32 asset, bytes32 meta, uint amount) = balances.unpackBalance();
             creditAccount(to, asset, meta, amount);
@@ -31,6 +31,7 @@ abstract contract CreditAccount is CommandBase {
         return done(balances);
     }
 }
+
 
 
 

@@ -21,7 +21,7 @@ abstract contract AmountToCustody {
         uint host,
         bytes32 account
     ) internal returns (bytes memory) {
-        (Cursor memory scan, uint count) = Cursors.openKeyed(blocks, i, Keys.Amount);
+        (Cursor memory scan, uint count) = Cursors.openRun(blocks, i, Keys.Amount);
         Writer memory writer = Writers.allocCustodies(count);
 
         while (scan.i < scan.end) {
@@ -33,6 +33,7 @@ abstract contract AmountToCustody {
         return writer.finish();
     }
 }
+
 
 
 

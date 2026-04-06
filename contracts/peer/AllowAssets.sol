@@ -18,7 +18,7 @@ abstract contract PeerAllowAssets is PeerBase {
     function peerAllowAsset(bytes32 asset, bytes32 meta) internal virtual returns (bool);
 
     function peerAllowAssets(bytes calldata request) external payable onlyPeer returns (bytes memory) {
-        (Cursor memory input, ) = Cursors.openKeyed(request, 0, Keys.Asset);
+        (Cursor memory input, ) = Cursors.openRun(request, 0, Keys.Asset);
         while (input.i < input.end) {
             (bytes32 asset, bytes32 meta) = input.unpackAsset();
             peerAllowAsset(asset, meta);
@@ -26,6 +26,7 @@ abstract contract PeerAllowAssets is PeerBase {
         return done(input);
     }
 }
+
 
 
 
