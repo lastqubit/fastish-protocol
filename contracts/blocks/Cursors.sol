@@ -16,13 +16,14 @@ using Cursors for Cursor;
 library Cursors {
     error MalformedBlocks();
     error InvalidBlock();
+    error ZeroCursor();
     error ZeroRecipient();
     error ZeroNode();
     error UnexpectedValue();
 
     // ── infrastructure ────────────────────────────────────────────────────────
 
-    function openAt(uint base, uint i, uint eod) internal pure returns (Cursor memory cur) {
+    function openAt(uint base, uint i, uint eod) private pure returns (Cursor memory cur) {
         if (i == eod) return Cursor(base + i, base + i, base + i, i);
         uint start = i + 8;
         if (start > eod) revert MalformedBlocks();
@@ -50,32 +51,20 @@ library Cursors {
         return openAt(base, i, source.length);
     }
 
-    function expect(Cursor memory cur, bytes4 key, uint min, uint max) internal pure returns (uint i, uint end) {
-        if (cur.i + 8 > cur.end) revert MalformedBlocks();
-        if (bytes4(msg.data[cur.i:cur.i + 4]) != key) revert InvalidBlock();
-
-        i = cur.i + 8;
-        end = i + uint32(bytes4(msg.data[cur.i + 4:i]));
-        if (end > cur.end) revert MalformedBlocks();
-        uint len = end - i;
-        if (len < min || (max != 0 && len > max)) revert InvalidBlock();
-        cur.i = end;
-    }
-
-    function openRange(bytes calldata source, uint i, uint n) internal pure returns (Cursor memory cur) {
-        if (n == 0) revert InvalidBlock();
-
-        uint next = i;
-        for (uint j; j < n; ) {
-            next = openFrom(source, next).cursor;
-            unchecked {
-                ++j;
-            }
-        }
+    function openCount(bytes calldata source, uint i, uint n) internal pure returns (Cursor memory cur) {
+        if (n == 0) revert ZeroCursor();
 
         uint base;
         assembly ("memory-safe") {
             base := source.offset
+        }
+
+        uint next = i;
+        for (uint j; j < n; ) {
+            next = openAt(base, next, source.length).cursor;
+            unchecked {
+                ++j;
+            }
         }
 
         cur.start = base + i;
@@ -97,35 +86,31 @@ library Cursors {
         cur.cursor = end;
     }
 
-    function openTyped(
+    function openKeyed(
         bytes calldata source,
         uint i,
         bytes4 key
-    ) internal pure returns (Cursor memory cur, uint count_) {
-        uint cursor_;
-        (count_, cursor_) = count(source, i, key);
-        cur = openStream(source, i);
+    ) internal pure returns (Cursor memory cur, uint total) {
+        uint cursor;
+        (total, cursor) = count(source, i, key);
         uint base;
         assembly ("memory-safe") {
             base := source.offset
         }
-        cur.end = base + cursor_;
-        cur.cursor = cursor_;
+        cur.start = base + i;
+        cur.i = cur.start;
+        cur.end = base + cursor;
+        cur.cursor = cursor;
     }
 
-    function openInput(bytes calldata source, uint i) internal pure returns (Cursor memory cur, uint count_) {
+    function openInput(bytes calldata source, uint i) internal pure returns (Cursor memory cur, uint total) {
         if (i == source.length) return (openStream(source, i), 0);
-        return openTyped(source, i, bytes4(source[i:i + 4]));
+        return openKeyed(source, i, bytes4(source[i:i + 4]));
     }
 
-    function take(Cursor memory cur) internal pure returns (Cursor memory out) {
-        out = openAt(cur.i);
-        if (out.end > cur.end) revert MalformedBlocks();
-
-        uint base = cur.end - cur.cursor;
-        out.cursor = out.end - base;
-
-        cur.i = out.end;
+    function isAt(Cursor memory cur, bytes4 key) internal pure returns (bool) {
+        if (cur.i + 4 > cur.end) return false;
+        return bytes4(msg.data[cur.i:cur.i + 4]) == key;
     }
 
     function find(Cursor memory cur, bytes4 key) internal pure returns (Cursor memory out) {
@@ -141,10 +126,21 @@ library Cursors {
         return Cursor(cur.end, cur.end, cur.end, cur.end - base);
     }
 
-    function maybeNodeAfter(Cursor memory cur, bytes calldata source) internal pure returns (uint id) {
-        Cursor memory node = findFrom(source, cur.cursor, source.length, Keys.Node);
-        if (node.i == node.end) return 0;
-        return node.unpackNode();
+    function findFrom(bytes calldata source, uint i, uint limit, bytes4 key) internal pure returns (Cursor memory out) {
+        uint base;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        if (limit > source.length) revert MalformedBlocks();
+        while (i < limit) {
+            out = openAt(base, i, source.length);
+            if (out.cursor > limit) revert MalformedBlocks();
+            if (bytes4(source[i:i + 4]) == key) return out;
+            i = out.cursor;
+        }
+
+        uint end = base + limit;
+        return Cursor(end, end, end, limit);
     }
 
     function count(bytes calldata source, uint i, bytes4 key) internal pure returns (uint total, uint cursor) {
@@ -177,26 +173,26 @@ library Cursors {
         }
     }
 
-    function isAt(Cursor memory cur, bytes4 key) internal pure returns (bool) {
-        if (cur.i + 4 > cur.end) return false;
-        return bytes4(msg.data[cur.i:cur.i + 4]) == key;
+    function take(Cursor memory cur) internal pure returns (Cursor memory out) {
+        out = openAt(cur.i);
+        if (out.end > cur.end) revert MalformedBlocks();
+
+        uint base = cur.end - cur.cursor;
+        out.cursor = out.end - base;
+
+        cur.i = out.end;
     }
 
-    function findFrom(bytes calldata source, uint i, uint limit, bytes4 key) internal pure returns (Cursor memory out) {
-        uint base;
-        assembly ("memory-safe") {
-            base := source.offset
-        }
-        if (limit > source.length) revert MalformedBlocks();
-        while (i < limit) {
-            out = openAt(base, i, source.length);
-            if (out.cursor > limit) revert MalformedBlocks();
-            if (bytes4(source[i:i + 4]) == key) return out;
-            i = out.cursor;
-        }
+    function expect(Cursor memory cur, bytes4 key, uint min, uint max) internal pure returns (uint i, uint end) {
+        if (cur.i + 8 > cur.end) revert MalformedBlocks();
+        if (bytes4(msg.data[cur.i:cur.i + 4]) != key) revert InvalidBlock();
 
-        uint end = base + limit;
-        return Cursor(end, end, end, limit);
+        i = cur.i + 8;
+        end = i + uint32(bytes4(msg.data[cur.i + 4:i]));
+        if (end > cur.end) revert MalformedBlocks();
+        uint len = end - i;
+        if (len < min || (max != 0 && len > max)) revert InvalidBlock();
+        cur.i = end;
     }
 
     function create32(bytes4 key, bytes32 value) internal pure returns (bytes memory) {
@@ -225,6 +221,12 @@ library Cursors {
 
     function toCustodyBlock(uint host, bytes32 asset, bytes32 meta, uint amount) internal pure returns (bytes memory) {
         return create128(Keys.Custody, bytes32(host), asset, meta, bytes32(amount));
+    }
+
+    function maybeNodeAfter(Cursor memory cur, bytes calldata source) internal pure returns (uint id) {
+        Cursor memory node = findFrom(source, cur.cursor, source.length, Keys.Node);
+        if (node.i == node.end) return 0;
+        return node.unpackNode();
     }
 
     function resolveRecipient(
@@ -487,7 +489,7 @@ library Cursors {
         uint expectedCid
     ) internal pure returns (uint deadline, bytes calldata proof) {
         (uint i, uint end) = expect(cur, Keys.Auth, 149, 0);
-        if (uint(bytes32(msg.data[i:i + 32])) != expectedCid) revert MalformedBlocks();
+        if (uint(bytes32(msg.data[i:i + 32])) != expectedCid) revert UnexpectedValue();
         deadline = uint(bytes32(msg.data[i + 32:i + 64]));
         proof = msg.data[i + 64:end];
         cur.i = end;
@@ -534,5 +536,3 @@ library Cursors {
         cur.i = end;
     }
 }
-
-

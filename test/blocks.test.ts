@@ -198,7 +198,7 @@ describe("Cursors", () => {
       expect(hash).to.equal(expectedHash);
     });
 
-    it("verifyAuth reverts MalformedBlocks when cid mismatches", async () => {
+    it("verifyAuth reverts UnexpectedValue when cid mismatches", async () => {
       const proof = ethers.concat(["0x" + "11".repeat(20), "0x" + "22".repeat(65)]);
       const auth = encodeAuthBlock(77n, 123456n, proof);
       const parent = encodeBundleBlock(
@@ -207,7 +207,7 @@ describe("Cursors", () => {
       );
 
       await expect(helper.testVerifyAuth(parent, 0n, 88n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+        .to.be.revertedWithCustomError(helper, "UnexpectedValue");
     });
 
     it("verifyAuth reverts MalformedBlocks when trailing auth is missing", async () => {
@@ -345,4 +345,5 @@ describe("Cursors", () => {
     });
   });
 });
+
 

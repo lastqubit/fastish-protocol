@@ -40,7 +40,7 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
     function addLiquidityFromCustodiesToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(addLiquidityFromCustodiesToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openKeyed(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -81,7 +81,7 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
     function removeLiquidityFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(removeLiquidityFromCustodyToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openKeyed(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -125,7 +125,7 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
     function addLiquidityFromBalancesToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(addLiquidityFromBalancesToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openKeyed(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -166,7 +166,7 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
     function removeLiquidityFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(removeLiquidityFromBalanceToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openKeyed(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -181,5 +181,6 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
         return writer.finish();
     }
 }
+
 
 

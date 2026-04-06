@@ -35,7 +35,7 @@ abstract contract StakeBalanceToBalances is CommandBase {
     function stakeBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(stakeBalanceToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openKeyed(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -73,7 +73,7 @@ abstract contract StakeCustodyToBalances is CommandBase {
     function stakeCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(stakeCustodyToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openKeyed(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -101,7 +101,7 @@ abstract contract StakeCustodyToPosition is CommandBase {
     function stakeCustodyToPosition(
         CommandContext calldata c
     ) external payable onlyCommand(stakeCustodyToPositionId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, ) = Cursors.openTyped(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, ) = Cursors.openKeyed(c.state, 0, Keys.Custody);
         Cursor memory input;
         while (custodies.i < custodies.end) {
             HostAmount memory custody = custodies.unpackCustodyValue();
@@ -112,5 +112,6 @@ abstract contract StakeCustodyToPosition is CommandBase {
         return done(custodies);
     }
 }
+
 
 

@@ -28,3 +28,4 @@ contract TestBurnHost is Host, Burn {
 }
 
 
+

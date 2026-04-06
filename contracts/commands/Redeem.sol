@@ -36,7 +36,7 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
     function redeemFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(redeemFromBalanceToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openKeyed(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -78,7 +78,7 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
     function redeemFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(redeemFromCustodyToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openKeyed(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
@@ -93,5 +93,6 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
         return writer.finish();
     }
 }
+
 
 

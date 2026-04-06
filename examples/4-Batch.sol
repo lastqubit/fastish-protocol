@@ -30,7 +30,7 @@ abstract contract MyCommand is CommandBase {
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
         // Bound a cursor to the contiguous AMOUNT prefix and count how many
         // output BALANCE blocks we need to allocate.
-        (Cursor memory inputs, uint count) = Cursors.openTyped(c.request, 0, Keys.Amount);
+        (Cursor memory inputs, uint count) = Cursors.openKeyed(c.request, 0, Keys.Amount);
         Writer memory writer = Writers.allocBalances(count);
 
         // Walk every AMOUNT block in the request.
@@ -46,5 +46,6 @@ abstract contract MyCommand is CommandBase {
         return writer.done();
     }
 }
+
 
 

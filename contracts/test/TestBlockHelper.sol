@@ -116,7 +116,7 @@ contract TestBlockHelper {
         assembly ("memory-safe") {
             base := source.offset
         }
-        Cursor memory cur = Cursors.openRange(source, i, n);
+        Cursor memory cur = Cursors.openCount(source, i, n);
         return (cur.i - base, cur.end - base, cur.cursor);
     }
 
@@ -129,7 +129,7 @@ contract TestBlockHelper {
         assembly ("memory-safe") {
             base := source.offset
         }
-        Cursor memory cur = Cursors.openRange(source, i, n);
+        Cursor memory cur = Cursors.openCount(source, i, n);
         Cursor memory item = cur.take();
         return (item.i - base, item.end - base, item.cursor, cur.i - base);
     }
@@ -189,5 +189,6 @@ contract TestBlockHelper {
         return Cursors.count(source, i, sourceKey);
     }
 }
+
 
 

@@ -28,7 +28,7 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
     function swapExactBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactBalanceToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openKeyed(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocBalances(count);
         Cursor memory input;
 
@@ -62,7 +62,7 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
     function swapExactCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactCustodyToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openKeyed(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocBalances(count);
         Cursor memory input;
 
@@ -76,5 +76,6 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
         return writer.finish();
     }
 }
+
 
 
