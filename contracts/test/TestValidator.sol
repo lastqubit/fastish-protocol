@@ -8,3 +8,5 @@ contract TestValidator is Validator {
         return verify(hash, nonce, proof);
     }
 }
+
+

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Blocks, Cursor, HostAmount, Keys, Writer, Writers } from "../Blocks.sol";
+import { AssetAmount, Cursors, Cursor, HostAmount, Keys, Writer, Writers } from "../Cursors.sol";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant ALFCTB = "addLiquidityFromCustodiesToBalances";
@@ -40,13 +40,13 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
     function addLiquidityFromCustodiesToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(addLiquidityFromCustodiesToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (custodies.i < custodies.end) {
             if (useInput) {
-                input = Blocks.cursorFrom(c.request, input.cursor);
+                input = Cursors.openFrom(c.request, input.cursor);
             }
             addLiquidityFromCustodiesToBalances(c.account, custodies, input, writer);
         }
@@ -81,15 +81,15 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
     function removeLiquidityFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(removeLiquidityFromCustodyToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (custodies.i < custodies.end) {
             if (useInput) {
-                input = Blocks.cursorFrom(c.request, input.cursor);
+                input = Cursors.openFrom(c.request, input.cursor);
             }
-            HostAmount memory custody = custodies.toCustodyValue();
+            HostAmount memory custody = custodies.unpackCustodyValue();
             removeLiquidityFromCustodyToBalances(c.account, custody, input, writer);
         }
 
@@ -125,13 +125,13 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
     function addLiquidityFromBalancesToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(addLiquidityFromBalancesToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (balances.i < balances.end) {
             if (useInput) {
-                input = Blocks.cursorFrom(c.request, input.cursor);
+                input = Cursors.openFrom(c.request, input.cursor);
             }
             addLiquidityFromBalancesToBalances(c.account, balances, input, writer);
         }
@@ -166,18 +166,20 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
     function removeLiquidityFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(removeLiquidityFromBalanceToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (balances.i < balances.end) {
             if (useInput) {
-                input = Blocks.cursorFrom(c.request, input.cursor);
+                input = Cursors.openFrom(c.request, input.cursor);
             }
-            AssetAmount memory balance = balances.toBalanceValue();
+            AssetAmount memory balance = balances.unpackBalanceValue();
             removeLiquidityFromBalanceToBalances(c.account, balance, input, writer);
         }
 
         return writer.finish();
     }
 }
+
+

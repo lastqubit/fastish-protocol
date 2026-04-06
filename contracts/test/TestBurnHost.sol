@@ -26,3 +26,5 @@ contract TestBurnHost is Host, Burn {
     function getBurnId() external view returns (uint) { return burnId; }
     function getAdminAccount() external view returns (bytes32) { return adminAccount; }
 }
+
+

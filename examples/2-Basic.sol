@@ -30,3 +30,5 @@ contract ExampleHost is Host, DebitAccount {
         balances[account][key] -= amount;
     }
 }
+
+

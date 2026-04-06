@@ -2,12 +2,12 @@
 pragma solidity ^0.8.33;
 
 import {CommandContext, CommandBase, Channels} from "./Base.sol";
-import {AssetAmount, HostAmount, Blocks, Cursor, Writers, Writer, Keys} from "../Blocks.sol";
+import {AssetAmount, HostAmount, Cursors, Cursor, Writers, Writer, Keys} from "../Cursors.sol";
 
 string constant LFBTB = "liquidateFromBalanceToBalances";
 string constant LFCTB = "liquidateFromCustodyToBalances";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 abstract contract LiquidateFromBalanceToBalances is CommandBase {
@@ -36,15 +36,15 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
     function liquidateFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(liquidateFromBalanceToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (balances.i < balances.end) {
             if (useInput) {
-                input = Blocks.cursorFrom(c.request, input.cursor);
+                input = Cursors.openFrom(c.request, input.cursor);
             }
-            AssetAmount memory balance = balances.toBalanceValue();
+            AssetAmount memory balance = balances.unpackBalanceValue();
             liquidateFromBalanceToBalances(c.account, balance, input, writer);
         }
 
@@ -78,18 +78,20 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
     function liquidateFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(liquidateFromCustodyToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (custodies.i < custodies.end) {
             if (useInput) {
-                input = Blocks.cursorFrom(c.request, input.cursor);
+                input = Cursors.openFrom(c.request, input.cursor);
             }
-            HostAmount memory custody = custodies.toCustodyValue();
+            HostAmount memory custody = custodies.unpackCustodyValue();
             liquidateFromCustodyToBalances(c.account, custody, input, writer);
         }
 
         return writer.finish();
     }
 }
+
+

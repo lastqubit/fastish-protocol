@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Blocks, Cursor, Writers, Writer } from "../Blocks.sol";
+import { Cursors, Cursor, Writers, Writer } from "../Cursors.sol";
 import { ALLOC_SCALE } from "../blocks/Writers.sol";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 abstract contract InputToBalance {
@@ -14,7 +14,7 @@ abstract contract InputToBalance {
     ) internal virtual returns (bytes32 asset, bytes32 meta, uint amount);
 
     function inputsToBalances(bytes calldata blocks, uint i, bytes32 account) internal returns (bytes memory) {
-        (Cursor memory scan, uint count) = Blocks.allFrom(blocks, i);
+        (Cursor memory scan, uint count) = Cursors.openInput(blocks, i);
         Writer memory writer = Writers.allocScaledBalances(count, ALLOC_SCALE);
 
         while (scan.i < scan.end) {
@@ -26,3 +26,5 @@ abstract contract InputToBalance {
         return writer.finish();
     }
 }
+
+

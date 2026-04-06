@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Blocks, Cursor } from "../Blocks.sol";
+import { Cursors, Cursor } from "../Cursors.sol";
 
 string constant NAME = "remove";
 
@@ -20,10 +20,12 @@ abstract contract Remove is CommandBase {
     function remove(CommandContext calldata c) external payable onlyCommand(removeId, c.target) returns (bytes memory) {
         Cursor memory input;
         while (input.cursor < c.request.length) {
-            input = Blocks.cursorFrom(c.request, input.cursor);
+            input = Cursors.openFrom(c.request, input.cursor);
             remove(c.account, input);
         }
 
         return done(0, input.cursor);
     }
 }
+
+

@@ -20,3 +20,5 @@ contract ExampleHost is Host {
     // "example" - host namespace, used to group related hosts in discovery.
     constructor(address rootzero) Host(rootzero, 1, "example") {}
 }
+
+

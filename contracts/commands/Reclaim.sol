@@ -2,11 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
 
 string constant NAME = "reclaimToBalances";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 abstract contract ReclaimToBalances is CommandBase {
@@ -33,7 +33,7 @@ abstract contract ReclaimToBalances is CommandBase {
     function reclaimToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(reclaimToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory inputs, uint count) = Blocks.allFrom(c.request, 0);
+        (Cursor memory inputs, uint count) = Cursors.openInput(c.request, 0);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
 
         while (inputs.i < inputs.end) {
@@ -44,3 +44,5 @@ abstract contract ReclaimToBalances is CommandBase {
         return writer.finish();
     }
 }
+
+

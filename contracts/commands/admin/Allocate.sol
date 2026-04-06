@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "../Base.sol";
-import { Blocks, Cursor, HostAmount, Keys, Schemas } from "../../Blocks.sol";
-using Blocks for Cursor;
+import { Cursors, Cursor, HostAmount, Keys, Schemas } from "../../Cursors.sol";
+using Cursors for Cursor;
 
 string constant NAME = "allocate";
 
@@ -19,13 +19,15 @@ abstract contract Allocate is CommandBase {
     function allocate(uint host, bytes32 asset, bytes32 meta, uint amount) internal virtual;
 
     function allocate(CommandContext calldata c) external payable onlyAdmin(c.account) onlyCommand(allocateId, c.target) returns (bytes memory) {
-        (Cursor memory input, ) = Blocks.matchingFrom(c.request, 0, Keys.Allocation);
+        (Cursor memory input, ) = Cursors.openTyped(c.request, 0, Keys.Allocation);
 
         while (input.i < input.end) {
-            HostAmount memory v = input.toAllocationValue();
+            HostAmount memory v = input.unpackAllocationValue();
             allocate(v.host, v.asset, v.meta, v.amount);
         }
 
         return done(input);
     }
 }
+
+

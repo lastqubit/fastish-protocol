@@ -3,13 +3,13 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { AddLiquidityFromCustodiesToBalances, RemoveLiquidityFromCustodyToBalances, AddLiquidityFromBalancesToBalances, RemoveLiquidityFromBalanceToBalances } from "../commands/Liquidity.sol";
-import { Blocks } from "../blocks/Blocks.sol";
+import { Cursors } from "../blocks/Cursors.sol";
 import { AssetAmount, HostAmount } from "../blocks/Schema.sol";
-import { Block, Cursor, Writer, Keys } from "../Blocks.sol";
+import { Cursor, Writer, Keys } from "../Cursors.sol";
 import { Writers } from "../blocks/Writers.sol";
 import { Ids } from "../utils/Ids.sol";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 contract TestLiquidityHost is
@@ -60,8 +60,8 @@ contract TestLiquidityHost is
         Cursor memory input,
         Writer memory out
     ) internal override {
-        HostAmount memory a = custodies.toCustodyValue();
-        HostAmount memory b = custodies.toCustodyValue();
+        HostAmount memory a = custodies.unpackCustodyValue();
+        HostAmount memory b = custodies.unpackCustodyValue();
         uint bundleLen = 0;
         if (input.i < input.end) {
             bundleLen = input.end - input.i;
@@ -101,8 +101,8 @@ contract TestLiquidityHost is
         Cursor memory input,
         Writer memory out
     ) internal override {
-        AssetAmount memory a = balances.toBalanceValue();
-        AssetAmount memory b = balances.toBalanceValue();
+        AssetAmount memory a = balances.unpackBalanceValue();
+        AssetAmount memory b = balances.unpackBalanceValue();
         uint bundleLen = 0;
         if (input.i < input.end) {
             bundleLen = input.end - input.i;
@@ -137,16 +137,14 @@ contract TestLiquidityHost is
     }
 
     function emitMinimum(Cursor memory input) internal {
-        uint i = input.i;
-        while (i < input.end) {
-            Block memory member = Blocks.at(i);
-            if (member.end > input.end) revert Blocks.MalformedBlocks();
-            if (member.key == Keys.Minimum) {
-                (bytes32 asset, bytes32 meta, uint amount) = Blocks.unpackMinimum(member);
+        Cursor memory cur = input;
+        while (cur.i < cur.end) {
+            Cursor memory member = cur.take();
+            if (member.isAt(Keys.Minimum)) {
+                (bytes32 asset, bytes32 meta, uint amount) = member.unpackMinimum();
                 emit MinimumObserved(asset, meta, amount);
                 return;
             }
-            i = member.end;
         }
     }
 
@@ -166,3 +164,5 @@ contract TestLiquidityHost is
         return removeLiquidityFromBalanceToBalancesId;
     }
 }
+
+

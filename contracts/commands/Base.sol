@@ -38,3 +38,5 @@ abstract contract CommandBase is OperationBase, CommandEvent {
         return Ids.toCommand(Selectors.command(name), address(this));
     }
 }
+
+

@@ -2,12 +2,12 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, HostAmount, Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
 
 string constant BABTB = "borrowAgainstBalanceToBalance";
 string constant BACTB = "borrowAgainstCustodyToBalance";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 abstract contract BorrowAgainstCustodyToBalance is CommandBase {
@@ -29,13 +29,13 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     function borrowAgainstCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(borrowAgainstCustodyToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocBalances(count);
         Cursor memory input;
 
         while (custodies.i < custodies.end) {
-            input = Blocks.cursorFrom(c.request, input.cursor);
-            HostAmount memory custody = custodies.toCustodyValue();
+            input = Cursors.openFrom(c.request, input.cursor);
+            HostAmount memory custody = custodies.unpackCustodyValue();
             AssetAmount memory out = borrowAgainstCustodyToBalance(c.account, custody, input);
             writer.appendNonZeroBalance(out);
         }
@@ -63,13 +63,13 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     function borrowAgainstBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(borrowAgainstBalanceToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocBalances(count);
         Cursor memory input;
 
         while (balances.i < balances.end) {
-            input = Blocks.cursorFrom(c.request, input.cursor);
-            AssetAmount memory balance = balances.toBalanceValue();
+            input = Cursors.openFrom(c.request, input.cursor);
+            AssetAmount memory balance = balances.unpackBalanceValue();
             AssetAmount memory out = borrowAgainstBalanceToBalance(c.account, balance, input);
             writer.appendNonZeroBalance(out);
         }
@@ -77,3 +77,5 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
         return writer.finish();
     }
 }
+
+

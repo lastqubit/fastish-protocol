@@ -100,3 +100,4 @@ describe("Burn", () => {
       .to.be.revertedWithCustomError(host, "NoOperation");
   });
 });
+

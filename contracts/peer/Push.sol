@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { PeerBase } from "./Base.sol";
-import { Blocks, Cursor } from "../Blocks.sol";
+import { Cursors, Cursor } from "../Cursors.sol";
 
 string constant NAME = "peerPush";
 
@@ -18,7 +18,7 @@ abstract contract PeerPush is PeerBase {
     function peerPush(bytes calldata request) external payable onlyPeer returns (bytes memory) {
         uint q = 0;
         while (q < request.length) {
-            Cursor memory input = Blocks.cursorFrom(request, q);
+            Cursor memory input = Cursors.openFrom(request, q);
             peerPush(input);
             q = input.cursor;
         }
@@ -26,3 +26,5 @@ abstract contract PeerPush is PeerBase {
         return done(0, q);
     }
 }
+
+

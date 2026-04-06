@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Blocks, Cursor, HostAmount, Keys, Writer, Writers } from "../Blocks.sol";
-using Blocks for Cursor;
+import { AssetAmount, Cursors, Cursor, HostAmount, Keys, Writer, Writers } from "../Cursors.sol";
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant SEBTB = "swapExactBalanceToBalance";
@@ -28,13 +28,13 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
     function swapExactBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactBalanceToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocBalances(count);
         Cursor memory input;
 
         while (balances.i < balances.end) {
-            input = Blocks.cursorFrom(c.request, input.cursor);
-            AssetAmount memory balance = balances.toBalanceValue();
+            input = Cursors.openFrom(c.request, input.cursor);
+            AssetAmount memory balance = balances.unpackBalanceValue();
             AssetAmount memory out = swapExactBalanceToBalance(c.account, balance, input);
             writer.appendNonZeroBalance(out);
         }
@@ -62,13 +62,13 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
     function swapExactCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactCustodyToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocBalances(count);
         Cursor memory input;
 
         while (custodies.i < custodies.end) {
-            input = Blocks.cursorFrom(c.request, input.cursor);
-            HostAmount memory custody = custodies.toCustodyValue();
+            input = Cursors.openFrom(c.request, input.cursor);
+            HostAmount memory custody = custodies.unpackCustodyValue();
             AssetAmount memory out = swapExactCustodyToBalance(c.account, custody, input);
             writer.appendNonZeroBalance(out);
         }
@@ -76,3 +76,5 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
         return writer.finish();
     }
 }
+
+

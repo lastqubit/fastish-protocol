@@ -3,10 +3,9 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { SwapExactBalanceToBalance } from "../commands/Swap.sol";
-import { AssetAmount, Block, Cursor, Blocks, Keys } from "../Blocks.sol";
+import { AssetAmount, Cursor, Cursors, Keys } from "../Cursors.sol";
 
-using Blocks for Block;
-using Blocks for Cursor;
+using Cursors for Cursor;
 
 contract TestSwapHost is Host, SwapExactBalanceToBalance {
     event SwapMapped(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes inputData);
@@ -22,10 +21,9 @@ contract TestSwapHost is Host, SwapExactBalanceToBalance {
         AssetAmount memory balance,
         Cursor memory input
     ) internal override returns (AssetAmount memory out) {
-        if (input.i == input.end) revert Blocks.InvalidBlock();
+        if (input.i == input.end) revert Cursors.InvalidBlock();
 
-        Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.end];
+        bytes calldata inputData = input.isAt(Keys.Route) ? input.unpackRoute() : msg.data[input.i:input.end];
         emit SwapMapped(account, balance.asset, balance.meta, balance.amount, inputData);
 
         Cursor memory cur = input;
@@ -50,3 +48,5 @@ contract TestSwapHost is Host, SwapExactBalanceToBalance {
         return adminAccount;
     }
 }
+
+

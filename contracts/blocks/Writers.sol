@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Blocks } from "./Blocks.sol";
+import { Cursors } from "./Cursors.sol";
 import { AssetAmount, HostAmount, Tx, Keys } from "./Schema.sol";
 
 struct Writer {
@@ -25,7 +25,7 @@ library Writers {
     // uint so assembly can write the full header in one mstore while the
     // payload starts at offset + 8.
     function toBlockHeader(bytes4 key, uint len) internal pure returns (uint) {
-        if (len > type(uint32).max) revert Blocks.MalformedBlocks();
+        if (len > type(uint32).max) revert Cursors.MalformedBlocks();
         return (uint(uint32(key)) << 224) | (uint(uint32(len)) << 192);
     }
 
@@ -73,7 +73,7 @@ library Writers {
     ) internal pure returns (Writer memory writer) {
         if (count == 0) revert EmptyRequest();
         uint scaledCount = count * scaledRatio;
-        if (scaledCount % ALLOC_SCALE != 0) revert Blocks.MalformedBlocks();
+        if (scaledCount % ALLOC_SCALE != 0) revert Cursors.MalformedBlocks();
         uint len = (scaledCount / ALLOC_SCALE) * blockLen;
         writer = Writer({i: 0, end: len, dst: new bytes(len)});
     }
@@ -178,3 +178,5 @@ library Writers {
         }
     }
 }
+
+

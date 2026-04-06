@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "../Base.sol";
-import { Blocks, Cursor, Keys, Schemas } from "../../Blocks.sol";
-using Blocks for Cursor;
+import { Cursors, Cursor, Keys, Schemas } from "../../Cursors.sol";
+using Cursors for Cursor;
 
 string constant NAME = "authorize";
 
@@ -17,7 +17,7 @@ abstract contract Authorize is CommandBase {
     function authorize(
         CommandContext calldata c
     ) external payable onlyAdmin(c.account) onlyCommand(authorizeId, c.target) returns (bytes memory) {
-        Cursor memory input = Blocks.streamFrom(c.request, 0);
+        Cursor memory input = Cursors.openStream(c.request, 0);
         while (input.i < input.end) {
             if (!input.isAt(Keys.Node)) break;
             uint node = input.unpackNode();
@@ -26,3 +26,5 @@ abstract contract Authorize is CommandBase {
         return done(input);
     }
 }
+
+

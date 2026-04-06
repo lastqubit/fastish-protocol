@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
-using Blocks for Cursor;
+import { Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant NAME = "mintToBalances";
@@ -31,7 +31,7 @@ abstract contract MintToBalances is CommandBase {
     function mintToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(mintToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory inputs, uint count) = Blocks.allFrom(c.request, 0);
+        (Cursor memory inputs, uint count) = Cursors.openInput(c.request, 0);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
 
         while (inputs.i < inputs.end) {
@@ -42,3 +42,5 @@ abstract contract MintToBalances is CommandBase {
         return writer.finish();
     }
 }
+
+

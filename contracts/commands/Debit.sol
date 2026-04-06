@@ -2,11 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Blocks, Cursor, Keys, Schemas, Writer, Writers } from "../Blocks.sol";
+import { Cursors, Cursor, Keys, Schemas, Writer, Writers } from "../Cursors.sol";
 
 string constant NAME = "debitAccount";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 abstract contract DebitAccount is CommandBase {
@@ -24,7 +24,7 @@ abstract contract DebitAccount is CommandBase {
     /// The default implementation iterates AMOUNT blocks, calls
     /// `debitAccount`, and emits matching BALANCE blocks.
     function debitAccount(bytes32 account, bytes calldata request) internal virtual returns (bytes memory) {
-        (Cursor memory inputs, uint count) = Blocks.matchingFrom(request, 0, Keys.Amount);
+        (Cursor memory inputs, uint count) = Cursors.openTyped(request, 0, Keys.Amount);
         Writer memory writer = Writers.allocBalances(count);
 
         while (inputs.i < inputs.end) {
@@ -42,3 +42,5 @@ abstract contract DebitAccount is CommandBase {
         return debitAccount(c.account, c.request);
     }
 }
+
+

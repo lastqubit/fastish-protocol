@@ -3,12 +3,12 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { ReclaimToBalances } from "../commands/Reclaim.sol";
-import { AssetAmount, Cursor, Writer, Keys } from "../Blocks.sol";
-import { Blocks } from "../blocks/Blocks.sol";
+import { AssetAmount, Cursor, Writer, Keys } from "../Cursors.sol";
+import { Cursors } from "../blocks/Cursors.sol";
 import { Writers } from "../blocks/Writers.sol";
 import { Ids } from "../utils/Ids.sol";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 contract TestReclaimHost is Host, ReclaimToBalances {
@@ -48,3 +48,5 @@ contract TestReclaimHost is Host, ReclaimToBalances {
     function getReclaimBalanceId() external view returns (uint) { return reclaimToBalancesId; }
     function getAdminAccount() external view returns (bytes32) { return adminAccount; }
 }
+
+

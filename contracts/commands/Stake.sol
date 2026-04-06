@@ -2,13 +2,13 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, HostAmount, Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
 
 string constant SBTB = "stakeBalanceToBalances";
 string constant SCTB = "stakeCustodyToBalances";
 string constant SCTP = "stakeCustodyToPosition";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 abstract contract StakeBalanceToBalances is CommandBase {
@@ -35,13 +35,13 @@ abstract contract StakeBalanceToBalances is CommandBase {
     function stakeBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(stakeBalanceToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (balances.i < balances.end) {
-            input = Blocks.cursorFrom(c.request, input.cursor);
-            AssetAmount memory balance = balances.toBalanceValue();
+            input = Cursors.openFrom(c.request, input.cursor);
+            AssetAmount memory balance = balances.unpackBalanceValue();
             stakeBalanceToBalances(c.account, balance, input, writer);
         }
 
@@ -73,13 +73,13 @@ abstract contract StakeCustodyToBalances is CommandBase {
     function stakeCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(stakeCustodyToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openTyped(c.state, 0, Keys.Custody);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (custodies.i < custodies.end) {
-            input = Blocks.cursorFrom(c.request, input.cursor);
-            HostAmount memory custody = custodies.toCustodyValue();
+            input = Cursors.openFrom(c.request, input.cursor);
+            HostAmount memory custody = custodies.unpackCustodyValue();
             stakeCustodyToBalances(c.account, custody, input, writer);
         }
 
@@ -101,14 +101,16 @@ abstract contract StakeCustodyToPosition is CommandBase {
     function stakeCustodyToPosition(
         CommandContext calldata c
     ) external payable onlyCommand(stakeCustodyToPositionId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, ) = Blocks.matchingFrom(c.state, 0, Keys.Custody);
+        (Cursor memory custodies, ) = Cursors.openTyped(c.state, 0, Keys.Custody);
         Cursor memory input;
         while (custodies.i < custodies.end) {
-            HostAmount memory custody = custodies.toCustodyValue();
-            input = Blocks.cursorFrom(c.request, input.cursor);
+            HostAmount memory custody = custodies.unpackCustodyValue();
+            input = Cursors.openFrom(c.request, input.cursor);
             stakeCustodyToPosition(c.account, custody, input);
         }
 
         return done(custodies);
     }
 }
+
+

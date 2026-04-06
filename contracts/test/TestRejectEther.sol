@@ -6,3 +6,5 @@ contract TestRejectEther {
         revert("NO_ETH");
     }
 }
+
+

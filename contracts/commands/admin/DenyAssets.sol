@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "../Base.sol";
-import { Blocks, Cursor, Keys, Schemas } from "../../Blocks.sol";
-using Blocks for Cursor;
+import { Cursors, Cursor, Keys, Schemas } from "../../Cursors.sol";
+using Cursors for Cursor;
 
 string constant NAME = "denyAssets";
 
@@ -21,7 +21,7 @@ abstract contract DenyAssets is CommandBase {
     function denyAssets(
         CommandContext calldata c
     ) external payable onlyAdmin(c.account) onlyCommand(denyAssetsId, c.target) returns (bytes memory) {
-        (Cursor memory input, ) = Blocks.matchingFrom(c.request, 0, Keys.Asset);
+        (Cursor memory input, ) = Cursors.openTyped(c.request, 0, Keys.Asset);
 
         while (input.i < input.end) {
             (bytes32 asset, bytes32 meta) = input.unpackAsset();
@@ -31,3 +31,5 @@ abstract contract DenyAssets is CommandBase {
         return done(input);
     }
 }
+
+

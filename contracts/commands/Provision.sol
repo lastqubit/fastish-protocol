@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Blocks, Cursor, Keys, Schemas, Writer, Writers } from "../Blocks.sol";
-using Blocks for Cursor;
+import { Cursors, Cursor, Keys, Schemas, Writer, Writers } from "../Cursors.sol";
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant PROVISION = "provision";
@@ -29,7 +29,7 @@ abstract contract Provision is CommandBase, ProvisionHook {
     function provision(
         CommandContext calldata c
     ) external payable onlyCommand(provisionId, c.target) returns (bytes memory) {
-        (Cursor memory inputs, uint count) = Blocks.matchingFrom(c.request, 0, Keys.Bundle);
+        (Cursor memory inputs, uint count) = Cursors.openTyped(c.request, 0, Keys.Bundle);
         Writer memory writer = Writers.allocCustodies(count);
 
         while (inputs.i < inputs.end) {
@@ -55,8 +55,8 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
     function provisionFromBalance(
         CommandContext calldata c
     ) external payable onlyCommand(provisionFromBalanceId, c.target) returns (bytes memory) {
-        uint toHost = Blocks.resolveNode(c.request, 0, c.request.length, 0);
-        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        uint toHost = Cursors.resolveNode(c.request, 0, c.request.length, 0);
+        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocCustodies(count);
 
         while (balances.i < balances.end) {
@@ -68,3 +68,5 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
         return writer.done();
     }
 }
+
+

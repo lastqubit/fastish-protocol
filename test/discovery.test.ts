@@ -80,3 +80,4 @@ describe("Host Discovery", () => {
       .withArgs(hostId, BigInt(blockNum), 2n, "v2");
   });
 });
+

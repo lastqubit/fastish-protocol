@@ -105,3 +105,4 @@ describe("Validator", () => {
       .to.be.revertedWithCustomError(validator, "InvalidSigner");
   });
 });
+

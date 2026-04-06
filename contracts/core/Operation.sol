@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { AccessControl } from "./Access.sol";
-import { Cursor } from "../blocks/Blocks.sol";
+import { Cursor } from "../blocks/Cursors.sol";
 import { Assets } from "../utils/Assets.sol";
 import { Ids } from "../utils/Ids.sol";
 
@@ -41,3 +41,5 @@ abstract contract OperationBase is AccessControl {
         }
     }
 }
+
+

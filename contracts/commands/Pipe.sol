@@ -2,11 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext } from "./Base.sol";
-import { Blocks, Cursor, Keys, Schemas } from "../Blocks.sol";
+import { Cursors, Cursor, Keys, Schemas } from "../Cursors.sol";
 import { Accounts } from "../utils/Accounts.sol";
 import { Values } from "../utils/Value.sol";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 
 string constant NAME = "pipe";
 
@@ -33,7 +33,7 @@ abstract contract Pipe is CommandBase {
         bytes calldata steps,
         Values.Budget memory budget
     ) internal returns (bytes memory) {
-        (Cursor memory input, ) = Blocks.matchingFrom(steps, 0, Keys.Step);
+        (Cursor memory input, ) = Cursors.openTyped(steps, 0, Keys.Step);
         while (input.i < input.end) {
             (uint target, uint value, bytes calldata request) = input.unpackStep();
             uint spend = Values.use(budget, value);
@@ -50,3 +50,5 @@ abstract contract Pipe is CommandBase {
         return pipe(c.account, c.state, c.request, budget);
     }
 }
+
+

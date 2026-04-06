@@ -12,9 +12,9 @@ pragma solidity ^0.8.33;
 //   3. The onlyCommand modifier on the entrypoint to enforce the trusted caller and target.
 
 import {CommandBase, CommandContext, Channels} from "../contracts/Commands.sol";
-import {Blocks, Cursor, Schemas} from "../contracts/Blocks.sol";
+import {Cursors, Cursor, Schemas} from "../contracts/Cursors.sol";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 
 // NAME is the human-readable command name. It is used to derive the command ID
 // and is published in the Command event so off-chain tooling can discover it.
@@ -39,10 +39,12 @@ abstract contract MyCommand is CommandBase {
         // c.target matches this command's ID (or is 0, meaning "any command").
 
         // Open the first request block as a cursor and decode the AMOUNT.
-        Cursor memory input = Blocks.cursorFrom(c.request, 0);
+        Cursor memory input = Cursors.openFrom(c.request, 0);
         (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
 
         // Apply your app logic here (e.g. debit the account), then return a BALANCE block.
-        return Blocks.toBalanceBlock(asset, meta, amount);
+        return Cursors.toBalanceBlock(asset, meta, amount);
     }
 }
+
+

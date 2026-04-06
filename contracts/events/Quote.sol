@@ -12,3 +12,5 @@ abstract contract QuoteEvent is EventEmitter {
         emit EventAbi(ABI);
     }
 }
+
+

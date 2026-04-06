@@ -2,11 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Blocks, Cursor, Writers, Writer, Keys } from "../Blocks.sol";
+import { AssetAmount, Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
 
 string constant UBTB = "unstakeBalanceToBalances";
 
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 abstract contract UnstakeBalanceToBalances is CommandBase {
@@ -33,16 +33,18 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
     function unstakeBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(unstakeBalanceToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Blocks.matchingFrom(c.state, 0, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openTyped(c.state, 0, Keys.Balance);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
         Cursor memory input;
 
         while (balances.i < balances.end) {
-            input = Blocks.cursorFrom(c.request, input.cursor);
-            AssetAmount memory balance = balances.toBalanceValue();
+            input = Cursors.openFrom(c.request, input.cursor);
+            AssetAmount memory balance = balances.unpackBalanceValue();
             unstakeBalanceToBalances(c.account, balance, input, writer);
         }
 
         return writer.finish();
     }
 }
+
+

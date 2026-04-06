@@ -3,12 +3,11 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { MintToBalances } from "../commands/Mint.sol";
-import { Blocks, Block, Cursor, Writer } from "../Blocks.sol";
+import { Cursors, Cursor, Writer, Keys } from "../Cursors.sol";
 import { Writers } from "../blocks/Writers.sol";
 import { Ids } from "../utils/Ids.sol";
 
-using Blocks for Block;
-using Blocks for Cursor;
+using Cursors for Cursor;
 using Writers for Writer;
 
 contract TestMintHost is Host, MintToBalances {
@@ -32,8 +31,7 @@ contract TestMintHost is Host, MintToBalances {
     }
 
     function mintToBalances(bytes32 account, Cursor memory input, Writer memory out) internal override {
-        Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.end];
+        bytes calldata inputData = input.isAt(Keys.Route) ? input.unpackRoute() : msg.data[input.i:input.end];
         emit MintCalled(account, inputData);
         if (returnAmount > 0) out.appendBalance(returnAsset, returnMeta, returnAmount);
     }
@@ -41,3 +39,5 @@ contract TestMintHost is Host, MintToBalances {
     function getMintId() external view returns (uint) { return mintToBalancesId; }
     function getAdminAccount() external view returns (bytes32) { return adminAccount; }
 }
+
+

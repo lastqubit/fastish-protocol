@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Blocks, Cursor, Keys, Schemas } from "../Blocks.sol";
-using Blocks for Cursor;
+import { Cursors, Cursor, Keys, Schemas } from "../Cursors.sol";
+using Cursors for Cursor;
 
 string constant NAME = "transfer";
 string constant INPUT = string.concat(Schemas.Amount, "&", Schemas.Recipient);
@@ -25,7 +25,7 @@ abstract contract Transfer is CommandBase {
     function transfer(bytes32 from, bytes calldata request) internal virtual returns (bytes memory) {
         uint q = 0;
         while (q < request.length) {
-            Cursor memory cur = Blocks.cursorFrom(request, q);
+            Cursor memory cur = Cursors.openFrom(request, q);
             if (!cur.isAt(Keys.Amount)) break;
             (bytes32 asset, bytes32 meta, uint amount) = cur.unpackAmount();
             bytes32 to = cur.unpackRecipient();
@@ -42,3 +42,5 @@ abstract contract Transfer is CommandBase {
         return transfer(c.account, c.request);
     }
 }
+
+

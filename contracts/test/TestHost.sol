@@ -16,9 +16,9 @@ import { Destroy } from "../commands/admin/Destroy.sol";
 import { Init } from "../commands/admin/Init.sol";
 import { Allocate } from "../commands/admin/Allocate.sol";
 import { Tx } from "../blocks/Schema.sol";
-import { Blocks, Block, Cursor } from "../Blocks.sol";
+import { Cursors, Cursor, Keys } from "../Cursors.sol";
 
-using Blocks for Block;
+using Cursors for Cursor;
 
 contract TestHost is
     Host,
@@ -84,14 +84,12 @@ contract TestHost is
     }
 
     function init(Cursor memory input) internal override {
-        Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.end];
+        bytes calldata inputData = input.isAt(Keys.Route) ? input.unpackRoute() : msg.data[input.i:input.end];
         emit InitCalled(inputData);
     }
 
     function destroy(Cursor memory input) internal override {
-        Block memory ref = Blocks.at(input.i);
-        bytes calldata inputData = msg.data[ref.i:ref.end];
+        bytes calldata inputData = input.isAt(Keys.Route) ? input.unpackRoute() : msg.data[input.i:input.end];
         emit DestroyCalled(inputData);
     }
 
@@ -201,3 +199,5 @@ contract TestHost is
         return authorized[node];
     }
 }
+
+

@@ -22,3 +22,5 @@ library Layout {
     uint8 constant Erc20 = 0x02;
     uint8 constant Erc721 = 0x03;
 }
+
+
