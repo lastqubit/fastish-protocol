@@ -1,30 +1,22 @@
 # rootzero
 
-`rootzero` is the Solidity library used to build hosts and commands for the RootZero protocol.
+`rootzero` is the Solidity library for building hosts and commands for the rootzero protocol.
 
-It contains the reusable contracts, utilities, and encoding helpers that RootZero applications compose on top of. If you are building a RootZero host, a command contract, or a small protocol extension that needs to speak RootZero's id, asset, and block formats, this repo is the shared foundation.
-
-## What You Build With It
-
-- `Host` contracts that register with RootZero discovery and expose trusted command endpoints
-- `Command` contracts that execute protocol actions such as transfer, deposit, withdraw, settlement, and admin flows
-- Shared request/response block parsing and writing logic
-- Shared id, asset, account, and event encoding used across the protocol
+It contains the reusable contracts, utilities, cursor parsers, and encoding helpers that rootzero applications compose on top of. If you are building a host, a command contract, or protocol tooling that needs to speak the protocol's id, asset, account, and block formats, this repo is the shared foundation.
 
 ## Main Entry Points
 
 Most consumers should start from the package root entrypoints:
 
-- `@rootzero/contracts/Core.sol`: core host and validation building blocks
+- `@rootzero/contracts/Core.sol`: core host, access control, balances, and validator building blocks
 - `@rootzero/contracts/Commands.sol`: base command contract plus standard command mixins
-- `@rootzero/contracts/Blocks.sol`: block schema, readers, and writers
-- `@rootzero/contracts/Utils.sol`: ids, assets, accounts, layout, strings, and value helpers
+- `@rootzero/contracts/Cursors.sol`: cursor readers, schemas, keys, memory refs, and writers
+- `@rootzero/contracts/Utils.sol`: ids, assets, accounts, channels, layout, strings, and value helpers
 - `@rootzero/contracts/Events.sol`: reusable event emitters and event contracts
 
 ## Start Here
 
-If you are new to RootZero, start with the getting started guide in the repository:
-https://github.com/lastqubit/rootzero-contracts/blob/main/docs/GETTING_STARTED.md
+If you are new to rootzero, read [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) first.
 
 It walks through:
 
@@ -39,7 +31,7 @@ It walks through:
 
 ### Build a Host
 
-Extend `Host` when you want a RootZero host contract with admin command support and optional discovery registration.
+Extend `Host` when you want a rootzero host contract with admin command support and optional discovery registration.
 
 ```solidity
 // SPDX-License-Identifier: GPL-3.0-only
@@ -54,59 +46,52 @@ contract ExampleHost is Host {
 }
 ```
 
-`rootzero` is the trusted RootZero runtime. If it is a contract, the host also announces itself there during deployment. Use `address(0)` for a self-managed host that does not auto-register.
-
-`Host` already layers in the standard admin command flows used by RootZero hosts:
-
-- `Authorize`
-- `Unauthorize`
-- `Relocate`
+`rootzero` is the trusted runtime. If it is a contract, the host also announces itself there during deployment. Use `address(0)` for a self-managed host that does not auto-register.
 
 ### Build a Command
 
-Extend `CommandBase` when you want a RootZero command mixin that runs inside the protocol's trusted call model. Commands are abstract contracts mixed into a host or composed as a standalone module.
+Extend `CommandBase` when you want a rootzero command mixin that runs inside the protocol's trusted call model. Commands are abstract contracts mixed into a host.
 
 ```solidity
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandBase, CommandContext} from "@rootzero/contracts/Commands.sol";
+import {CommandBase, CommandContext, Channels} from "@rootzero/contracts/Commands.sol";
+import {Cursors, Cursor, Schemas} from "@rootzero/contracts/Cursors.sol";
+
+using Cursors for Cursor;
 
 string constant NAME = "myCommand";
-string constant ROUTE = "route(uint foo, uint bar)";
+string constant INPUT = Schemas.Amount;
 
 abstract contract ExampleCommand is CommandBase {
     uint internal immutable myCommandId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, ROUTE, myCommandId, 0, 0);
+        emit Command(host, NAME, INPUT, myCommandId, Channels.Setup, Channels.Balances);
     }
 
     function myCommand(
         CommandContext calldata c
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
-        return "";
+        Cursor memory input = Cursors.openBlock(c.request, 0);
+        (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
+        return Cursors.toBalanceBlock(asset, meta, amount);
     }
 }
 ```
 
-`CommandBase` gives you the common RootZero command context:
-
-- trusted caller enforcement
-- admin checks
-- expiry checks
-- command-to-command or command-to-host calls through encoded RootZero node ids
-- shared command events
-
 ## Repo Layout
 
-- `contracts/core`: host, access control, balances, and validation primitives
+- `contracts/core`: host, access control, balances, operation, and validation primitives
 - `contracts/commands`: standard command building blocks and admin commands
 - `contracts/peer`: peer protocol surfaces for inter-host asset flows
-- `contracts/blocks`: request/response block encoding and decoding
+- `contracts/blocks`: request/response schema, cursor parsing, memory refs, and writers
 - `contracts/utils`: shared protocol encoding helpers
 - `contracts/events`: protocol event contracts and emitters
 - `contracts/interfaces`: discovery interfaces and shared external protocol surfaces
+- `examples`: small host and command examples
+- `docs`: introductory documentation
 
 ## Install And Compile
 
@@ -115,21 +100,13 @@ npm install @rootzero/contracts
 npm run compile
 ```
 
-The stable import surface for consumers is:
-
-- `@rootzero/contracts/Core.sol`
-- `@rootzero/contracts/Commands.sol`
-- `@rootzero/contracts/Blocks.sol`
-- `@rootzero/contracts/Utils.sol`
-- `@rootzero/contracts/Events.sol`
-
 ## When To Use This Repo
 
 Use `rootzero` if you want to:
 
-- create a new RootZero host
-- implement a new RootZero command
-- reuse RootZero's block format and wire encoding
-- share protocol-level Solidity code across multiple RootZero applications
+- create a new rootzero host
+- implement a new rootzero command
+- reuse the protocol's block format and wire encoding
+- share protocol-level Solidity code across multiple rootzero applications
 
 If you are looking for a full end-user app or deployment repo, this library is the lower-level protocol package rather than the full product surface.

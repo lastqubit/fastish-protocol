@@ -12,3 +12,6 @@ abstract contract AssetEvent is EventEmitter {
         emit EventAbi(ABI);
     }
 }
+
+
+

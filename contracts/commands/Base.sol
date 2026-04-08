@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { OperationBase } from "../core/Operation.sol";
-import { CommandEvent } from "../events/Command.sol";
-import { Channels } from "../utils/Channels.sol";
-import { Ids, Selectors } from "../utils/Ids.sol";
+import {OperationBase} from "../core/Operation.sol";
+import {CommandEvent} from "../events/Command.sol";
+import {Channels} from "../utils/Channels.sol";
+import {Ids, Selectors} from "../utils/Ids.sol";
 
 struct CommandContext {
     uint target;
@@ -15,11 +15,11 @@ struct CommandContext {
 
 abstract contract CommandBase is OperationBase, CommandEvent {
     error Expired();
-    error NotAdmin(bytes32 value);
+    error NotAdmin();
     error UnexpectedEndpoint();
 
     modifier onlyAdmin(bytes32 account) {
-        if (account != adminAccount) revert NotAdmin(account);
+        if (account != adminAccount) revert NotAdmin();
         _;
     }
 
@@ -38,3 +38,6 @@ abstract contract CommandBase is OperationBase, CommandEvent {
         return Ids.toCommand(Selectors.command(name), address(this));
     }
 }
+
+
+

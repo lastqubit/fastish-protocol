@@ -1,16 +1,16 @@
-# Getting Started With RootZero
+# Getting Started With rootzero
 
-This guide is for developers who want to build on RootZero without reading the whole codebase first.
+This guide is for developers who want to build on rootzero without reading the whole codebase first.
 
 If you remember only one thing, remember this:
 
 - A `Host` is your application contract.
-- A command is an entrypoint the RootZero runtime is allowed to call.
+- A command is an entrypoint the rootzero runtime is allowed to call.
 - Requests and responses are passed around as typed byte blocks.
 
 ## The Mental Model
 
-RootZero moves data through a small command context:
+rootzero moves data through a small command context:
 
 ```solidity
 struct CommandContext {
@@ -36,7 +36,7 @@ Most built-in commands follow a simple pattern:
 
 ## Step 1: Start With A Host
 
-The smallest useful RootZero app is a host contract.
+The smallest useful rootzero app is a host contract.
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -53,7 +53,7 @@ contract ExampleHost is Host {
 
 What the constructor arguments mean:
 
-- `rootzero`: the trusted RootZero runtime allowed to call commands
+- `rootzero`: the trusted rootzero runtime allowed to call commands
 - `1`: your host version
 - `"example"`: your host namespace
 
@@ -71,10 +71,10 @@ pragma solidity ^0.8.33;
 
 import {Host} from "@rootzero/contracts/Core.sol";
 import {DebitAccount} from "@rootzero/contracts/Commands.sol";
-import {ensureAssetRef} from "@rootzero/contracts/Utils.sol";
+import {Assets} from "@rootzero/contracts/Utils.sol";
 
 contract ExampleHost is Host, DebitAccount {
-    mapping(bytes32 account => mapping(bytes32 assetRef => uint amount)) internal balances;
+    mapping(bytes32 account => mapping(bytes32 assetKey => uint amount)) internal balances;
 
     constructor(address rootzero)
         Host(rootzero, 1, "example")
@@ -86,8 +86,8 @@ contract ExampleHost is Host, DebitAccount {
         bytes32 meta,
         uint amount
     ) internal override {
-        bytes32 ref = ensureAssetRef(asset, meta);
-        balances[account][ref] -= amount;
+        bytes32 key = Assets.key(asset, meta);
+        balances[account][key] -= amount;
     }
 }
 ```
@@ -95,7 +95,7 @@ contract ExampleHost is Host, DebitAccount {
 Why this is a good first step:
 
 - you do not need to write block parsing yourself
-- you get the standard RootZero command surface
+- you get the standard rootzero command surface
 - you only implement the business rule that is unique to your app
 
 ## Step 3: Understand What Built-In Commands Consume
@@ -106,16 +106,16 @@ The built-in commands are easiest to use when you know which blocks they expect.
 
 - `deposit`: reads `AMOUNT` blocks, returns `BALANCE`
 - `transfer`: reads `AMOUNT` plus `RECIPIENT`
-- `debitAccountToBalance`: reads `AMOUNT`, returns `BALANCE`
+- `debitAccount`: reads `AMOUNT`, returns `BALANCE`
 - `provision`: reads `AMOUNT` plus `NODE`, returns `CUSTODY`
 - `pipe`: reads `STEP` blocks and runs them in order
 
 ### Commands That Read `state`
 
 - `withdraw`: reads `BALANCE`, optionally reads `RECIPIENT` from `request`
-- `creditBalanceToAccount`: reads `BALANCE`, optionally reads `RECIPIENT` from `request`
+- `creditAccount`: reads `BALANCE`, optionally reads `RECIPIENT` from `request`
 - `settle`: reads `TX`
-- `fund`: reads `BALANCE` from `state` and `NODE` from `request`
+- `provisionFromBalance`: reads `BALANCE` from `state` and `NODE` from `request`
 
 This is the main pattern to keep in mind:
 
@@ -138,7 +138,7 @@ const amount = 100n;
 
 const ctx = {
   target: 0n,
-  account: "0x...", // 32-byte RootZero account id
+  account: "0x...", // 32-byte rootzero account id
   state: "0x",
   request: encodeAmountBlock(asset, meta, amount),
 };
@@ -161,26 +161,30 @@ When the built-in modules are not enough, add your own command entrypoint.
 pragma solidity ^0.8.33;
 
 import {Host} from "@rootzero/contracts/Core.sol";
-import {CommandContext} from "@rootzero/contracts/Commands.sol";
-import {toCommandId} from "@rootzero/contracts/Utils.sol";
+import {CommandBase, CommandContext, Channels} from "@rootzero/contracts/Commands.sol";
+import {Cursors, Cursor, Schemas} from "@rootzero/contracts/Cursors.sol";
 
-bytes32 constant NAME = "myCommand";
+using Cursors for Cursor;
+
+string constant NAME = "myCommand";
 string constant ROUTE = "route(uint foo, uint bar)";
+string constant INPUT = string.concat(ROUTE, "&", Schemas.Amount);
 
-contract ExampleHost is Host {
-    uint immutable myCommandId = toCommandId(NAME, address(this));
+abstract contract MyCommand is CommandBase {
+    uint internal immutable myCommandId = commandId(NAME);
 
-    constructor(address rootzero)
-        Host(rootzero, 1, "example")
-    {
-        emit Command(host, NAME, ROUTE, myCommandId, 0, 0);
+    constructor() {
+        emit Command(host, NAME, INPUT, myCommandId, Channels.Setup, Channels.Balances);
     }
 
     function myCommand(
         CommandContext calldata c
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
-        c.request;
-        return "";
+        Cursor memory input = Cursors.openBlock(c.request, 0);
+        uint foo = input.unpackRouteUint();
+        (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
+        foo;
+        return Cursors.toBalanceBlock(asset, meta, amount);
     }
 }
 ```
@@ -191,21 +195,26 @@ There are three important ideas here:
 - you announce it with the `Command` event
 - `onlyCommand(myCommandId, c.target)` ensures the trusted caller hit the right endpoint
 
-## Step 6: Read Route Data Inside A Custom Command
+## Step 6: Read Input With A Cursor
 
-Route blocks are a good fit for command-specific parameters.
+Cursor parsing is the nicest way to read structured command input.
 
-If your request contains a `route(uint foo, uint bar)` block, your command can:
+If your request contains a bundled input like:
 
-- treat it as the command-specific payload
-- decode it however your app expects
-- keep the rest of the RootZero request format unchanged
+- `route(uint foo) & amount(bytes32 asset, bytes32 meta, uint amount)`
+
+your command can:
+
+- open it with `Cursors.openBlock(...)`
+- consume the route first
+- then consume the amount
+- keep parsing in bundle/member order without indexing helpers
 
 For simple projects, it is perfectly fine to:
 
-- publish the route schema string in the `Command` event
-- encode the route bytes off-chain
-- decode the route bytes inside the command
+- publish the full input schema string in the `Command` event
+- encode bundled input blocks off-chain
+- decode them sequentially with cursor helpers inside the command
 
 ## Step 7: Return State With Writers
 
@@ -215,14 +224,15 @@ When your command needs to build response blocks manually, use `Writers`.
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {Writers} from "@rootzero/contracts/Blocks.sol";
-import {Writer} from "@rootzero/contracts/Schema.sol";
+import {Writers, Writer} from "@rootzero/contracts/Cursors.sol";
+
+using Writers for Writer;
 
 function buildBalances() internal pure returns (bytes memory) {
-    Writer memory writer = Writers.alloc(108 * 2);
-    Writers.appendBalance(writer, bytes32(uint256(1)), bytes32(0), 50);
-    Writers.appendBalance(writer, bytes32(uint256(2)), bytes32(0), 75);
-    return Writers.done(writer);
+    Writer memory writer = Writers.allocBalances(2);
+    writer.appendBalance(bytes32(uint256(1)), bytes32(0), 50);
+    writer.appendBalance(bytes32(uint256(2)), bytes32(0), 75);
+    return writer.done();
 }
 ```
 
@@ -236,13 +246,13 @@ If you are only consuming built-in commands, you often will not need to touch wr
 
 ## A Tiny End-To-End Example
 
-Imagine you want a host that keeps internal balances and lets RootZero debit them.
+Imagine you want a host that keeps internal balances and lets rootzero debit them.
 
 1. Deploy a host that inherits `Host` and `DebitAccount`.
 2. Store balances in your own mapping.
 3. Implement `debitAccount(account, asset, meta, amount)`.
 4. Send `debitAccountToBalance` a request containing one or more `AMOUNT` blocks.
-5. RootZero returns `BALANCE` blocks representing the debited amounts.
+5. rootzero returns `BALANCE` blocks representing the debited amounts.
 
 That is already a valid and useful integration.
 
@@ -253,7 +263,8 @@ If you want to learn by example, these are the best files to read next:
 - `examples/1-Host.sol`: smallest host
 - `examples/2-Basic.sol`: host plus a built-in command hook
 - `examples/3-Command.sol`: custom command id and command event
-- `examples/MapBalance.sol`: transforming returned balance state
+- `examples/4-Batch.sol`: batching request input and building balance output
+- `examples/5-Route.sol`: bundled route input plus protocol blocks
 - `test/commands.test.ts`: concrete request and response examples
 - `test/helpers/blocks.ts`: block encoders you can reuse in off-chain tooling
 
@@ -270,6 +281,6 @@ If you want to learn by example, these are the best files to read next:
 1. Deploy a plain `Host`.
 2. Add one built-in command such as `DebitAccount` or `Deposit`.
 3. Use the TypeScript block helpers to build requests.
-4. Only then add a custom command with a route block.
+4. Only then add a custom command with bundled input and cursor parsing.
 
 That path keeps the first integration small and easy to debug.

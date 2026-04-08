@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Keys, Schemas, Blocks, Block, Writers, Writer } from "../Blocks.sol";
-using Blocks for Block;
+import { AssetAmount, Cursors, Cursor, HostAmount, Keys, Writer, Writers } from "../Cursors.sol";
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant SEBTB = "swapExactBalanceToBalance";
@@ -12,36 +12,31 @@ string constant SECTB = "swapExactCustodyToBalance";
 abstract contract SwapExactBalanceToBalance is CommandBase {
     uint internal immutable swapExactBalanceToBalanceId = commandId(SEBTB);
 
-    constructor(string memory maybeRoute) {
-        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
-        emit Command(host, SEBTB, schema, swapExactBalanceToBalanceId, Channels.Balances, Channels.Balances);
+    constructor(string memory input) {
+        emit Command(host, SEBTB, input, swapExactBalanceToBalanceId, Channels.Balances, Channels.Balances);
     }
 
     /// @dev Override to swap an exact balance input into a balance output.
-    /// Implementations extract the requested minimum from
-    /// `rawRoute.innerMinimum()`.
+    /// `input` is the request cursor for the current iteration; implementations
+    /// validate and unpack it as needed.
     function swapExactBalanceToBalance(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawRoute
+        Cursor memory input
     ) internal virtual returns (AssetAmount memory out);
 
     function swapExactBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactBalanceToBalanceId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.Balance);
+        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
+        Writer memory writer = Writers.allocBalances(count);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            Block memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue();
-            AssetAmount memory out = swapExactBalanceToBalance(c.account, balance, route);
+        while (balances.i < balances.end) {
+            input = Cursors.openBlock(c.request, input.next);
+            AssetAmount memory balance = balances.unpackBalanceValue();
+            AssetAmount memory out = swapExactBalanceToBalance(c.account, balance, input);
             writer.appendNonZeroBalance(out);
-            i = ref.cursor;
         }
 
         return writer.finish();
@@ -51,38 +46,39 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
 abstract contract SwapExactCustodyToBalance is CommandBase {
     uint internal immutable swapExactCustodyToBalanceId = commandId(SECTB);
 
-    constructor(string memory maybeRoute) {
-        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
-        emit Command(host, SECTB, schema, swapExactCustodyToBalanceId, Channels.Custodies, Channels.Balances);
+    constructor(string memory input) {
+        emit Command(host, SECTB, input, swapExactCustodyToBalanceId, Channels.Custodies, Channels.Balances);
     }
 
     /// @dev Override to swap an exact custody input into a balance output.
-    /// Implementations extract the requested minimum from
-    /// `rawRoute.innerMinimum()`.
+    /// `input` is the request cursor for the current iteration; implementations
+    /// validate and unpack it as needed.
     function swapExactCustodyToBalance(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawRoute
+        Cursor memory input
     ) internal virtual returns (AssetAmount memory out);
 
     function swapExactCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactCustodyToBalanceId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.state, i, Keys.Custody);
+        (Cursor memory custodies, uint count) = Cursors.openRun(c.state, 0, Keys.Custody);
+        Writer memory writer = Writers.allocBalances(count);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            Block memory ref = Blocks.from(c.state, i);
-            HostAmount memory custody = ref.toCustodyValue();
-            AssetAmount memory out = swapExactCustodyToBalance(c.account, custody, route);
+        while (custodies.i < custodies.end) {
+            input = Cursors.openBlock(c.request, input.next);
+            HostAmount memory custody = custodies.unpackCustodyValue();
+            AssetAmount memory out = swapExactCustodyToBalance(c.account, custody, input);
             writer.appendNonZeroBalance(out);
-            i = ref.cursor;
         }
 
         return writer.finish();
     }
 }
+
+
+
+
+
+

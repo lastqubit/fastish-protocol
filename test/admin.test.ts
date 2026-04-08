@@ -59,18 +59,18 @@ describe("Admin Commands", () => {
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
-    it("reverts NoOperation for empty request", async () => {
+    it("reverts ZeroCursor for empty request", async () => {
       await expect(callAs(0, "authorize", adminCtx("0x")))
-        .to.be.revertedWithCustomError(host, "NoOperation");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
   });
 
   describe("init", () => {
-    it("emits InitCalled for a single ROUTE block", async () => {
-      const route = "0x1234";
-      await expect(callAs(0, "init", adminCtx(encodeRouteBlock(route))))
+    it("emits InitCalled for a single input block", async () => {
+      const inputData = "0x1234";
+      await expect(callAs(0, "init", adminCtx(encodeRouteBlock(inputData))))
         .to.emit(host, "InitCalled")
-        .withArgs(route);
+        .withArgs(inputData);
     });
 
     it("accepts the explicit init command id as the target", async () => {
@@ -85,9 +85,9 @@ describe("Admin Commands", () => {
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
-    it("reverts InvalidBlock for empty request", async () => {
+    it("reverts ZeroCursor for empty request", async () => {
       await expect(callAs(0, "init", adminCtx("0x")))
-        .to.be.revertedWithCustomError(host, "InvalidBlock");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
   });
 
@@ -112,9 +112,9 @@ describe("Admin Commands", () => {
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
-    it("reverts NoOperation for empty request", async () => {
+    it("reverts ZeroCursor for empty request", async () => {
       await expect(callAs(0, "unauthorize", adminCtx("0x")))
-        .to.be.revertedWithCustomError(host, "NoOperation");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
   });
 
@@ -146,9 +146,9 @@ describe("Admin Commands", () => {
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
-    it("reverts NoOperation for empty request", async () => {
+    it("reverts ZeroCursor for empty request", async () => {
       await expect(callAs(0, "allowAssets", adminCtx("0x")))
-        .to.be.revertedWithCustomError(host, "NoOperation");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
   });
 
@@ -169,9 +169,9 @@ describe("Admin Commands", () => {
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
-    it("reverts NoOperation for empty request", async () => {
+    it("reverts ZeroCursor for empty request", async () => {
       await expect(callAs(0, "denyAssets", adminCtx("0x")))
-        .to.be.revertedWithCustomError(host, "NoOperation");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
   });
 
@@ -196,9 +196,9 @@ describe("Admin Commands", () => {
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
-    it("reverts NoOperation for empty request", async () => {
+    it("reverts ZeroCursor for empty request", async () => {
       await expect(callAs(0, "allocate", adminCtx("0x")))
-        .to.be.revertedWithCustomError(host, "NoOperation");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
   });
 
@@ -263,11 +263,11 @@ describe("Admin Commands", () => {
   });
 
   describe("destroy", () => {
-    it("emits DestroyCalled for a single ROUTE block", async () => {
-      const route = "0xdead";
-      await expect(callAs(0, "destroy", adminCtx(encodeRouteBlock(route))))
+    it("emits DestroyCalled for a single input block", async () => {
+      const inputData = "0xdead";
+      await expect(callAs(0, "destroy", adminCtx(encodeRouteBlock(inputData))))
         .to.emit(host, "DestroyCalled")
-        .withArgs(route);
+        .withArgs(inputData);
     });
 
     it("accepts the explicit destroy command id as the target", async () => {
@@ -282,9 +282,11 @@ describe("Admin Commands", () => {
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
-    it("reverts InvalidBlock for empty request", async () => {
+    it("reverts ZeroCursor for empty request", async () => {
       await expect(callAs(0, "destroy", adminCtx("0x")))
-        .to.be.revertedWithCustomError(host, "InvalidBlock");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
   });
 });
+
+

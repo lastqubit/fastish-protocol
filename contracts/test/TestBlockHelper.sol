@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { AssetAmount, HostAmount, Tx } from "../blocks/Schema.sol";
-import { Block, Writer } from "../Blocks.sol";
+import { HostAmount, Tx } from "../blocks/Schema.sol";
+import { Cursor, Writer } from "../Cursors.sol";
 import { MemRef } from "../blocks/Mem.sol";
-import { Blocks, Keys } from "../blocks/Blocks.sol";
+import { Cursors, Keys } from "../blocks/Cursors.sol";
 import { Mem } from "../blocks/Mem.sol";
 import { Writers, BALANCE_BLOCK_LEN, CUSTODY_BLOCK_LEN, TX_BLOCK_LEN } from "../blocks/Writers.sol";
 
-using Blocks for Block;
 using Writers for Writer;
 using Mem for MemRef;
+using Cursors for Cursor;
 
 contract TestBlockHelper {
-    function testBlockHeader(bytes4 key, uint selfLen, uint totalLen) external pure returns (uint) {
-        return Writers.toBlockHeader(key, selfLen, totalLen);
+    function testBlockHeader(bytes4 key, uint len) external pure returns (uint) {
+        return Writers.toBlockHeader(key, len);
     }
 
     function testWriteBalanceBlock(bytes32 asset, bytes32 meta, uint amount) external pure returns (bytes memory) {
@@ -71,123 +71,13 @@ contract TestBlockHelper {
         return Writers.finish(w);
     }
 
-    function testParseBlock(bytes calldata source, uint i) external pure returns (bytes4 key, uint bound, uint end) {
-        uint base;
-        assembly ("memory-safe") {
-            base := source.offset
-        }
-        Block memory ref = Blocks.from(source, i);
-        if (ref.key == 0) return (bytes4(0), ref.cursor, ref.cursor);
-        return (ref.key, ref.bound - base, ref.end - base);
-    }
-
-    function testUnpackAmount(bytes calldata source, uint i)
-        external
-        pure
-        returns (bytes32 asset, bytes32 meta, uint amount)
-    {
-        Block memory ref = Blocks.amountFrom(source, i);
-        return ref.unpackAmount();
-    }
-
     function testUnpackBalance(bytes calldata source, uint i)
         external
         pure
         returns (bytes32 asset, bytes32 meta, uint amount)
     {
-        Block memory ref = Blocks.balanceFrom(source, i);
-        return ref.unpackBalance();
-    }
-
-    function testUnpackCustody(bytes calldata source, uint i)
-        external
-        pure
-        returns (uint host_, bytes32 asset, bytes32 meta, uint amount)
-    {
-        Block memory ref = Blocks.custodyFrom(source, i);
-        HostAmount memory value = ref.toCustodyValue();
-        return (value.host, value.asset, value.meta, value.amount);
-    }
-
-    function testUnpackRecipient(bytes calldata source, uint i) external pure returns (bytes32 account) {
-        Block memory ref = Blocks.from(source, i);
-        return ref.unpackRecipient();
-    }
-
-    function testUnpackNode(bytes calldata source, uint i) external pure returns (uint id) {
-        Block memory ref = Blocks.from(source, i);
-        return ref.unpackNode();
-    }
-
-    function testUnpackQuantity(bytes calldata source, uint i) external pure returns (uint amount) {
-        Block memory ref = Blocks.quantityFrom(source, i);
-        return ref.unpackQuantity();
-    }
-
-    function testExpectMinimum(bytes calldata source, uint i, bytes32 asset, bytes32 meta)
-        external
-        pure
-        returns (uint amount)
-    {
-        Block memory ref = Blocks.from(source, i);
-        return ref.expectMinimum(asset, meta);
-    }
-
-    function testExpectAmount(bytes calldata source, uint i, bytes32 asset, bytes32 meta)
-        external
-        pure
-        returns (uint amount)
-    {
-        Block memory ref = Blocks.from(source, i);
-        return ref.expectAmount(asset, meta);
-    }
-
-    function testExpectBalance(bytes calldata source, uint i, bytes32 asset, bytes32 meta)
-        external
-        pure
-        returns (uint amount)
-    {
-        Block memory ref = Blocks.from(source, i);
-        return ref.expectBalance(asset, meta);
-    }
-
-    function testExpectMaximum(bytes calldata source, uint i, bytes32 asset, bytes32 meta)
-        external
-        pure
-        returns (uint amount)
-    {
-        Block memory ref = Blocks.from(source, i);
-        return ref.expectMaximum(asset, meta);
-    }
-
-    function testExpectCustody(bytes calldata source, uint i, uint host_)
-        external
-        pure
-        returns (bytes32 asset, bytes32 meta, uint amount)
-    {
-        Block memory ref = Blocks.from(source, i);
-        AssetAmount memory value = ref.expectCustody(host_);
-        return (value.asset, value.meta, value.amount);
-    }
-
-    function testUnpackFunding(bytes calldata source, uint i) external pure returns (uint host_, uint amount) {
-        Block memory ref = Blocks.from(source, i);
-        return ref.unpackFunding();
-    }
-
-    function testUnpackAsset(bytes calldata source, uint i) external pure returns (bytes32 asset, bytes32 meta) {
-        Block memory ref = Blocks.from(source, i);
-        return ref.unpackAsset();
-    }
-
-    function testUnpackAllocation(bytes calldata source, uint i)
-        external
-        pure
-        returns (uint host_, bytes32 asset, bytes32 meta, uint amount)
-    {
-        Block memory ref = Blocks.from(source, i);
-        HostAmount memory value = ref.toAllocationValue();
-        return (value.host, value.asset, value.meta, value.amount);
+        Cursor memory input = Cursors.openBlock(source, i);
+        return input.unpackBalance();
     }
 
     function testToTxValue(bytes calldata source, uint i)
@@ -195,13 +85,81 @@ contract TestBlockHelper {
         pure
         returns (bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount)
     {
-        Block memory ref = Blocks.from(source, i);
-        Tx memory value = ref.toTxValue();
+        Cursor memory input = Cursors.openBlock(source, i);
+        Tx memory value = input.unpackTxValue();
         return (value.from, value.to, value.asset, value.meta, value.amount);
     }
 
-    function testCountBlocks(bytes calldata source, uint i, bytes4 key) external pure returns (uint count, uint next) {
-        return Blocks.count(source, i, key);
+    function testCountBlocks(bytes calldata source, uint i, bytes4 key) external pure returns (uint count, uint cursor) {
+        return Cursors.count(source, i, key);
+    }
+
+    function testCursorFrom(bytes calldata source, uint i)
+        external
+        pure
+        returns (uint start, uint end, uint cursor)
+    {
+        uint base;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        Cursor memory cur = Cursors.openBlock(source, i);
+        return (cur.i - base, cur.end - base, cur.next);
+    }
+
+    function testCursorFromN(bytes calldata source, uint i, uint n)
+        external
+        pure
+        returns (uint start, uint end, uint cursor)
+    {
+        uint base;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        Cursor memory cur = Cursors.openCount(source, i, n);
+        return (cur.i - base, cur.end - base, cur.next);
+    }
+
+    function testTake(bytes calldata source, uint i, uint n)
+        external
+        pure
+        returns (uint start, uint end, uint cursor, uint next)
+    {
+        uint base;
+        assembly ("memory-safe") {
+            base := source.offset
+        }
+        Cursor memory cur = Cursors.openCount(source, i, n);
+        Cursor memory item = cur.take();
+        return (item.i - base, item.end - base, item.next, cur.i - base);
+    }
+
+    function testCursorDoneEmpty(bytes calldata source) external pure returns (bool) {
+        Cursor memory cur = Cursors.openStream(source, 0);
+        cur.finish();
+        return true;
+    }
+
+    function testCursorDoneOpen(bytes calldata source) external pure returns (bool) {
+        Cursor memory cur = Cursors.openStream(source, 0);
+        cur.finish();
+        return true;
+    }
+
+    function testCursorDoneAdvanced(bytes calldata source) external pure returns (bool) {
+        Cursor memory cur = Cursors.openStream(source, 0);
+        cur.take();
+        cur.finish();
+        return true;
+    }
+
+    function testCursorDoneConsumed(bytes calldata source) external pure returns (bool) {
+        Cursor memory cur = Cursors.openStream(source, 0);
+        while (cur.i < cur.end) {
+            cur.take();
+        }
+        cur.finish();
+        return true;
     }
 
     function testResolveRecipient(bytes calldata source, uint i, uint limit, bytes32 backup)
@@ -209,7 +167,7 @@ contract TestBlockHelper {
         pure
         returns (bytes32)
     {
-        return Blocks.resolveRecipient(source, i, limit, backup);
+        return Cursors.resolveRecipient(source, i, limit, backup);
     }
 
     function testResolveNode(bytes calldata source, uint i, uint limit, uint backup)
@@ -217,7 +175,7 @@ contract TestBlockHelper {
         pure
         returns (uint)
     {
-        return Blocks.resolveNode(source, i, limit, backup);
+        return Cursors.resolveNode(source, i, limit, backup);
     }
 
     function testVerifyAuth(bytes calldata source, uint i, uint expectedCid)
@@ -225,8 +183,8 @@ contract TestBlockHelper {
         pure
         returns (bytes32 hash, uint deadline, bytes calldata proof)
     {
-        Block memory ref = Blocks.from(source, i);
-        return Blocks.verifyAuth(ref, expectedCid);
+        Cursor memory input = Cursors.openBlock(source, i);
+        return Cursors.resolveAuth(input, expectedCid);
     }
 
     function testMemParseBalance(bytes memory source, uint i)
@@ -247,15 +205,20 @@ contract TestBlockHelper {
         return Mem.slice(source, start, end_);
     }
 
-    function testMemCount(bytes memory source, uint i, bytes4 key) external pure returns (uint count, uint next) {
+    function testMemCount(bytes memory source, uint i, bytes4 key) external pure returns (uint count, uint cursor) {
         return Mem.count(source, i, key);
     }
 
     function testAllocBalancesFromCount(bytes calldata source, uint i, bytes4 sourceKey)
         external
         pure
-        returns (uint count, uint next)
+        returns (uint count, uint cursor)
     {
-        return Blocks.count(source, i, sourceKey);
+        return Cursors.count(source, i, sourceKey);
     }
 }
+
+
+
+
+

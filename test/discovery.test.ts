@@ -10,7 +10,7 @@ describe("Host Discovery", () => {
     discovery = await deploy("TestDiscovery");
   });
 
-  it("announces host on construction when the RootZero runtime is set", async () => {
+  it("announces host on construction when the rootzero runtime is set", async () => {
     const rootzero = await discovery.getAddress();
 
     // Deploy host pointing to discovery — should emit HostAnnounced during construction
@@ -33,7 +33,7 @@ describe("Host Discovery", () => {
     expect(parsed!.args.namespace).to.equal("test");
   });
 
-  it("does NOT announce when the RootZero runtime is address(0)", async () => {
+  it("does NOT announce when the rootzero runtime is address(0)", async () => {
     // No revert, no HostAnnounced from discovery
     const host = await deploy("TestHost", ethers.ZeroAddress);
     expect(await host.getAddress()).to.not.equal(ethers.ZeroAddress);
@@ -80,3 +80,5 @@ describe("Host Discovery", () => {
       .withArgs(hostId, BigInt(blockNum), 2n, "v2");
   });
 });
+
+

@@ -2,7 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant NAME = "mintToBalances";
@@ -11,32 +12,36 @@ abstract contract MintToBalances is CommandBase {
     uint internal immutable mintToBalancesId = commandId(NAME);
     uint private immutable outScale;
 
-    constructor(string memory route, uint scaledRatio) {
+    constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, NAME, route, mintToBalancesId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, input, mintToBalancesId, Channels.Setup, Channels.Balances);
     }
 
-    /// @dev Override to mint balances described by `rawRoute` for `account`.
-    /// Implementations may append one or more BALANCE blocks to `out`.
+    /// @dev Override to mint balances described by the current `input` stream
+    /// position for `account`.
+    /// Implementations should consume the request blocks they handle by
+    /// advancing `input`, and may append BALANCE outputs to `out` within the
+    /// capacity implied by this command's configured `scaledRatio`.
     function mintToBalances(
         bytes32 account,
-        Block memory rawRoute,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function mintToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(mintToBalancesId, c.target) returns (bytes memory) {
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.request, q, Keys.Route, outScale);
+        (Cursor memory inputs, uint count) = Cursors.openInput(c.request, 0);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
 
-        while (q < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            mintToBalances(c.account, route, writer);
+        while (inputs.i < inputs.end) {
+            Cursor memory input = inputs.take();
+            mintToBalances(c.account, input, writer);
         }
 
         return writer.finish();
     }
 }
+
+
+

@@ -10,10 +10,10 @@ pragma solidity ^0.8.33;
 // Use Writers when you need to build the response incrementally rather than
 // returning a single pre-encoded block.
 
-import { CommandBase, CommandContext, Channels } from "../contracts/Commands.sol";
-import { AssetAmount, Blocks, Block, Writers, Writer, Keys, Schemas } from "../contracts/Blocks.sol";
+import {CommandBase, CommandContext, Channels} from "../contracts/Commands.sol";
+import {Cursors, Cursor, Writers, Writer, Keys, Schemas} from "../contracts/Cursors.sol";
 
-using Blocks for Block;
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant NAME = "myCommand";
@@ -28,28 +28,25 @@ abstract contract MyCommand is CommandBase {
     function myCommand(
         CommandContext calldata c
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
-        uint i = 0;
-
-        // Allocate a writer pre-sized for one BALANCE block per AMOUNT block in the request.
-        // `end` is the offset past the last AMOUNT block so the loop knows when to stop.
-        (Writer memory writer, uint end) = Writers.allocBalancesFrom(c.request, i, Keys.Amount);
+        // Bound a cursor to the contiguous AMOUNT prefix and count how many
+        // output BALANCE blocks we need to allocate.
+        (Cursor memory inputs, uint count) = Cursors.openRun(c.request, 0, Keys.Amount);
+        Writer memory writer = Writers.allocBalances(count);
 
         // Walk every AMOUNT block in the request.
-        while (i < end) {
-            // Read the block header at offset i to find its key, length, and end position.
-            Block memory ref = Blocks.from(c.request, i);
-
-            // Unpack asset, meta, and amount from this block.
-            AssetAmount memory value = ref.toAmountValue();
+        while (inputs.i < inputs.end) {
+            // Unpack asset, meta, and amount from the next AMOUNT block.
+            (bytes32 asset, bytes32 meta, uint amount) = inputs.unpackAmount();
 
             // Apply your app logic here (e.g. debit the account), then append a BALANCE block.
-            writer.appendBalance(value);
-
-            // Advance the cursor past this block.
-            i = ref.cursor;
+            writer.appendBalance(asset, meta, amount);
         }
 
         // Finalize and return the encoded BALANCE blocks.
         return writer.done();
     }
 }
+
+
+
+

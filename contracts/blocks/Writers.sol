@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Blocks } from "./Blocks.sol";
+import { Cursors } from "./Cursors.sol";
 import { AssetAmount, HostAmount, Tx, Keys } from "./Schema.sol";
 
 struct Writer {
@@ -11,21 +11,22 @@ struct Writer {
 }
 
 uint constant ALLOC_SCALE = 10_000;
-uint constant BALANCE_BLOCK_LEN = 108;
-uint constant BOUNTY_BLOCK_LEN = 76;
-uint constant CUSTODY_BLOCK_LEN = 140;
-uint constant TX_BLOCK_LEN = 172;
+uint constant BALANCE_BLOCK_LEN = 104;
+uint constant BOUNTY_BLOCK_LEN = 72;
+uint constant CUSTODY_BLOCK_LEN = 136;
+uint constant TX_BLOCK_LEN = 168;
 
 library Writers {
     error WriterOverflow();
     error IncompleteWriter();
     error EmptyRequest();
 
-    // Encodes a 12-byte block header (4-byte key + 4-byte selfLen + 4-byte totalLen) into a uint so assembly can
-    // write the full header in one mstore while the payload starts at offset + 12.
-    function toBlockHeader(bytes4 key, uint selfLen, uint totalLen) internal pure returns (uint) {
-        if (selfLen > type(uint32).max || totalLen > type(uint32).max || selfLen > totalLen) revert Blocks.MalformedBlocks();
-        return (uint(uint32(key)) << 224) | (uint(uint32(selfLen)) << 192) | (uint(uint32(totalLen)) << 160);
+    // Encodes an 8-byte block header (4-byte key + 4-byte payloadLen) into a
+    // uint so assembly can write the full header in one mstore while the
+    // payload starts at offset + 8.
+    function toBlockHeader(bytes4 key, uint len) internal pure returns (uint) {
+        if (len > type(uint32).max) revert Cursors.MalformedBlocks();
+        return (uint(uint32(key)) << 224) | (uint(uint32(len)) << 192);
     }
 
     function alloc(uint len) internal pure returns (Writer memory writer) {
@@ -41,68 +42,38 @@ library Writers {
         writer.i = next;
     }
 
-    function allocBalancesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source
-    ) internal pure returns (Writer memory writer, uint next) {
-        return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, BALANCE_BLOCK_LEN);
+    function allocBalances(uint count) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, ALLOC_SCALE, BALANCE_BLOCK_LEN);
     }
 
-    function allocPairedBalancesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source
-    ) internal pure returns (Writer memory writer, uint next) {
-        return allocFromScaledCount(blocks, i, source, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
+    function allocPairedBalances(uint count) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
     }
 
-    function allocScaledBalancesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source,
-        uint scaledRatio
-    ) internal pure returns (Writer memory writer, uint next) {
-        return allocFromScaledCount(blocks, i, source, scaledRatio, BALANCE_BLOCK_LEN);
+    function allocScaledBalances(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, scaledRatio, BALANCE_BLOCK_LEN);
     }
 
-    function allocTxsFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source
-    ) internal pure returns (Writer memory writer, uint next) {
-        return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, TX_BLOCK_LEN);
+    function allocTxs(uint count) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, ALLOC_SCALE, TX_BLOCK_LEN);
     }
 
-    function allocCustodiesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source
-    ) internal pure returns (Writer memory writer, uint next) {
-        return allocFromScaledCount(blocks, i, source, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
+    function allocCustodies(uint count) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
     }
 
-    function allocScaledCustodiesFrom(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source,
-        uint scaledRatio
-    ) internal pure returns (Writer memory writer, uint next) {
-        return allocFromScaledCount(blocks, i, source, scaledRatio, CUSTODY_BLOCK_LEN);
+    function allocScaledCustodies(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(count, scaledRatio, CUSTODY_BLOCK_LEN);
     }
 
     function allocFromScaledCount(
-        bytes calldata blocks,
-        uint i,
-        bytes4 source,
+        uint count,
         uint scaledRatio,
         uint blockLen
-    ) internal pure returns (Writer memory writer, uint next) {
-        uint count;
-        (count, next) = Blocks.count(blocks, i, source);
+    ) internal pure returns (Writer memory writer) {
         if (count == 0) revert EmptyRequest();
         uint scaledCount = count * scaledRatio;
-        if (scaledCount % ALLOC_SCALE != 0) revert Blocks.MalformedBlocks();
+        if (scaledCount % ALLOC_SCALE != 0) revert Cursors.MalformedBlocks();
         uint len = (scaledCount / ALLOC_SCALE) * blockLen;
         writer = Writer({i: 0, end: len, dst: new bytes(len)});
     }
@@ -110,13 +81,13 @@ library Writers {
     function writeBalanceBlock(bytes memory dst, uint i, AssetAmount memory value) internal pure returns (uint next) {
         next = i + BALANCE_BLOCK_LEN;
         if (next > dst.length) revert WriterOverflow();
-        uint header = toBlockHeader(Keys.Balance, 96, 96);
+        uint header = toBlockHeader(Keys.Balance, 96);
         assembly ("memory-safe") {
             let p := add(add(dst, 0x20), i)
             mstore(p, header)
-            mstore(add(p, 0x0c), mload(value))
-            mstore(add(p, 0x2c), mload(add(value, 0x20)))
-            mstore(add(p, 0x4c), mload(add(value, 0x40)))
+            mstore(add(p, 0x08), mload(value))
+            mstore(add(p, 0x28), mload(add(value, 0x20)))
+            mstore(add(p, 0x48), mload(add(value, 0x40)))
         }
     }
 
@@ -139,12 +110,12 @@ library Writers {
     function writeBountyBlock(bytes memory dst, uint i, uint amount, bytes32 relayer) internal pure returns (uint next) {
         next = i + BOUNTY_BLOCK_LEN;
         if (next > dst.length) revert WriterOverflow();
-        uint header = toBlockHeader(Keys.Bounty, 64, 64);
+        uint header = toBlockHeader(Keys.Bounty, 64);
         assembly ("memory-safe") {
             let p := add(add(dst, 0x20), i)
             mstore(p, header)
-            mstore(add(p, 0x0c), amount)
-            mstore(add(p, 0x2c), relayer)
+            mstore(add(p, 0x08), amount)
+            mstore(add(p, 0x28), relayer)
         }
     }
 
@@ -155,14 +126,14 @@ library Writers {
     function writeCustodyBlock(bytes memory dst, uint i, HostAmount memory value) internal pure returns (uint next) {
         next = i + CUSTODY_BLOCK_LEN;
         if (next > dst.length) revert WriterOverflow();
-        uint header = toBlockHeader(Keys.Custody, 128, 128);
+        uint header = toBlockHeader(Keys.Custody, 128);
         assembly ("memory-safe") {
             let p := add(add(dst, 0x20), i)
             mstore(p, header)
-            mstore(add(p, 0x0c), mload(value))
-            mstore(add(p, 0x2c), mload(add(value, 0x20)))
-            mstore(add(p, 0x4c), mload(add(value, 0x40)))
-            mstore(add(p, 0x6c), mload(add(value, 0x60)))
+            mstore(add(p, 0x08), mload(value))
+            mstore(add(p, 0x28), mload(add(value, 0x20)))
+            mstore(add(p, 0x48), mload(add(value, 0x40)))
+            mstore(add(p, 0x68), mload(add(value, 0x60)))
         }
     }
 
@@ -177,15 +148,15 @@ library Writers {
     function writeTxBlock(bytes memory dst, uint i, Tx memory value) internal pure returns (uint next) {
         next = i + TX_BLOCK_LEN;
         if (next > dst.length) revert WriterOverflow();
-        uint header = toBlockHeader(Keys.Transaction, 160, 160);
+        uint header = toBlockHeader(Keys.Transaction, 160);
         assembly ("memory-safe") {
             let p := add(add(dst, 0x20), i)
             mstore(p, header)
-            mstore(add(p, 0x0c), mload(value))
-            mstore(add(p, 0x2c), mload(add(value, 0x20)))
-            mstore(add(p, 0x4c), mload(add(value, 0x40)))
-            mstore(add(p, 0x6c), mload(add(value, 0x60)))
-            mstore(add(p, 0x8c), mload(add(value, 0x80)))
+            mstore(add(p, 0x08), mload(value))
+            mstore(add(p, 0x28), mload(add(value, 0x20)))
+            mstore(add(p, 0x48), mload(add(value, 0x40)))
+            mstore(add(p, 0x68), mload(add(value, 0x60)))
+            mstore(add(p, 0x88), mload(add(value, 0x80)))
         }
     }
 
@@ -207,3 +178,6 @@ library Writers {
         }
     }
 }
+
+
+

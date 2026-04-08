@@ -2,10 +2,10 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Keys, Schemas, Blocks, Block } from "../Blocks.sol";
+import { Cursors, Cursor, Keys, Schemas } from "../Cursors.sol";
 string constant NAME = "creditAccount";
 
-using Blocks for Block;
+using Cursors for Cursor;
 
 abstract contract CreditAccount is CommandBase {
     uint internal immutable creditAccountId = commandId(NAME);
@@ -21,16 +21,17 @@ abstract contract CreditAccount is CommandBase {
     function creditAccount(
         CommandContext calldata c
     ) external payable onlyCommand(creditAccountId, c.target) returns (bytes memory) {
-        bytes32 to = Blocks.resolveRecipient(c.request, 0, c.request.length, c.account);
-        uint i = 0;
-        while (i < c.state.length) {
-            Block memory ref = Blocks.from(c.state, i);
-            if (ref.key != Keys.Balance) break;
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance();
+        bytes32 to = Cursors.resolveRecipient(c.request, 0, c.request.length, c.account);
+        Cursor memory balances = Cursors.openRun(c.state, 0, Keys.Balance, 1);
+        while (balances.i < balances.end) {
+            (bytes32 asset, bytes32 meta, uint amount) = balances.unpackBalance();
             creditAccount(to, asset, meta, amount);
-            i = ref.cursor;
         }
 
-        return done(0, i);
+        return balances.complete();
     }
 }
+
+
+
+

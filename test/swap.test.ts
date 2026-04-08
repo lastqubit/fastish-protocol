@@ -41,7 +41,7 @@ describe("SwapExactBalanceToBalance", () => {
     return (host.connect(signer) as ethers.Contract)[method](...args);
   }
 
-  it("maps each BALANCE block using its paired ROUTE block", async () => {
+  it("maps each BALANCE block using its paired input block", async () => {
     const asset1 = ethers.zeroPadValue("0xa1", 32);
     const asset2 = ethers.zeroPadValue("0xa2", 32);
     const meta = ethers.ZeroHash;
@@ -63,19 +63,19 @@ describe("SwapExactBalanceToBalance", () => {
     ));
   });
 
-  it("emits the raw route bytes that were paired with each balance", async () => {
+  it("emits the raw input bytes that were paired with each balance", async () => {
     const asset = ethers.zeroPadValue("0xb1", 32);
-    const route = "0xfeed";
+    const inputData = "0xfeed";
     const tx = await callAs(0, swapMethod, ctx({
       state: encodeBalanceBlock(asset, ethers.ZeroHash, 5n),
-      request: encodeRouteBlock(route),
+      request: encodeRouteBlock(inputData),
     }));
 
     await expect(tx).to.emit(host, "SwapMapped")
-      .withArgs(userAccount, asset, ethers.ZeroHash, 5n, route);
+      .withArgs(userAccount, asset, ethers.ZeroHash, 5n, inputData);
   });
 
-  it("reverts InvalidBlock when a balance is missing its route block", async () => {
+  it("reverts InvalidBlock when a balance is missing its paired input block", async () => {
     const state = concat(
       encodeBalanceBlock(ethers.zeroPadValue("0xc1", 32), ethers.ZeroHash, 1n),
       encodeBalanceBlock(ethers.zeroPadValue("0xc2", 32), ethers.ZeroHash, 2n)
@@ -103,7 +103,7 @@ describe("SwapExactBalanceToBalance", () => {
       .to.emit(host, "SwapMapped");
   });
 
-  it("emits the minimum parsed from the route's child block", async () => {
+  it("emits the minimum parsed from the input block's child block", async () => {
     const asset = ethers.zeroPadValue("0xb2", 32);
     const meta = ethers.ZeroHash;
     const minAsset = ethers.zeroPadValue("0xcc", 32);
@@ -125,4 +125,16 @@ describe("SwapExactBalanceToBalance", () => {
     await expect(callAs(1, swapMethod, ctx({ state, request })))
       .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
   });
+
+  it("forwards non-route request blocks as generic input", async () => {
+    const asset = ethers.zeroPadValue("0xf2", 32);
+    const request = encodeBalanceBlock(asset, ethers.ZeroHash, 7n);
+
+    await expect(callAs(0, swapMethod, ctx({
+      state: encodeBalanceBlock(asset, ethers.ZeroHash, 1n),
+      request,
+    }))).to.emit(host, "SwapMapped");
+  });
 });
+
+

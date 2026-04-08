@@ -26,48 +26,50 @@ library Schemas {
     string constant Bounty = "bounty(uint amount, bytes32 relayer)";
 
     function route1(string memory maybeRoute, string memory a) internal pure returns (string memory) {
-        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, ">", a);
+        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, "&", a);
     }
 
     function route2(string memory maybeRoute, string memory a, string memory b) internal pure returns (string memory) {
-        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, ">", a, ">", b);
+        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, "&", a, "&", b);
     }
 }
 
 // Block stream:
-// - encoding is [bytes4 key][bytes4 selfLen][bytes4 totalLen][self payload][child blocks...]
-// - `selfLen` covers only the block payload
-// - `totalLen` covers payload plus child blocks
+// - encoding is [bytes4 key][bytes4 payloadLen][payload]
+// - `payloadLen` covers only the block payload
 // - payload layout is block-specific
 //
 // Extensible payloads:
 // - self payload may be [head][dynamic tail]
 // - head layout is implied by the block key
 // - one dynamic field may consume the rest of self payload without its own length prefix
-// - child blocks, if any, are encoded as a normal nested block stream
 //
 // Schema DSL:
 // - `;` separates top-level sibling blocks
-// - `>` attaches child blocks to the preceding parent
-// - repeated `>` adds more children to the same parent, not to the previous child
+// - `&` bundles adjacent blocks into one bundle block
+// - bundled blocks preserve member order, so `a & b` differs from `b & a`
+// - a bundle block's self payload is an embedded normal block stream of its bundled members
+// - bundled members keep their ordinary block encoding, so dynamic blocks are allowed inside bundles
 // - `->` separates request and response shapes, appears at most once, and is omitted when no output is modeled
 // - top-level blocks of the same type should be grouped together
 // - primary / driving blocks should appear before auxiliary blocks
 // - `route(<fields...>)` is a reserved extensible schema form whose key is always `Keys.Route`
+// - `&` compiles to a `Keys.Bundle` block whose self payload is the bundled member block stream
 // - canonical blocks are `amount(...)` for request amounts, `balance(...)` for state balances,
 //   `minimum(...)` for result floors, `maximum(...)` for spend ceilings, and `quantity(...)`
 //   for plain scalar amounts
-// - `auth(uint cid, uint deadline, bytes proof)` is a proof-separator child and must be emitted last
+// - `auth(uint cid, uint deadline, bytes proof)` is a proof-separator block and must be emitted last
 //
 // Signed blocks:
-// - a signed top-level block ends with one trailing AUTH child
-// - only the final AUTH is treated specially; earlier AUTH blocks remain ordinary signed child bytes
-// - the signed slice runs from the parent block start through the AUTH head, excluding only AUTH proof bytes
+// - an authenticated input segment ends with one trailing AUTH block
+// - auth is typically grouped with the signed payload in one bundle, with AUTH as the final member
+// - only the final AUTH is treated specially; earlier AUTH blocks remain ordinary signed bytes
+// - the signed slice runs from the segment start through the AUTH head, excluding only AUTH proof bytes
 // - `cid` binds the signature to one command; `deadline` acts as expiry and nonce
 // - current helpers assume proof layout `[bytes20 signer][bytes65 sig]`
 
 uint constant AUTH_PROOF_LEN = 85;
-uint constant AUTH_TOTAL_LEN = 161;
+uint constant AUTH_TOTAL_LEN = 157;
 
 struct AssetAmount {
     bytes32 asset;
@@ -102,4 +104,7 @@ struct Tx {
     bytes32 meta;
     uint amount;
 }
+
+
+
 

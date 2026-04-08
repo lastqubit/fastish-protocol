@@ -2,8 +2,9 @@
 pragma solidity ^0.8.33;
 
 import { PeerBase } from "./Base.sol";
-import { Blocks, Block, Keys, Schemas } from "../Blocks.sol";
-using Blocks for Block;
+import { Cursors, Cursor, Keys, Schemas } from "../Cursors.sol";
+
+using Cursors for Cursor;
 
 string constant NAME = "peerAllowAssets";
 
@@ -17,14 +18,15 @@ abstract contract PeerAllowAssets is PeerBase {
     function peerAllowAsset(bytes32 asset, bytes32 meta) internal virtual returns (bool);
 
     function peerAllowAssets(bytes calldata request) external payable onlyPeer returns (bytes memory) {
-        uint q = 0;
-        while (q < request.length) {
-            Block memory ref = Blocks.from(request, q);
-            if (ref.key != Keys.Asset) break;
-            (bytes32 asset, bytes32 meta) = ref.unpackAsset();
+        Cursor memory assets = Cursors.openRun(request, 0, Keys.Asset, 1);
+        while (assets.i < assets.end) {
+            (bytes32 asset, bytes32 meta) = assets.unpackAsset();
             peerAllowAsset(asset, meta);
-            q = ref.cursor;
         }
-        return done(0, q);
+        return assets.complete();
     }
 }
+
+
+
+

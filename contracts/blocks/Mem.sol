@@ -2,25 +2,24 @@
 pragma solidity ^0.8.33;
 
 import { HostAmount, Tx, Keys } from "./Schema.sol";
-import { Blocks } from "./Blocks.sol";
+import { Cursors } from "./Cursors.sol";
 
 struct MemRef {
     bytes4 key;
     uint i;
-    uint bound;
     uint end;
 }
 
 library Mem {
     function from(bytes memory source, uint i) internal pure returns (MemRef memory ref) {
         uint eod = source.length;
-        if (i == eod) return MemRef(bytes4(0), 0, 0, i);
-        if (i > eod) revert Blocks.MalformedBlocks();
+        if (i == eod) return MemRef(bytes4(0), i, i);
+        if (i > eod) revert Cursors.MalformedBlocks();
 
         unchecked {
-            ref.i = i + 12;
+            ref.i = i + 8;
         }
-        if (ref.i > eod) revert Blocks.MalformedBlocks();
+        if (ref.i > eod) revert Cursors.MalformedBlocks();
 
         bytes32 w;
         assembly ("memory-safe") {
@@ -28,14 +27,12 @@ library Mem {
         }
 
         ref.key = bytes4(w);
-        ref.bound = ref.i + uint32(bytes4(w << 32));
-        ref.end = ref.i + uint32(bytes4(w << 64));
-
-        if (ref.bound > ref.end || ref.end > eod) revert Blocks.MalformedBlocks();
+        ref.end = ref.i + uint32(bytes4(w << 32));
+        if (ref.end > eod) revert Cursors.MalformedBlocks();
     }
 
     function slice(bytes memory source, uint start, uint end) internal pure returns (bytes memory out) {
-        if (end < start || end > source.length) revert Blocks.MalformedBlocks();
+        if (end < start || end > source.length) revert Cursors.MalformedBlocks();
         uint len = end - start;
         out = new bytes(len);
         if (len == 0) return out;
@@ -45,41 +42,41 @@ library Mem {
         }
     }
 
-    function count(bytes memory source, uint i, bytes4 key) internal pure returns (uint count_, uint next) {
-        next = i;
-        while (next < source.length) {
-            MemRef memory ref = from(source, next);
+    function count(bytes memory source, uint i, bytes4 key) internal pure returns (uint total, uint cursor) {
+        cursor = i;
+        while (cursor < source.length) {
+            MemRef memory ref = from(source, cursor);
             if (ref.key != key) break;
             unchecked {
-                ++count_;
+                ++total;
             }
-            next = ref.end;
+            cursor = ref.end;
         }
     }
 
     function find(bytes memory source, uint i, uint limit, bytes4 key) internal pure returns (MemRef memory ref) {
-        if (limit > source.length) revert Blocks.MalformedBlocks();
+        if (limit > source.length) revert Cursors.MalformedBlocks();
         while (i < limit) {
             ref = from(source, i);
-            if (ref.end > limit) revert Blocks.MalformedBlocks();
+            if (ref.end > limit) revert Cursors.MalformedBlocks();
             if (ref.key == key) return ref;
             i = ref.end;
         }
 
-        return MemRef(bytes4(0), limit, limit, limit);
+        return MemRef(bytes4(0), limit, limit);
     }
 
     function ensure(MemRef memory ref, bytes4 key) internal pure {
-        if (key == 0 || key != ref.key) revert Blocks.InvalidBlock();
+        if (key == 0 || key != ref.key) revert Cursors.InvalidBlock();
     }
 
     function ensure(MemRef memory ref, bytes4 key, uint len) internal pure {
-        if (key == 0 || key != ref.key || len != (ref.bound - ref.i)) revert Blocks.InvalidBlock();
+        if (key == 0 || key != ref.key || len != (ref.end - ref.i)) revert Cursors.InvalidBlock();
     }
 
     function ensure(MemRef memory ref, bytes4 key, uint min, uint max) internal pure {
-        uint len = ref.bound - ref.i;
-        if (key == 0 || key != ref.key || len < min || (max != 0 && len > max)) revert Blocks.InvalidBlock();
+        uint len = ref.end - ref.i;
+        if (key == 0 || key != ref.key || len < min || (max != 0 && len > max)) revert Cursors.InvalidBlock();
     }
 
     function unpackBalance(
@@ -127,3 +124,6 @@ library Mem {
         }
     }
 }
+
+
+

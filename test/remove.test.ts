@@ -35,31 +35,27 @@ describe("Remove", () => {
     return (host.connect(signer) as any)[removeMethod](...args);
   }
 
-  // ── Happy path ─────────────────────────────────────────────────────────────
-
-  it("emits RemoveCalled for a single ROUTE block", async () => {
-    const route = "0xdead";
-    const request = encodeRouteBlock(route);
+  it("emits RemoveCalled for a single input block", async () => {
+    const inputData = "0xdead";
+    const request = encodeRouteBlock(inputData);
     const tx = await callAs(0, ctx({ request }));
-    await expect(tx).to.emit(host, "RemoveCalled").withArgs(userAccount, route);
+    await expect(tx).to.emit(host, "RemoveCalled").withArgs(userAccount, inputData);
   });
 
-  it("emits RemoveCalled for each ROUTE block when multiple are present", async () => {
-    const route1 = "0x1111";
-    const route2 = "0x2222";
-    const request = concat(encodeRouteBlock(route1), encodeRouteBlock(route2));
+  it("emits RemoveCalled for each input block when multiple are present", async () => {
+    const input1 = "0x1111";
+    const input2 = "0x2222";
+    const request = concat(encodeRouteBlock(input1), encodeRouteBlock(input2));
     const tx = await callAs(0, ctx({ request }));
-    await expect(tx).to.emit(host, "RemoveCalled").withArgs(userAccount, route1);
-    await expect(tx).to.emit(host, "RemoveCalled").withArgs(userAccount, route2);
+    await expect(tx).to.emit(host, "RemoveCalled").withArgs(userAccount, input1);
+    await expect(tx).to.emit(host, "RemoveCalled").withArgs(userAccount, input2);
   });
 
-  it("returns empty bytes after processing ROUTE blocks", async () => {
+  it("returns empty bytes after processing input blocks", async () => {
     const request = encodeRouteBlock("0x01");
     const result: string = await (host as any)[removeMethod].staticCall(ctx({ request }));
     expect(result).to.equal("0x");
   });
-
-  // ── Target / access guards ─────────────────────────────────────────────────
 
   it("accepts the explicit remove command id as the target", async () => {
     const target = await host.getRemoveId();
@@ -80,10 +76,10 @@ describe("Remove", () => {
       .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
   });
 
-  // ── Error cases ────────────────────────────────────────────────────────────
-
-  it("reverts NoOperation when request is empty", async () => {
+  it("reverts ZeroCursor when request is empty", async () => {
     await expect(callAs(0, ctx()))
-      .to.be.revertedWithCustomError(host, "NoOperation");
+      .to.be.revertedWithCustomError(host, "ZeroCursor");
   });
 });
+
+

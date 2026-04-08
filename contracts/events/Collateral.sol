@@ -13,3 +13,6 @@ abstract contract CollateralEvent is EventEmitter {
         emit EventAbi(ABI);
     }
 }
+
+
+

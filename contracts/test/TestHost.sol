@@ -16,7 +16,9 @@ import { Destroy } from "../commands/admin/Destroy.sol";
 import { Init } from "../commands/admin/Init.sol";
 import { Allocate } from "../commands/admin/Allocate.sol";
 import { Tx } from "../blocks/Schema.sol";
-import { Block } from "../Blocks.sol";
+import { Cursors, Cursor, Keys } from "../Cursors.sol";
+
+using Cursors for Cursor;
 
 contract TestHost is
     Host,
@@ -42,8 +44,8 @@ contract TestHost is
     event DebitFromCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint returned);
     event SettleCalled(bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount);
     event ProvisionCalled(uint host_, bytes32 account, bytes32 asset, bytes32 meta, uint amount);
-    event InitCalled(bytes routeData);
-    event DestroyCalled(bytes routeData);
+    event InitCalled(bytes inputData);
+    event DestroyCalled(bytes inputData);
     event AllowAssetCalled(bytes32 asset, bytes32 meta);
     event DenyAssetCalled(bytes32 asset, bytes32 meta);
     event AllocateCalled(uint host_, bytes32 asset, bytes32 meta, uint amount);
@@ -81,14 +83,14 @@ contract TestHost is
         emit ProvisionCalled(host_, account, asset, meta, amount);
     }
 
-    function init(Block memory rawRoute) internal override {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit InitCalled(routeData);
+    function init(Cursor memory input) internal override {
+        bytes calldata inputData = input.isAt(Keys.Route) ? input.unpackRoute() : msg.data[input.i:input.end];
+        emit InitCalled(inputData);
     }
 
-    function destroy(Block memory rawRoute) internal override {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit DestroyCalled(routeData);
+    function destroy(Cursor memory input) internal override {
+        bytes calldata inputData = input.isAt(Keys.Route) ? input.unpackRoute() : msg.data[input.i:input.end];
+        emit DestroyCalled(inputData);
     }
 
     function allowAsset(bytes32 asset, bytes32 meta) internal override returns (bool) {
@@ -197,3 +199,6 @@ contract TestHost is
         return authorized[node];
     }
 }
+
+
+

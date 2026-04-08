@@ -2,11 +2,11 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Writer, Keys, Schemas, Blocks, Block, Writers } from "../Blocks.sol";
+import { Cursors, Cursor, Keys, Schemas, Writer, Writers } from "../Cursors.sol";
 
 string constant NAME = "deposit";
 
-using Blocks for Block;
+using Cursors for Cursor;
 using Writers for Writer;
 
 // @dev Use `deposit` for externally sourced assets; use `debitAccountToBalance` for internal balance deductions.
@@ -29,17 +29,19 @@ abstract contract Deposit is CommandBase {
     function deposit(
         CommandContext calldata c
     ) external payable onlyCommand(depositId, c.target) returns (bytes memory) {
-        uint q = 0;
-        (Writer memory writer, uint next) = Writers.allocBalancesFrom(c.request, q, Keys.Amount);
+        (Cursor memory inputs, uint count) = Cursors.openRun(c.request, 0, Keys.Amount);
+        Writer memory writer = Writers.allocBalances(count);
 
-        while (q < next) {
-            Block memory ref = Blocks.from(c.request, q);
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
+        while (inputs.i < inputs.end) {
+            (bytes32 asset, bytes32 meta, uint amount) = inputs.unpackAmount();
             deposit(c.account, asset, meta, amount);
             writer.appendBalance(asset, meta, amount);
-            q = ref.cursor;
         }
 
         return writer.done();
     }
 }
+
+
+
+

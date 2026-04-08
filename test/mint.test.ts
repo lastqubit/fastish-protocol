@@ -44,29 +44,29 @@ describe("MintToBalances", () => {
 
   // ── Happy path ─────────────────────────────────────────────────────────────
 
-  it("emits MintCalled for a single ROUTE block", async () => {
-    const route = "0x1234";
-    const request = encodeRouteBlock(route);
+  it("emits MintCalled for a single input block", async () => {
+    const inputData = "0x1234";
+    const request = encodeRouteBlock(inputData);
     const tx = await callAs(0, ctx({ request }));
-    await expect(tx).to.emit(host, "MintCalled").withArgs(userAccount, route);
+    await expect(tx).to.emit(host, "MintCalled").withArgs(userAccount, inputData);
   });
 
-  it("returns one BALANCE block for a single ROUTE block", async () => {
+  it("returns one BALANCE block for a single input block", async () => {
     const request = encodeRouteBlock("0x01");
     const result: string = await (host as any)[mintMethod].staticCall(ctx({ request }));
     expect(result).to.equal(encodeBalanceBlock(ASSET, META, AMOUNT));
   });
 
-  it("emits MintCalled for each ROUTE block when multiple are present", async () => {
-    const route1 = "0xaaaa";
-    const route2 = "0xbbbb";
-    const request = concat(encodeRouteBlock(route1), encodeRouteBlock(route2));
+  it("emits MintCalled for each input block when multiple are present", async () => {
+    const input1 = "0xaaaa";
+    const input2 = "0xbbbb";
+    const request = concat(encodeRouteBlock(input1), encodeRouteBlock(input2));
     const tx = await callAs(0, ctx({ request }));
-    await expect(tx).to.emit(host, "MintCalled").withArgs(userAccount, route1);
-    await expect(tx).to.emit(host, "MintCalled").withArgs(userAccount, route2);
+    await expect(tx).to.emit(host, "MintCalled").withArgs(userAccount, input1);
+    await expect(tx).to.emit(host, "MintCalled").withArgs(userAccount, input2);
   });
 
-  it("returns one BALANCE block per ROUTE block", async () => {
+  it("returns one BALANCE block per input block", async () => {
     const request = concat(encodeRouteBlock("0x01"), encodeRouteBlock("0x02"));
     const result: string = await (host as any)[mintMethod].staticCall(ctx({ request }));
     expect(result).to.equal(concat(
@@ -98,8 +98,10 @@ describe("MintToBalances", () => {
 
   // ── Error cases ────────────────────────────────────────────────────────────
 
-  it("reverts EmptyRequest when request has no ROUTE blocks", async () => {
+  it("reverts EmptyRequest when request has no input blocks", async () => {
     await expect(callAs(0, ctx()))
       .to.be.revertedWithCustomError(host, "EmptyRequest");
   });
 });
+
+

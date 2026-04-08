@@ -2,9 +2,9 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Keys, Schemas, Blocks, Block, BlockPair, Writers, Writer } from "../Blocks.sol";
+import { AssetAmount, Cursors, Cursor, HostAmount, Keys, Writer, Writers } from "../Cursors.sol";
 
-using Blocks for Block;
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant ALFCTB = "addLiquidityFromCustodiesToBalances";
@@ -15,39 +15,40 @@ string constant RLFBTB = "removeLiquidityFromBalanceToBalances";
 abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
     uint internal immutable addLiquidityFromCustodiesToBalancesId = commandId(ALFCTB);
     uint private immutable outScale;
+    bool private immutable useInput;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory maybeInput, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
-        emit Command(host, ALFCTB, schema, addLiquidityFromCustodiesToBalancesId, Channels.Custodies, Channels.Balances);
+        useInput = bytes(maybeInput).length > 0;
+        emit Command(host, ALFCTB, maybeInput, addLiquidityFromCustodiesToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
-    /// @dev Override to add liquidity from two custody inputs.
-    /// Implementations extract the requested minimum liquidity output from
-    /// `rawRoute.innerMinimum()` and may append up to three BALANCE blocks to
-    /// `out`: two refunds plus the liquidity receipt.
+    /// @dev Override to add liquidity from the current `custodies` stream
+    /// position, consuming the two custody blocks that make up the pair.
+    /// `input` carries any optional extra request block and should be ignored
+    /// when `maybeInput` is empty. Implementations validate and unpack it as
+    /// needed. Implementations should advance `custodies` past the consumed
+    /// pair and may append BALANCE outputs to `out` within the capacity
+    /// implied by this command's configured `scaledRatio`.
     function addLiquidityFromCustodiesToBalances(
         bytes32 account,
-        BlockPair memory rawCustodies,
-        Block memory rawRoute,
+        Cursor memory custodies,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function addLiquidityFromCustodiesToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(addLiquidityFromCustodiesToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
+        (Cursor memory custodies, uint count) = Cursors.openRun(c.state, 0, Keys.Custody);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            BlockPair memory custodies;
-            custodies = Blocks.twoFrom(c.state, i);
-            i = custodies.b.cursor;
-            addLiquidityFromCustodiesToBalances(c.account, custodies, route, writer);
+        while (custodies.i < custodies.end) {
+            if (useInput) {
+                input = Cursors.openBlock(c.request, input.next);
+            }
+            addLiquidityFromCustodiesToBalances(c.account, custodies, input, writer);
         }
 
         return writer.finish();
@@ -57,38 +58,39 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
 abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
     uint internal immutable removeLiquidityFromCustodyToBalancesId = commandId(RLFCTB);
     uint private immutable outScale;
+    bool private immutable useInput;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory maybeInput, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = Schemas.route2(maybeRoute, Schemas.Minimum, Schemas.Minimum);
-        emit Command(host, RLFCTB, schema, removeLiquidityFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        useInput = bytes(maybeInput).length > 0;
+        emit Command(host, RLFCTB, maybeInput, removeLiquidityFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
     }
 
     /// @dev Override to remove liquidity from a custody position.
-    /// Implementations extract requested minimum outputs from `rawRoute` and
-    /// may append up to two BALANCE blocks to `out`.
+    /// `input` carries any optional extra request block and should be
+    /// ignored when `maybeInput` is empty. Implementations validate and unpack
+    /// it as needed, and may append BALANCE outputs to `out` within the
+    /// capacity implied by this command's configured `scaledRatio`.
     function removeLiquidityFromCustodyToBalances(
         bytes32 account,
         HostAmount memory custody,
-        Block memory rawRoute,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function removeLiquidityFromCustodyToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(removeLiquidityFromCustodyToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Custody, outScale);
+        (Cursor memory custodies, uint count) = Cursors.openRun(c.state, 0, Keys.Custody);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            Block memory ref = Blocks.from(c.state, i);
-            HostAmount memory custody = ref.toCustodyValue();
-            removeLiquidityFromCustodyToBalances(c.account, custody, route, writer);
-            i = ref.cursor;
+        while (custodies.i < custodies.end) {
+            if (useInput) {
+                input = Cursors.openBlock(c.request, input.next);
+            }
+            HostAmount memory custody = custodies.unpackCustodyValue();
+            removeLiquidityFromCustodyToBalances(c.account, custody, input, writer);
         }
 
         return writer.finish();
@@ -98,39 +100,40 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
 abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
     uint internal immutable addLiquidityFromBalancesToBalancesId = commandId(ALFBTB);
     uint private immutable outScale;
+    bool private immutable useInput;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory maybeInput, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = Schemas.route1(maybeRoute, Schemas.Minimum);
-        emit Command(host, ALFBTB, schema, addLiquidityFromBalancesToBalancesId, Channels.Balances, Channels.Balances);
+        useInput = bytes(maybeInput).length > 0;
+        emit Command(host, ALFBTB, maybeInput, addLiquidityFromBalancesToBalancesId, Channels.Balances, Channels.Balances);
     }
 
-    /// @dev Override to add liquidity from two balance inputs.
-    /// Implementations extract the requested minimum liquidity output from
-    /// `rawRoute.innerMinimum()` and may append up to three BALANCE blocks to
-    /// `out`: two refunds plus the liquidity receipt.
+    /// @dev Override to add liquidity from the current `balances` stream
+    /// position, consuming the two balance blocks that make up the pair.
+    /// `input` carries any optional extra request block and should be ignored
+    /// when `maybeInput` is empty. Implementations validate and unpack it as
+    /// needed. Implementations should advance `balances` past the consumed
+    /// pair and may append BALANCE outputs to `out` within the capacity
+    /// implied by this command's configured `scaledRatio`.
     function addLiquidityFromBalancesToBalances(
         bytes32 account,
-        BlockPair memory rawBalances,
-        Block memory rawRoute,
+        Cursor memory balances,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function addLiquidityFromBalancesToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(addLiquidityFromBalancesToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
+        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            BlockPair memory balances;
-            balances = Blocks.twoFrom(c.state, i);
-            i = balances.b.cursor;
-            addLiquidityFromBalancesToBalances(c.account, balances, route, writer);
+        while (balances.i < balances.end) {
+            if (useInput) {
+                input = Cursors.openBlock(c.request, input.next);
+            }
+            addLiquidityFromBalancesToBalances(c.account, balances, input, writer);
         }
 
         return writer.finish();
@@ -140,40 +143,47 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
 abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
     uint internal immutable removeLiquidityFromBalanceToBalancesId = commandId(RLFBTB);
     uint private immutable outScale;
+    bool private immutable useInput;
 
-    constructor(string memory maybeRoute, uint scaledRatio) {
+    constructor(string memory maybeInput, uint scaledRatio) {
         outScale = scaledRatio;
-        string memory schema = Schemas.route2(maybeRoute, Schemas.Minimum, Schemas.Minimum);
-        emit Command(host, RLFBTB, schema, removeLiquidityFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        useInput = bytes(maybeInput).length > 0;
+        emit Command(host, RLFBTB, maybeInput, removeLiquidityFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
     }
 
     /// @dev Override to remove liquidity from a balance position.
-    /// Implementations extract requested minimum outputs from `rawRoute` and
-    /// may append up to two BALANCE blocks to `out`.
+    /// `input` carries any optional extra request block and should be
+    /// ignored when `maybeInput` is empty. Implementations validate and unpack
+    /// it as needed, and may append BALANCE outputs to `out` within the
+    /// capacity implied by this command's configured `scaledRatio`.
     function removeLiquidityFromBalanceToBalances(
         bytes32 account,
         AssetAmount memory balance,
-        Block memory rawRoute,
+        Cursor memory input,
         Writer memory out
     ) internal virtual;
 
     function removeLiquidityFromBalanceToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(removeLiquidityFromBalanceToBalancesId, c.target) returns (bytes memory) {
-        uint i = 0;
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocScaledBalancesFrom(c.state, i, Keys.Balance, outScale);
+        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
+        Writer memory writer = Writers.allocScaledBalances(count, outScale);
+        Cursor memory input;
 
-        while (i < end) {
-            Block memory route;
-            route = Blocks.routeFrom(c.request, q);
-            q = route.cursor;
-            Block memory ref = Blocks.from(c.state, i);
-            AssetAmount memory balance = ref.toBalanceValue();
-            removeLiquidityFromBalanceToBalances(c.account, balance, route, writer);
-            i = ref.cursor;
+        while (balances.i < balances.end) {
+            if (useInput) {
+                input = Cursors.openBlock(c.request, input.next);
+            }
+            AssetAmount memory balance = balances.unpackBalanceValue();
+            removeLiquidityFromBalanceToBalances(c.account, balance, input, writer);
         }
 
         return writer.finish();
     }
 }
+
+
+
+
+
+

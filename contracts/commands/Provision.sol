@@ -2,14 +2,14 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Keys, Schemas, Blocks, Block, Writers, Writer } from "../Blocks.sol";
-using Blocks for Block;
+import { Cursors, Cursor, Keys, Schemas, Writer, Writers } from "../Cursors.sol";
+using Cursors for Cursor;
 using Writers for Writer;
 
 string constant PROVISION = "provision";
 string constant PFB = "provisionFromBalance";
 
-string constant REQUEST = string.concat(Schemas.Amount, ">", Schemas.Node);
+string constant INPUT = string.concat(Schemas.Node, "&", Schemas.Amount);
 
 abstract contract ProvisionHook {
     /// @dev Override this hook to send or provision funds to `host`.
@@ -23,22 +23,21 @@ abstract contract Provision is CommandBase, ProvisionHook {
     uint internal immutable provisionId = commandId(PROVISION);
 
     constructor() {
-        emit Command(host, PROVISION, REQUEST, provisionId, Channels.Setup, Channels.Custodies);
+        emit Command(host, PROVISION, INPUT, provisionId, Channels.Setup, Channels.Custodies);
     }
 
     function provision(
         CommandContext calldata c
     ) external payable onlyCommand(provisionId, c.target) returns (bytes memory) {
-        uint q = 0;
-        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(c.request, q, Keys.Amount);
+        (Cursor memory inputs, uint count) = Cursors.openRun(c.request, 0, Keys.Bundle);
+        Writer memory writer = Writers.allocCustodies(count);
 
-        while (q < end) {
-            Block memory ref = Blocks.from(c.request, q);
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
-            uint toHost = ref.innerNode();
+        while (inputs.i < inputs.end) {
+            Cursor memory input = inputs.take();
+            uint toHost = input.unpackNode();
+            (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
             provision(c.account, toHost, asset, meta, amount);
             writer.appendCustody(toHost, asset, meta, amount);
-            q = ref.cursor;
         }
 
         return writer.done();
@@ -56,18 +55,20 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
     function provisionFromBalance(
         CommandContext calldata c
     ) external payable onlyCommand(provisionFromBalanceId, c.target) returns (bytes memory) {
-        uint toHost = Blocks.resolveNode(c.request, 0, c.request.length, 0);
-        uint i = 0;
-        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(c.state, i, Keys.Balance);
+        uint toHost = Cursors.resolveNode(c.request, 0, c.request.length, 0);
+        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
+        Writer memory writer = Writers.allocCustodies(count);
 
-        while (i < end) {
-            Block memory ref = Blocks.from(c.state, i);
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackBalance();
+        while (balances.i < balances.end) {
+            (bytes32 asset, bytes32 meta, uint amount) = balances.unpackBalance();
             provision(c.account, toHost, asset, meta, amount);
             writer.appendCustody(toHost, asset, meta, amount);
-            i = ref.cursor;
         }
 
         return writer.done();
     }
 }
+
+
+
+

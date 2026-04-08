@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { HostAmount, Blocks, Block, Writers, Writer, Keys } from "../Blocks.sol";
+import { HostAmount, Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
 
-using Blocks for Block;
+using Cursors for Cursor;
 using Writers for Writer;
 
 abstract contract AmountToCustody {
@@ -21,16 +21,19 @@ abstract contract AmountToCustody {
         uint host,
         bytes32 account
     ) internal returns (bytes memory) {
-        (Writer memory writer, uint end) = Writers.allocCustodiesFrom(blocks, i, Keys.Amount);
+        (Cursor memory scan, uint count) = Cursors.openRun(blocks, i, Keys.Amount);
+        Writer memory writer = Writers.allocCustodies(count);
 
-        while (i < end) {
-            Block memory ref = Blocks.from(blocks, i);
-            (bytes32 asset, bytes32 meta, uint amount) = ref.unpackAmount();
+        while (scan.i < scan.end) {
+            (bytes32 asset, bytes32 meta, uint amount) = scan.unpackAmount();
             HostAmount memory out = amountToCustody(host, account, asset, meta, amount);
             if (out.amount > 0) writer.appendCustody(out);
-            i = ref.cursor;
         }
 
         return writer.finish();
     }
 }
+
+
+
+

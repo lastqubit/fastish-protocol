@@ -3,17 +3,16 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { ReclaimToBalances } from "../commands/Reclaim.sol";
-import { AssetAmount } from "../blocks/Schema.sol";
-import { Block, Writer } from "../Blocks.sol";
-import { Blocks } from "../blocks/Blocks.sol";
+import { AssetAmount, Cursor, Writer, Keys } from "../Cursors.sol";
+import { Cursors } from "../blocks/Cursors.sol";
 import { Writers } from "../blocks/Writers.sol";
 import { Ids } from "../utils/Ids.sol";
 
-using Blocks for Block;
+using Cursors for Cursor;
 using Writers for Writer;
 
 contract TestReclaimHost is Host, ReclaimToBalances {
-    event ReclaimCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes routeData);
+    event ReclaimCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, bytes inputData);
 
     bytes32 public returnAsset;
     bytes32 public returnMeta;
@@ -34,15 +33,21 @@ contract TestReclaimHost is Host, ReclaimToBalances {
 
     function reclaimToBalances(
         bytes32 account,
-        AssetAmount memory amount,
-        Block memory rawRoute,
+        Cursor memory input,
         Writer memory out
     ) internal override {
-        bytes calldata routeData = msg.data[rawRoute.i:rawRoute.bound];
-        emit ReclaimCalled(account, amount.asset, amount.meta, amount.amount, routeData);
+        bytes memory inputData = "";
+        if (input.isAt(Keys.Route)) {
+            inputData = input.unpackRoute();
+        }
+        (bytes32 asset, bytes32 meta, uint amount_) = input.unpackAmount();
+        emit ReclaimCalled(account, asset, meta, amount_, inputData);
         if (returnAmount > 0) out.appendBalance(returnAsset, returnMeta, returnAmount);
     }
 
     function getReclaimBalanceId() external view returns (uint) { return reclaimToBalancesId; }
     function getAdminAccount() external view returns (bytes32) { return adminAccount; }
 }
+
+
+

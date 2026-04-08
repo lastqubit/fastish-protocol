@@ -2,8 +2,8 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Channels } from "../Base.sol";
-import { Keys, Schemas, Blocks, Block } from "../../Blocks.sol";
-using Blocks for Block;
+import { Cursors, Cursor, Keys, Schemas } from "../../Cursors.sol";
+using Cursors for Cursor;
 
 string constant NAME = "allowAssets";
 
@@ -21,14 +21,17 @@ abstract contract AllowAssets is CommandBase {
     function allowAssets(
         CommandContext calldata c
     ) external payable onlyAdmin(c.account) onlyCommand(allowAssetsId, c.target) returns (bytes memory) {
-        uint i = 0;
-        while (i < c.request.length) {
-            Block memory ref = Blocks.from(c.request, i);
-            if (ref.key != Keys.Asset) break;
-            (bytes32 asset, bytes32 meta) = ref.unpackAsset();
+        Cursor memory assets = Cursors.openRun(c.request, 0, Keys.Asset, 1);
+
+        while (assets.i < assets.end) {
+            (bytes32 asset, bytes32 meta) = assets.unpackAsset();
             allowAsset(asset, meta);
-            i = ref.cursor;
         }
-        return done(0, i);
+
+        return assets.complete();
     }
 }
+
+
+
+

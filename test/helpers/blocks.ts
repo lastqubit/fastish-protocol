@@ -22,6 +22,7 @@ export const Keys = {
   Maximum: blockKey("maximum(bytes32 asset, bytes32 meta, uint amount)"),
   Auth: blockKey("auth(uint cid, uint deadline, bytes proof)"),
   Bounty: blockKey("bounty(uint amount, bytes32 relayer)"),
+  Bundle: blockKey("bundle(bytes data)"),
   Route: blockKey("route(bytes data)"),
 } as const;
 
@@ -41,18 +42,7 @@ function encodeUint32(value: number): string {
 // Build a block header + payload
 function block(key: string, payload: string): string {
   const payloadBytes = ethers.getBytes(payload);
-  const selfLen = payloadBytes.length;
-  const totalLen = selfLen; // no children
-  return ethers.concat([key, encodeUint32(selfLen), encodeUint32(totalLen), payload]);
-}
-
-// Build a block with children
-function blockWithChildren(key: string, payload: string, children: string): string {
-  const payloadBytes = ethers.getBytes(payload);
-  const childrenBytes = ethers.getBytes(children);
-  const selfLen = payloadBytes.length;
-  const totalLen = selfLen + childrenBytes.length;
-  return ethers.concat([key, encodeUint32(selfLen), encodeUint32(totalLen), payload, children]);
+  return ethers.concat([key, encodeUint32(payloadBytes.length), payload]);
 }
 
 export function encodeAmountBlock(asset: string, meta: string, amount: bigint): string {
@@ -60,11 +50,17 @@ export function encodeAmountBlock(asset: string, meta: string, amount: bigint): 
 }
 
 export function encodeAmountBlockWithNode(asset: string, meta: string, amount: bigint, nodeId: bigint): string {
-  return blockWithChildren(Keys.Amount, ethers.concat([pad32(asset), pad32(meta), pad32(amount)]), encodeNodeBlock(nodeId));
+  return encodeBundleBlock(
+    encodeAmountBlock(asset, meta, amount),
+    encodeNodeBlock(nodeId),
+  );
 }
 
 export function encodeAmountBlockWithRecipient(asset: string, meta: string, amount: bigint, recipient: string): string {
-  return blockWithChildren(Keys.Amount, ethers.concat([pad32(asset), pad32(meta), pad32(amount)]), encodeRecipientBlock(recipient));
+  return encodeBundleBlock(
+    encodeAmountBlock(asset, meta, amount),
+    encodeRecipientBlock(recipient),
+  );
 }
 
 export function encodeBalanceBlock(asset: string, meta: string, amount: bigint): string {
@@ -111,12 +107,20 @@ export function encodeRouteBlock(data: string): string {
   return block(Keys.Route, data);
 }
 
+export function encodeBundleBlock(...members: string[]): string {
+  return block(Keys.Bundle, concat(...members));
+}
+
 export function encodeRouteBlockWithAmount(data: string, asset: string, meta: string, amount: bigint): string {
-  return blockWithChildren(Keys.Route, data, encodeAmountBlock(asset, meta, amount));
+  return encodeBundleBlock(encodeRouteBlock(data), encodeAmountBlock(asset, meta, amount));
 }
 
 export function encodeRouteBlockWithMinimum(data: string, asset: string, meta: string, amount: bigint): string {
-  return blockWithChildren(Keys.Route, data, encodeMinimumBlock(asset, meta, amount));
+  return encodeBundleBlock(encodeRouteBlock(data), encodeMinimumBlock(asset, meta, amount));
+}
+
+export function encodeBundleBlockWithMinimum(data: string, asset: string, meta: string, amount: bigint): string {
+  return encodeBundleBlock(encodeRouteBlock(data), encodeMinimumBlock(asset, meta, amount));
 }
 
 export function encodeAuthBlock(cid: bigint, deadline: bigint, proof: string): string {
@@ -141,3 +145,5 @@ const COMMAND_ARGS = "((uint256,bytes32,bytes,bytes))";
 export function commandSelector(name: string): string {
   return ethers.dataSlice(ethers.id(name + COMMAND_ARGS), 0, 4);
 }
+
+

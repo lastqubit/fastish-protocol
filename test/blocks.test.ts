@@ -7,7 +7,7 @@ import {
   encodeAmountBlock, encodeBalanceBlock, encodeCustodyBlock,
   encodeRecipientBlock, encodeNodeBlock, encodeFundingBlock,
   encodeAssetBlock, encodeAllocationBlock, encodeTxBlock, encodeQuantityBlock, encodeMinimumBlock, encodeMaximumBlock,
-  encodeAuthBlock,
+  encodeAuthBlock, encodeBundleBlock, encodeRouteBlock,
   pad32, concat
 } from "./helpers/blocks.js";
 
@@ -15,15 +15,7 @@ function encodeUint32(value: number): string {
   return ethers.toBeHex(value, 4);
 }
 
-function blockWithChildren(key: string, payload: string, children: string): string {
-  const payloadBytes = ethers.getBytes(payload);
-  const childrenBytes = ethers.getBytes(children);
-  const selfLen = payloadBytes.length;
-  const totalLen = selfLen + childrenBytes.length;
-  return ethers.concat([key, encodeUint32(selfLen), encodeUint32(totalLen), payload, children]);
-}
-
-describe("Blocks", () => {
+describe("Cursors", () => {
   let helper: Awaited<ReturnType<typeof deploy>>;
 
   before(async () => {
@@ -37,25 +29,25 @@ describe("Blocks", () => {
     const meta  = ethers.zeroPadValue("0x02", 32);
     const amount = 12345n;
 
-    it("toBlockHeader packs key/selfLen/totalLen into upper bits", async () => {
+    it("toBlockHeader packs key/payloadLen into upper bits", async () => {
       const key = Keys.Balance;
-      const header: bigint = await helper.testBlockHeader(key, 96n, 96n);
+      const header: bigint = await helper.testBlockHeader(key, 96n);
       // Key in bits 224-255
       const keyFromHeader = (header >> 224n) & 0xffffffffn;
       expect(keyFromHeader.toString(16)).to.equal(key.slice(2).toLowerCase());
-      // selfLen in bits 192-223
-      const selfLen = (header >> 192n) & 0xffffffffn;
-      expect(selfLen).to.equal(96n);
+      // payloadLen in bits 192-223
+      const payloadLen = (header >> 192n) & 0xffffffffn;
+      expect(payloadLen).to.equal(96n);
     });
 
-    it("toBlockHeader reverts MalformedBlocks when selfLen > totalLen", async () => {
-      await expect(helper.testBlockHeader(Keys.Balance, 96n, 64n))
+    it("toBlockHeader reverts MalformedBlocks when payloadLen exceeds uint32", async () => {
+      await expect(helper.testBlockHeader(Keys.Balance, 0x1_0000_0000n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
-    it("writeBalanceBlock produces 108-byte output", async () => {
+    it("writeBalanceBlock produces 104-byte output", async () => {
       const data: string = await helper.testWriteBalanceBlock(asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(108);
+      expect(ethers.getBytes(data).length).to.equal(104);
     });
 
     it("writeBalanceBlock starts with Keys.Balance", async () => {
@@ -72,17 +64,17 @@ describe("Blocks", () => {
       expect(v).to.equal(amount);
     });
 
-    it("writeCustodyBlock produces 140-byte output", async () => {
+    it("writeCustodyBlock produces 136-byte output", async () => {
       const hostId = 1234n;
       const data: string = await helper.testWriteCustodyBlock(hostId, asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(140);
+      expect(ethers.getBytes(data).length).to.equal(136);
     });
 
-    it("writeTxBlock produces 172-byte output", async () => {
+    it("writeTxBlock produces 168-byte output", async () => {
       const from_ = ethers.zeroPadValue("0x03", 32);
       const to_   = ethers.zeroPadValue("0x04", 32);
       const data: string = await helper.testWriteTxBlock(from_, to_, asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(172);
+      expect(ethers.getBytes(data).length).to.equal(168);
     });
 
     it("writeTxBlock round-trips correctly", async () => {
@@ -103,246 +95,16 @@ describe("Blocks", () => {
 
     it("finish truncates to actual written length", async () => {
       const data: string = await helper.testWriterFinish(asset, meta, amount);
-      expect(ethers.getBytes(data).length).to.equal(108); // one balance block
+      expect(ethers.getBytes(data).length).to.equal(104); // one balance block
     });
   });
 
   // ── Blocks (calldata parsing) ─────────────────────────────────────────────
 
-  describe("Blocks library", () => {
+  describe("Cursors library", () => {
     const asset = ethers.zeroPadValue("0xAA", 32);
     const meta  = ethers.zeroPadValue("0xBB", 32);
     const amount = 9999n;
-
-    it("from returns zero-key at end of data", async () => {
-      const [key] = await helper.testParseBlock("0x", 0n);
-      expect(key).to.equal("0x00000000");
-    });
-
-    it("from reverts MalformedBlocks when i > source.length", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      await expect(helper.testParseBlock(data, 999n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
-
-    it("from parses block key, bound, end correctly", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      const [key, bound, end] = await helper.testParseBlock(data, 0n);
-      expect(key).to.equal(Keys.Amount);
-      expect(end).to.equal(BigInt(ethers.getBytes(data).length));
-      expect(bound).to.equal(end); // no children
-    });
-
-    it("from reverts MalformedBlocks when total length runs past the source", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      const truncated = ethers.hexlify(ethers.getBytes(data).slice(0, -1));
-      await expect(helper.testParseBlock(truncated, 0n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
-
-    it("unpackAmount extracts asset/meta/amount from AMOUNT block", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      const [a, m, v] = await helper.testUnpackAmount(data, 0n);
-      expect(a).to.equal(asset);
-      expect(m).to.equal(meta);
-      expect(v).to.equal(amount);
-    });
-
-    it("unpackAmount reverts InvalidBlock for BALANCE block", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      await expect(helper.testUnpackAmount(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("unpackCustody reverts InvalidBlock for BALANCE block", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      await expect(helper.testUnpackCustody(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("unpackRecipient reverts InvalidBlock for AMOUNT block", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      await expect(helper.testUnpackRecipient(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("unpackNode reverts InvalidBlock for BALANCE block", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      await expect(helper.testUnpackNode(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("unpackFunding reverts InvalidBlock for AMOUNT block", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      await expect(helper.testUnpackFunding(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("unpackAsset reverts InvalidBlock for BALANCE block", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      await expect(helper.testUnpackAsset(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("unpackAllocation reverts InvalidBlock for AMOUNT block", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      await expect(helper.testUnpackAllocation(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("toTxValue reverts InvalidBlock for BALANCE block", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      await expect(helper.testToTxValue(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("unpackBalance extracts from BALANCE block", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      const [a, m, v] = await helper.testUnpackBalance(data, 0n);
-      expect(a).to.equal(asset);
-      expect(m).to.equal(meta);
-      expect(v).to.equal(amount);
-    });
-
-    it("unpackCustody extracts host/asset/meta/amount", async () => {
-      const hostId = 42n;
-      const data = encodeCustodyBlock(hostId, asset, meta, amount);
-      const [h, a, m, v] = await helper.testUnpackCustody(data, 0n);
-      expect(h).to.equal(hostId);
-      expect(a).to.equal(asset);
-      expect(m).to.equal(meta);
-      expect(v).to.equal(amount);
-    });
-
-    it("unpackRecipient extracts account from RECIPIENT block", async () => {
-      const account = ethers.zeroPadValue("0xdeadbeef", 32);
-      const data = encodeRecipientBlock(account);
-      const result = await helper.testUnpackRecipient(data, 0n);
-      expect(result).to.equal(account);
-    });
-
-    it("unpackNode extracts id from NODE block", async () => {
-      const nodeId = 777n;
-      const data = encodeNodeBlock(nodeId);
-      const result = await helper.testUnpackNode(data, 0n);
-      expect(result).to.equal(nodeId);
-    });
-
-    it("unpackQuantity extracts scalar amount from QUANTITY block", async () => {
-      const data = encodeQuantityBlock(777n);
-      const result = await helper.testUnpackQuantity(data, 0n);
-      expect(result).to.equal(777n);
-    });
-
-    it("unpackQuantity reverts InvalidBlock for AMOUNT block", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      await expect(helper.testUnpackQuantity(data, 0n))
-        .to.be.revertedWithCustomError(helper, "InvalidBlock");
-    });
-
-    it("expectMinimum returns only the minimum amount when asset/meta match", async () => {
-      const data = encodeMinimumBlock(asset, meta, amount);
-      const result = await helper.testExpectMinimum(data, 0n, asset, meta);
-      expect(result).to.equal(amount);
-    });
-
-    it("expectAmount returns only the amount when asset/meta match", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      const result = await helper.testExpectAmount(data, 0n, asset, meta);
-      expect(result).to.equal(amount);
-    });
-
-    it("expectBalance returns only the amount when asset/meta match", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      const result = await helper.testExpectBalance(data, 0n, asset, meta);
-      expect(result).to.equal(amount);
-    });
-
-    it("expectMaximum returns only the maximum amount when asset/meta match", async () => {
-      const data = encodeMaximumBlock(asset, meta, amount);
-      const result = await helper.testExpectMaximum(data, 0n, asset, meta);
-      expect(result).to.equal(amount);
-    });
-
-    it("expectMinimum reverts UnexpectedAsset for wrong asset", async () => {
-      const data = encodeMinimumBlock(asset, meta, amount);
-      const otherAsset = ethers.zeroPadValue("0xAB", 32);
-      await expect(helper.testExpectMinimum(data, 0n, otherAsset, meta))
-        .to.be.revertedWithCustomError(helper, "UnexpectedAsset");
-    });
-
-    it("expectMinimum reverts UnexpectedMeta for wrong meta", async () => {
-      const data = encodeMinimumBlock(asset, meta, amount);
-      const otherMeta = ethers.zeroPadValue("0xCC", 32);
-      await expect(helper.testExpectMinimum(data, 0n, asset, otherMeta))
-        .to.be.revertedWithCustomError(helper, "UnexpectedMeta");
-    });
-
-    it("expectAmount reverts UnexpectedAsset for wrong asset", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      const otherAsset = ethers.zeroPadValue("0xAB", 32);
-      await expect(helper.testExpectAmount(data, 0n, otherAsset, meta))
-        .to.be.revertedWithCustomError(helper, "UnexpectedAsset");
-    });
-
-    it("expectBalance reverts UnexpectedMeta for wrong meta", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      const otherMeta = ethers.zeroPadValue("0xCC", 32);
-      await expect(helper.testExpectBalance(data, 0n, asset, otherMeta))
-        .to.be.revertedWithCustomError(helper, "UnexpectedMeta");
-    });
-
-    it("expectMaximum reverts UnexpectedAsset for wrong asset", async () => {
-      const data = encodeMaximumBlock(asset, meta, amount);
-      const otherAsset = ethers.zeroPadValue("0xAB", 32);
-      await expect(helper.testExpectMaximum(data, 0n, otherAsset, meta))
-        .to.be.revertedWithCustomError(helper, "UnexpectedAsset");
-    });
-
-    it("expectCustody returns AssetAmount when host matches", async () => {
-      const hostId = 42n;
-      const data = encodeCustodyBlock(hostId, asset, meta, amount);
-      const [a, m, v] = await helper.testExpectCustody(data, 0n, hostId);
-      expect(a).to.equal(asset);
-      expect(m).to.equal(meta);
-      expect(v).to.equal(amount);
-    });
-
-    it("expectCustody reverts UnexpectedHost for wrong host", async () => {
-      const data = encodeCustodyBlock(42n, asset, meta, amount);
-      await expect(helper.testExpectCustody(data, 0n, 99n))
-        .to.be.revertedWithCustomError(helper, "UnexpectedHost");
-    });
-
-    it("unpackFunding extracts host/amount from FUNDING block", async () => {
-      const hostId = 555n;
-      const data = encodeFundingBlock(hostId, 100n);
-      const [h, v] = await helper.testUnpackFunding(data, 0n);
-      expect(h).to.equal(hostId);
-      expect(v).to.equal(100n);
-    });
-
-    it("unpackAsset extracts asset/meta from ASSET block", async () => {
-      const a = ethers.zeroPadValue("0x01", 32);
-      const m = ethers.zeroPadValue("0x02", 32);
-      const data = encodeAssetBlock(a, m);
-      const [ra, rm] = await helper.testUnpackAsset(data, 0n);
-      expect(ra).to.equal(a);
-      expect(rm).to.equal(m);
-    });
-
-    it("unpackAllocation extracts host/asset/meta/amount", async () => {
-      const h = 111n;
-      const a = ethers.zeroPadValue("0x01", 32);
-      const m = ethers.zeroPadValue("0x02", 32);
-      const v = 5000n;
-      const data = encodeAllocationBlock(h, a, m, v);
-      const [rh, ra, rm, rv] = await helper.testUnpackAllocation(data, 0n);
-      expect(rh).to.equal(h);
-      expect(ra).to.equal(a);
-      expect(rm).to.equal(m);
-      expect(rv).to.equal(v);
-    });
 
     it("count counts consecutive same-key blocks", async () => {
       const b1 = encodeAmountBlock(asset, meta, 1n);
@@ -421,9 +183,8 @@ describe("Blocks", () => {
       const sig = "0x" + "22".repeat(65);
       const proof = ethers.concat([signer, sig]);
       const auth = encodeAuthBlock(cid, deadline, proof);
-      const parent = blockWithChildren(
-        Keys.Amount,
-        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+      const parent = encodeBundleBlock(
+        encodeAmountBlock(asset, meta, amount),
         auth
       );
 
@@ -431,26 +192,26 @@ describe("Blocks", () => {
       expect(outDeadline).to.equal(deadline);
       expect(outProof).to.equal(proof);
 
-      const parentBytes = ethers.getBytes(parent);
+      const memberStream = concat(encodeAmountBlock(asset, meta, amount), auth);
+      const parentBytes = ethers.getBytes(memberStream);
       const expectedHash = ethers.keccak256(parentBytes.slice(0, parentBytes.length - 85));
       expect(hash).to.equal(expectedHash);
     });
 
-    it("verifyAuth reverts MalformedBlocks when cid mismatches", async () => {
+    it("verifyAuth reverts UnexpectedValue when cid mismatches", async () => {
       const proof = ethers.concat(["0x" + "11".repeat(20), "0x" + "22".repeat(65)]);
       const auth = encodeAuthBlock(77n, 123456n, proof);
-      const parent = blockWithChildren(
-        Keys.Amount,
-        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+      const parent = encodeBundleBlock(
+        encodeAmountBlock(asset, meta, amount),
         auth
       );
 
       await expect(helper.testVerifyAuth(parent, 0n, 88n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+        .to.be.revertedWithCustomError(helper, "UnexpectedValue");
     });
 
     it("verifyAuth reverts MalformedBlocks when trailing auth is missing", async () => {
-      const parent = encodeAmountBlock(asset, meta, amount);
+      const parent = encodeBundleBlock(encodeAmountBlock(asset, meta, amount));
 
       await expect(helper.testVerifyAuth(parent, 0n, 77n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
@@ -458,9 +219,8 @@ describe("Blocks", () => {
 
     it("verifyAuth reverts MalformedBlocks when trailing bytes are too short for AUTH", async () => {
       const truncatedAuthTail = ethers.hexlify(ethers.getBytes(encodeAuthBlock(77n, 123456n, ethers.concat(["0x" + "11".repeat(20), "0x" + "22".repeat(65)]))).slice(0, 100));
-      const parent = blockWithChildren(
-        Keys.Amount,
-        ethers.concat([pad32(asset), pad32(meta), pad32(amount)]),
+      const parent = encodeBundleBlock(
+        encodeAmountBlock(asset, meta, amount),
         truncatedAuthTail
       );
 
@@ -473,41 +233,78 @@ describe("Blocks", () => {
       expect(count).to.equal(0n);
     });
 
-    it("from reverts MalformedBlocks for 4-byte source (header too short)", async () => {
-      await expect(helper.testParseBlock("0xdeadbeef", 0n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
+    describe("cursor helpers", () => {
+      it("open creates a cursor over one block", async () => {
+        const a = encodeBalanceBlock(asset, meta, 1n);
+        const [start, end, cursor] = await helper.testCursorFrom(a, 0n);
+        expect(start).to.equal(0n);
+        expect(end).to.equal(BigInt(ethers.getBytes(a).length));
+        expect(cursor).to.equal(end);
+      });
 
-    it("from reverts MalformedBlocks for 8-byte source (header incomplete)", async () => {
-      await expect(helper.testParseBlock("0x0000000100000060", 0n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
+      it("open with n creates a cursor over n consecutive blocks", async () => {
+        const a = encodeBalanceBlock(asset, meta, 1n);
+        const b = encodeBalanceBlock(asset, meta, 2n);
+        const c = encodeBalanceBlock(asset, meta, 3n);
+        const source = concat(a, b, c);
+        const [start, end, cursor] = await helper.testCursorFromN(source, 0n, 2n);
+        expect(start).to.equal(0n);
+        expect(end).to.equal(BigInt(ethers.getBytes(concat(a, b)).length));
+        expect(cursor).to.equal(end);
+      });
 
-    it("from reverts MalformedBlocks when selfLen > totalLen in parsed block", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      const bytes_ = ethers.getBytes(data);
-      // bytes [4..7] = selfLen; set to 200 while totalLen stays 96 → selfLen > totalLen
-      bytes_[4] = 0x00; bytes_[5] = 0x00; bytes_[6] = 0x00; bytes_[7] = 0xC8;
-      await expect(helper.testParseBlock(ethers.hexlify(bytes_), 0n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
+      it("take returns a source-relative cursor for a range that starts after offset 0", async () => {
+        const prefix = encodeRecipientBlock(ethers.zeroPadValue("0x1234", 32));
+        const a = encodeBalanceBlock(asset, meta, 1n);
+        const b = encodeBalanceBlock(asset, meta, 2n);
+        const source = concat(prefix, a, b);
+        const offset = BigInt(ethers.getBytes(prefix).length);
+        const aLen = BigInt(ethers.getBytes(a).length);
+        const [start, end, cursor, next] = await helper.testTake(source, offset, 2n);
+        expect(start).to.equal(offset);
+        expect(end).to.equal(offset + aLen);
+        expect(cursor).to.equal(offset + aLen);
+        expect(next).to.equal(offset + aLen);
+      });
 
-    it("from reverts MalformedBlocks when totalLen exceeds source length", async () => {
-      const data = encodeAmountBlock(asset, meta, amount);
-      const bytes_ = ethers.getBytes(data);
-      // bytes [8..11] = totalLen; set to 9999 so ref.end = 12 + 9999 > source.length
-      bytes_[8] = 0x00; bytes_[9] = 0x00; bytes_[10] = 0x27; bytes_[11] = 0x0F;
-      await expect(helper.testParseBlock(ethers.hexlify(bytes_), 0n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
+      it("take keeps bundle cursors relative to the original source", async () => {
+        const prefix = encodeRecipientBlock(ethers.zeroPadValue("0x1234", 32));
+        const route = encodeRouteBlock("0x12345678");
+        const minimum = encodeMinimumBlock(asset, meta, amount);
+        const bundle = encodeBundleBlock(route, minimum);
+        const source = concat(prefix, bundle);
+        const offset = BigInt(ethers.getBytes(prefix).length);
+        const endOfSource = BigInt(ethers.getBytes(source).length);
+        const [start, end, cursor, next] = await helper.testTake(source, offset, 1n);
+        expect(start).to.equal(offset + 8n);
+        expect(end).to.equal(endOfSource);
+        expect(cursor).to.equal(endOfSource);
+        expect(next).to.equal(endOfSource);
+      });
 
-    it("from reverts MalformedBlocks when second block in sequence has truncated payload", async () => {
-      const b1 = encodeAmountBlock(asset, meta, 1n);
-      const b2 = encodeAmountBlock(asset, meta, 2n);
-      const truncated = ethers.hexlify(ethers.getBytes(concat(b1, b2)).slice(0, -1));
-      const b1End = BigInt(ethers.getBytes(b1).length);
-      await expect(helper.testParseBlock(truncated, b1End))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+      it("done reverts ZeroCursor for an empty cursor", async () => {
+        await expect(helper.testCursorDoneEmpty("0x"))
+          .to.be.revertedWithCustomError(helper, "ZeroCursor");
+      });
+
+      it("done reverts ZeroCursor when a cursor has not advanced and still has remaining input", async () => {
+        const a = encodeBalanceBlock(asset, meta, 1n);
+        await expect(helper.testCursorDoneOpen(a))
+          .to.be.revertedWithCustomError(helper, "ZeroCursor");
+      });
+
+      it("done reverts ZeroCursor when a cursor advanced but did not reach the end", async () => {
+        const a = encodeBalanceBlock(asset, meta, 1n);
+        const b = encodeBalanceBlock(asset, meta, 2n);
+        await expect(helper.testCursorDoneAdvanced(concat(a, b)))
+          .to.be.revertedWithCustomError(helper, "ZeroCursor");
+      });
+
+      it("done allows a cursor that fully consumed a non-empty range", async () => {
+        const a = encodeBalanceBlock(asset, meta, 1n);
+        const b = encodeBalanceBlock(asset, meta, 2n);
+        expect(await helper.testCursorDoneConsumed(concat(a, b))).to.equal(true);
+      });
     });
   });
 
@@ -539,8 +336,8 @@ describe("Blocks", () => {
     it("slice extracts sub-array", async () => {
       const data = encodeBalanceBlock(asset, meta, amount);
       const fullBytes = ethers.getBytes(data);
-      const sliced: string = await helper.testMemSlice(data, 12n, BigInt(fullBytes.length));
-      expect(ethers.getBytes(sliced).length).to.equal(fullBytes.length - 12);
+      const sliced: string = await helper.testMemSlice(data, 8n, BigInt(fullBytes.length));
+      expect(ethers.getBytes(sliced).length).to.equal(fullBytes.length - 8);
     });
 
     it("slice reverts MalformedBlocks for invalid bounds", async () => {
@@ -562,13 +359,15 @@ describe("Blocks", () => {
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
 
-    it("from reverts MalformedBlocks when Mem totalLen exceeds source", async () => {
+    it("from reverts MalformedBlocks when Mem payloadLen exceeds source", async () => {
       const data = encodeBalanceBlock(asset, meta, amount);
       const bytes_ = ethers.getBytes(data);
-      // bytes [8..11] = totalLen; set to 9999 so ref.end > source.length
-      bytes_[8] = 0x00; bytes_[9] = 0x00; bytes_[10] = 0x27; bytes_[11] = 0x0F;
+      // bytes [4..7] = payloadLen; set to 9999 so ref.end > source.length
+      bytes_[4] = 0x00; bytes_[5] = 0x00; bytes_[6] = 0x27; bytes_[7] = 0x0F;
       await expect(helper.testMemParseBalance(ethers.hexlify(bytes_), 0n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
     });
   });
 });
+
+

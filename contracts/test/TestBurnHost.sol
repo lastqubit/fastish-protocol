@@ -10,7 +10,7 @@ contract TestBurnHost is Host, Burn {
 
     constructor(address cmdr)
         Host(address(0), 1, "test")
-        Burn("")
+        Burn()
     {
         if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
@@ -26,3 +26,6 @@ contract TestBurnHost is Host, Burn {
     function getBurnId() external view returns (uint) { return burnId; }
     function getAdminAccount() external view returns (bytes32) { return adminAccount; }
 }
+
+
+

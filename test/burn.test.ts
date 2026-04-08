@@ -95,8 +95,10 @@ describe("Burn", () => {
 
   // ── Error cases ────────────────────────────────────────────────────────────
 
-  it("reverts NoOperation when state is empty", async () => {
+  it("reverts ZeroCursor when state is empty", async () => {
     await expect(callAs(0, ctx()))
-      .to.be.revertedWithCustomError(host, "NoOperation");
+      .to.be.revertedWithCustomError(host, "ZeroCursor");
   });
 });
+
+
