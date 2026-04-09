@@ -69,8 +69,14 @@ library Schemas {
 // - `cid` binds the signature to one command; `deadline` acts as expiry and nonce
 // - current helpers assume proof layout `[bytes20 signer][bytes65 sig]`
 
-uint constant AUTH_PROOF_LEN = 85;
-uint constant AUTH_TOTAL_LEN = 157;
+library Sizes {
+    uint constant Proof = 85;
+    uint constant Auth = 157;
+    uint constant Balance = 104;
+    uint constant Bounty = 72;
+    uint constant Custody = 136;
+    uint constant Transaction = 168;
+}
 
 struct AssetAmount {
     bytes32 asset;

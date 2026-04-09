@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { AssetAmount, HostAmount, Tx, Keys } from "./Schema.sol";
+import { AssetAmount, HostAmount, Tx, Keys, Sizes } from "./Schema.sol";
 
 struct Writer {
     uint i;
@@ -10,10 +10,6 @@ struct Writer {
 }
 
 uint constant ALLOC_SCALE = 10_000;
-uint constant BALANCE_BLOCK_LEN = 104;
-uint constant BOUNTY_BLOCK_LEN = 72;
-uint constant CUSTODY_BLOCK_LEN = 136;
-uint constant TX_BLOCK_LEN = 168;
 
 library Writers {
     error WriterOverflow();
@@ -44,27 +40,27 @@ library Writers {
     }
 
     function allocBalances(uint count) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(count, ALLOC_SCALE, BALANCE_BLOCK_LEN);
+        return allocFromScaledCount(count, ALLOC_SCALE, Sizes.Balance);
     }
 
     function allocPairedBalances(uint count) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(count, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
+        return allocFromScaledCount(count, ALLOC_SCALE * 2, Sizes.Balance);
     }
 
     function allocScaledBalances(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(count, scaledRatio, BALANCE_BLOCK_LEN);
+        return allocFromScaledCount(count, scaledRatio, Sizes.Balance);
     }
 
     function allocTxs(uint count) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(count, ALLOC_SCALE, TX_BLOCK_LEN);
+        return allocFromScaledCount(count, ALLOC_SCALE, Sizes.Transaction);
     }
 
     function allocCustodies(uint count) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(count, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
+        return allocFromScaledCount(count, ALLOC_SCALE, Sizes.Custody);
     }
 
     function allocScaledCustodies(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(count, scaledRatio, CUSTODY_BLOCK_LEN);
+        return allocFromScaledCount(count, scaledRatio, Sizes.Custody);
     }
 
     function allocFromScaledCount(
@@ -80,7 +76,7 @@ library Writers {
     }
 
     function writeBalanceBlock(bytes memory dst, uint i, AssetAmount memory value) internal pure returns (uint next) {
-        next = i + BALANCE_BLOCK_LEN;
+        next = i + Sizes.Balance;
         if (next > dst.length) revert WriterOverflow();
         uint header = toBlockHeader(Keys.Balance, 96);
         assembly ("memory-safe") {
@@ -109,7 +105,7 @@ library Writers {
     }
 
     function writeBountyBlock(bytes memory dst, uint i, uint amount, bytes32 relayer) internal pure returns (uint next) {
-        next = i + BOUNTY_BLOCK_LEN;
+        next = i + Sizes.Bounty;
         if (next > dst.length) revert WriterOverflow();
         uint header = toBlockHeader(Keys.Bounty, 64);
         assembly ("memory-safe") {
@@ -125,7 +121,7 @@ library Writers {
     }
 
     function writeCustodyBlock(bytes memory dst, uint i, HostAmount memory value) internal pure returns (uint next) {
-        next = i + CUSTODY_BLOCK_LEN;
+        next = i + Sizes.Custody;
         if (next > dst.length) revert WriterOverflow();
         uint header = toBlockHeader(Keys.Custody, 128);
         assembly ("memory-safe") {
@@ -147,7 +143,7 @@ library Writers {
     }
 
     function writeTxBlock(bytes memory dst, uint i, Tx memory value) internal pure returns (uint next) {
-        next = i + TX_BLOCK_LEN;
+        next = i + Sizes.Transaction;
         if (next > dst.length) revert WriterOverflow();
         uint header = toBlockHeader(Keys.Transaction, 160);
         assembly ("memory-safe") {

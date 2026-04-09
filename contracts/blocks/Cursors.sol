@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {AUTH_PROOF_LEN, AUTH_TOTAL_LEN, HostAsset, AssetAmount, HostAmount, Tx, Keys} from "./Schema.sol";
-import {ALLOC_SCALE, BALANCE_BLOCK_LEN, CUSTODY_BLOCK_LEN, TX_BLOCK_LEN, Writer, Writers} from "./Writers.sol";
+import {HostAsset, AssetAmount, HostAmount, Tx, Keys, Sizes} from "./Schema.sol";
+import {ALLOC_SCALE, Writer, Writers} from "./Writers.sol";
 
 struct Cur {
     uint offset;
@@ -168,13 +168,13 @@ library Cursors {
         Cur memory cur,
         uint cid
     ) internal pure returns (bytes32 hash, uint deadline, bytes calldata proof) {
-        if (cur.len - cur.i < AUTH_TOTAL_LEN) revert MalformedBlocks();
+        if (cur.len - cur.i < Sizes.Auth) revert MalformedBlocks();
 
-        uint i = cur.len - AUTH_TOTAL_LEN;
+        uint i = cur.len - Sizes.Auth;
         if (i < cur.bound) revert MalformedBlocks();
 
         (deadline, proof) = expectAuth(cur, i, cid);
-        hash = keccak256(msg.data[cur.offset + cur.i:cur.offset + cur.len - AUTH_PROOF_LEN]);
+        hash = keccak256(msg.data[cur.offset + cur.i:cur.offset + cur.len - Sizes.Proof]);
     }
 
     function unpackBalanceValue(Cur memory cur) internal pure returns (AssetAmount memory value) {
@@ -443,27 +443,27 @@ library Cursors {
     }
 
     function allocBalances(Cur memory cur) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, ALLOC_SCALE, BALANCE_BLOCK_LEN);
+        return allocFromScaledCount(cur, ALLOC_SCALE, Sizes.Balance);
     }
 
     function allocPairedBalances(Cur memory cur) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
+        return allocFromScaledCount(cur, ALLOC_SCALE * 2, Sizes.Balance);
     }
 
     function allocScaledBalances(Cur memory cur, uint scaledRatio) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, scaledRatio, BALANCE_BLOCK_LEN);
+        return allocFromScaledCount(cur, scaledRatio, Sizes.Balance);
     }
 
     function allocTxs(Cur memory cur) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, ALLOC_SCALE, TX_BLOCK_LEN);
+        return allocFromScaledCount(cur, ALLOC_SCALE, Sizes.Transaction);
     }
 
     function allocCustodies(Cur memory cur) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
+        return allocFromScaledCount(cur, ALLOC_SCALE, Sizes.Custody);
     }
 
     function allocScaledCustodies(Cur memory cur, uint scaledRatio) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, scaledRatio, CUSTODY_BLOCK_LEN);
+        return allocFromScaledCount(cur, scaledRatio, Sizes.Custody);
     }
 
     function allocFromScaledCount(

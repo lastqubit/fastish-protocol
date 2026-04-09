@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { HostAmount, Tx } from "../blocks/Schema.sol";
+import { HostAmount, Tx, Sizes } from "../blocks/Schema.sol";
 import { Cur, Cursors, Writer } from "../Cursors.sol";
 import { MemRef, Mem } from "../blocks/Mem.sol";
-import { Writers, BALANCE_BLOCK_LEN, CUSTODY_BLOCK_LEN, TX_BLOCK_LEN } from "../blocks/Writers.sol";
+import { Writers } from "../blocks/Writers.sol";
 
 using Cursors for Cur;
 using Writers for Writer;
@@ -16,7 +16,7 @@ contract TestCursorHelper {
     }
 
     function testWriteBalanceBlock(bytes32 asset, bytes32 meta, uint amount) external pure returns (bytes memory) {
-        Writer memory w = Writers.alloc(BALANCE_BLOCK_LEN);
+        Writer memory w = Writers.alloc(Sizes.Balance);
         w.appendBalance(asset, meta, amount);
         return w.dst;
     }
@@ -27,7 +27,7 @@ contract TestCursorHelper {
         bytes32 meta,
         uint amount
     ) external pure returns (bytes memory) {
-        Writer memory w = Writers.alloc(CUSTODY_BLOCK_LEN);
+        Writer memory w = Writers.alloc(Sizes.Custody);
         w.appendCustody(host_, asset, meta, amount);
         return w.dst;
     }
@@ -39,18 +39,18 @@ contract TestCursorHelper {
         bytes32 meta,
         uint amount
     ) external pure returns (bytes memory) {
-        Writer memory w = Writers.alloc(TX_BLOCK_LEN);
+        Writer memory w = Writers.alloc(Sizes.Transaction);
         w.appendTx(Tx({ from: from_, to: to_, asset: asset, meta: meta, amount: amount }));
         return w.dst;
     }
 
     function testWriterFinishIncomplete() external pure returns (bytes memory) {
-        Writer memory w = Writers.alloc(BALANCE_BLOCK_LEN);
+        Writer memory w = Writers.alloc(Sizes.Balance);
         return Writers.finish(w);
     }
 
     function testWriterFinish(bytes32 asset, bytes32 meta, uint amount) external pure returns (bytes memory) {
-        Writer memory w = Writers.alloc(BALANCE_BLOCK_LEN * 2);
+        Writer memory w = Writers.alloc(Sizes.Balance * 2);
         w.appendBalance(asset, meta, amount);
         return Writers.finish(w);
     }
