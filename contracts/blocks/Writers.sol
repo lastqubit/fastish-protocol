@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Cur, Cursors } from "./Cursors.sol";
 import { AssetAmount, HostAmount, Tx, Keys } from "./Schema.sol";
 
 struct Writer {
@@ -16,59 +15,18 @@ uint constant BOUNTY_BLOCK_LEN = 72;
 uint constant CUSTODY_BLOCK_LEN = 136;
 uint constant TX_BLOCK_LEN = 168;
 
-library Writers2 {
-    function alloc(Cur memory cur) internal pure returns (Writer memory writer) {
-        if (cur.i > cur.len) revert Cursors.MalformedBlocks();
-        writer = Writer({i: 0, end: cur.len - cur.i, dst: new bytes(cur.len - cur.i)});
-    }
-
-    function allocBalances(Cur memory cur) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, ALLOC_SCALE, BALANCE_BLOCK_LEN);
-    }
-
-    function allocPairedBalances(Cur memory cur) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
-    }
-
-    function allocScaledBalances(Cur memory cur, uint scaledRatio) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, scaledRatio, BALANCE_BLOCK_LEN);
-    }
-
-    function allocTxs(Cur memory cur) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, ALLOC_SCALE, TX_BLOCK_LEN);
-    }
-
-    function allocCustodies(Cur memory cur) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
-    }
-
-    function allocScaledCustodies(Cur memory cur, uint scaledRatio) internal pure returns (Writer memory writer) {
-        return allocFromScaledCount(cur, scaledRatio, CUSTODY_BLOCK_LEN);
-    }
-
-    function allocFromScaledCount(
-        Cur memory cur,
-        uint scaledRatio,
-        uint blockLen
-    ) internal pure returns (Writer memory writer) {
-        bytes4 key = cur.len < 4 ? bytes4(0) : bytes4(msg.data[cur.offset:cur.offset + 4]);
-        if (key == 0) revert Writers.EmptyRequest();
-        cur.i = 0;
-        (uint count, ) = Cursors.countRun(cur, key);
-        writer = Writers.allocFromScaledCount(count, scaledRatio, blockLen);
-    }
-}
-
 library Writers {
     error WriterOverflow();
     error IncompleteWriter();
     error EmptyRequest();
+    error BlockLengthOverflow();
+    error BadWriterRatio();
 
     // Encodes an 8-byte block header (4-byte key + 4-byte payloadLen) into a
     // uint so assembly can write the full header in one mstore while the
     // payload starts at offset + 8.
     function toBlockHeader(bytes4 key, uint len) internal pure returns (uint) {
-        if (len > type(uint32).max) revert Cursors.MalformedBlocks();
+        if (len > type(uint32).max) revert BlockLengthOverflow();
         return (uint(uint32(key)) << 224) | (uint(uint32(len)) << 192);
     }
 
@@ -116,7 +74,7 @@ library Writers {
     ) internal pure returns (Writer memory writer) {
         if (count == 0) revert EmptyRequest();
         uint scaledCount = count * scaledRatio;
-        if (scaledCount % ALLOC_SCALE != 0) revert Cursors.MalformedBlocks();
+        if (scaledCount % ALLOC_SCALE != 0) revert BadWriterRatio();
         uint len = (scaledCount / ALLOC_SCALE) * blockLen;
         writer = Writer({i: 0, end: len, dst: new bytes(len)});
     }

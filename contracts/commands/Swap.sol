@@ -2,10 +2,9 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Cur, Cursors, HostAmount, Writer, Writers, Writers2 } from "../Cursors.sol";
+import { AssetAmount, Cur, Cursors, HostAmount, Writer, Writers } from "../Cursors.sol";
 using Cursors for Cur;
 using Writers for Writer;
-using Writers2 for Cur;
 
 string constant SEBTB = "swapExactBalanceToBalance";
 string constant SECTB = "swapExactCustodyToBalance";
@@ -73,6 +72,7 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 

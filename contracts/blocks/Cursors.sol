@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import {AUTH_PROOF_LEN, AUTH_TOTAL_LEN, HostAsset, AssetAmount, HostAmount, Tx, Keys} from "./Schema.sol";
-import {BALANCE_BLOCK_LEN, BOUNTY_BLOCK_LEN, CUSTODY_BLOCK_LEN, TX_BLOCK_LEN, Writer, Writers} from "./Writers.sol";
+import {ALLOC_SCALE, BALANCE_BLOCK_LEN, CUSTODY_BLOCK_LEN, TX_BLOCK_LEN, Writer, Writers} from "./Writers.sol";
 
 struct Cur {
     uint offset;
@@ -166,14 +166,14 @@ library Cursors {
 
     function authLast(
         Cur memory cur,
-        uint expectedCid
+        uint cid
     ) internal pure returns (bytes32 hash, uint deadline, bytes calldata proof) {
         if (cur.len - cur.i < AUTH_TOTAL_LEN) revert MalformedBlocks();
 
         uint i = cur.len - AUTH_TOTAL_LEN;
         if (i < cur.bound) revert MalformedBlocks();
 
-        (deadline, proof) = expectAuth(cur, i, expectedCid);
+        (deadline, proof) = expectAuth(cur, i, cid);
         hash = keccak256(msg.data[cur.offset + cur.i:cur.offset + cur.len - AUTH_PROOF_LEN]);
     }
 
@@ -435,5 +435,46 @@ library Cursors {
     function requireCustody(Cur memory cur, uint host) internal pure returns (AssetAmount memory value) {
         value = expectCustody(cur, cur.i, host);
         cur.i += 136;
+    }
+
+    function alloc(Cur memory cur) internal pure returns (Writer memory writer) {
+        if (cur.i > cur.len) revert MalformedBlocks();
+        writer = Writer({i: 0, end: cur.len - cur.i, dst: new bytes(cur.len - cur.i)});
+    }
+
+    function allocBalances(Cur memory cur) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(cur, ALLOC_SCALE, BALANCE_BLOCK_LEN);
+    }
+
+    function allocPairedBalances(Cur memory cur) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(cur, ALLOC_SCALE * 2, BALANCE_BLOCK_LEN);
+    }
+
+    function allocScaledBalances(Cur memory cur, uint scaledRatio) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(cur, scaledRatio, BALANCE_BLOCK_LEN);
+    }
+
+    function allocTxs(Cur memory cur) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(cur, ALLOC_SCALE, TX_BLOCK_LEN);
+    }
+
+    function allocCustodies(Cur memory cur) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(cur, ALLOC_SCALE, CUSTODY_BLOCK_LEN);
+    }
+
+    function allocScaledCustodies(Cur memory cur, uint scaledRatio) internal pure returns (Writer memory writer) {
+        return allocFromScaledCount(cur, scaledRatio, CUSTODY_BLOCK_LEN);
+    }
+
+    function allocFromScaledCount(
+        Cur memory cur,
+        uint scaledRatio,
+        uint blockLen
+    ) internal pure returns (Writer memory writer) {
+        bytes4 key = cur.len < 4 ? bytes4(0) : bytes4(msg.data[cur.offset:cur.offset + 4]);
+        if (key == 0) revert Writers.EmptyRequest();
+        cur.i = 0;
+        (uint count, ) = countRun(cur, key);
+        writer = Writers.allocFromScaledCount(count, scaledRatio, blockLen);
     }
 }

@@ -2,14 +2,13 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Cur, Cursors, Writer, Writers, Writers2 } from "../Cursors.sol";
+import { AssetAmount, HostAmount, Cur, Cursors, Writer, Writers } from "../Cursors.sol";
 
 string constant RFBTB = "repayFromBalanceToBalances";
 string constant RFCTB = "repayFromCustodyToBalances";
 
 using Cursors for Cur;
 using Writers for Writer;
-using Writers2 for Cur;
 
 abstract contract RepayFromBalanceToBalances is CommandBase {
     uint internal immutable repayFromBalanceToBalancesId = commandId(RFBTB);
@@ -82,6 +81,7 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 

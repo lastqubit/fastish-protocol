@@ -11,11 +11,10 @@ pragma solidity ^0.8.33;
 // returning a single pre-encoded block.
 
 import {CommandBase, CommandContext, Channels} from "../contracts/Commands.sol";
-import {Cur, Cursors, Writer, Writers, Writers2, Schemas} from "../contracts/Cursors.sol";
+import {Cur, Cursors, Writer, Writers, Schemas} from "../contracts/Cursors.sol";
 
 using Cursors for Cur;
 using Writers for Writer;
-using Writers2 for Cur;
 
 string constant NAME = "myCommand";
 
@@ -48,6 +47,7 @@ abstract contract MyCommand is CommandBase {
         return inputs.complete(writer);
     }
 }
+
 
 
 

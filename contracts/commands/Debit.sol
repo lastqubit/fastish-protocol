@@ -2,13 +2,12 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Cursors, Cur, Schemas, Writer, Writers, Writers2 } from "../Cursors.sol";
+import { Cursors, Cur, Schemas, Writer, Writers } from "../Cursors.sol";
 
 string constant NAME = "debitAccount";
 
 using Cursors for Cur;
 using Writers for Writer;
-using Writers2 for Cur;
 
 abstract contract DebitAccount is CommandBase {
     uint internal immutable debitAccountId = commandId(NAME);
@@ -43,6 +42,7 @@ abstract contract DebitAccount is CommandBase {
         return debitAccount(c.account, c.request);
     }
 }
+
 
 
 

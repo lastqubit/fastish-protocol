@@ -2,13 +2,12 @@
 pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Cursors, Cur, Schemas, Writer, Writers, Writers2 } from "../Cursors.sol";
+import { Cursors, Cur, Schemas, Writer, Writers } from "../Cursors.sol";
 
 string constant NAME = "deposit";
 
 using Cursors for Cur;
 using Writers for Writer;
-using Writers2 for Cur;
 
 // @dev Use `deposit` for externally sourced assets; use `debitAccountToBalance` for internal balance deductions.
 abstract contract Deposit is CommandBase {
@@ -42,6 +41,7 @@ abstract contract Deposit is CommandBase {
         return request.complete(writer);
     }
 }
+
 
 
 

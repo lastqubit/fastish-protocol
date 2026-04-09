@@ -35,9 +35,9 @@ describe("Cursors", () => {
       expect((header >> 192n) & 0xffffffffn).to.equal(96n);
     });
 
-    it("toBlockHeader reverts MalformedBlocks when payloadLen exceeds uint32", async () => {
+    it("toBlockHeader reverts BlockLengthOverflow when payloadLen exceeds uint32", async () => {
       await expect(helper.testBlockHeader(Keys.Balance, 0x1_0000_0000n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+        .to.be.revertedWithCustomError(helper, "BlockLengthOverflow");
     });
 
     it("writeBalanceBlock round-trips", async () => {
