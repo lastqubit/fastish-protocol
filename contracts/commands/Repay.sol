@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { AssetAmount, HostAmount, Cur, Cursors, Writer, Writers } from "../Cursors.sol";
 
 string constant RFBTB = "repayFromBalanceToBalances";
@@ -16,7 +16,7 @@ abstract contract RepayFromBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RFBTB, input, repayFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        emit Command(host, RFBTB, input, repayFromBalanceToBalancesId, State.Balances, State.Balances);
     }
 
     /// @dev Override to repay debt using a balance amount.
@@ -53,7 +53,7 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RFCTB, input, repayFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        emit Command(host, RFCTB, input, repayFromCustodyToBalancesId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to repay debt using a custody amount.

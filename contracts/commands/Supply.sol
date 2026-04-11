@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandBase, CommandContext, Channels} from "./Base.sol";
+import {CommandBase, CommandContext, State} from "./Base.sol";
 import {Cursors, Cur, HostAmount} from "../Cursors.sol";
 string constant NAME = "supply";
 
@@ -11,7 +11,7 @@ abstract contract Supply is CommandBase {
     uint internal immutable supplyId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, "", supplyId, Channels.Custodies, Channels.Setup);
+        emit Command(host, NAME, "", supplyId, State.Custodies, State.Empty);
     }
 
     /// @dev Override to consume or supply a single custody position.

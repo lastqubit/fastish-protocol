@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Cursors, Cur, AssetAmount } from "../Cursors.sol";
+import { CommandBase, CommandContext, State } from "./Base.sol";
+import { Cursors, Cur } from "../Cursors.sol";
 using Cursors for Cur;
 
 string constant NAME = "burn";
@@ -11,7 +11,7 @@ abstract contract Burn is CommandBase {
     uint internal immutable burnId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, "", burnId, Channels.Balances, Channels.Setup);
+        emit Command(host, NAME, "", burnId, State.Balances, State.Empty);
     }
 
     /// @dev Override to burn or consume the provided balance amount.
@@ -22,8 +22,8 @@ abstract contract Burn is CommandBase {
         (Cur memory state, ) = cursor(c.state, 1);
 
         while (state.i < state.bound) {
-            AssetAmount memory balance = state.unpackBalanceValue();
-            burn(c.account, balance.asset, balance.meta, balance.amount);
+            (bytes32 asset, bytes32 meta, uint amount) = state.unpackBalance();
+            burn(c.account, asset, meta, amount);
         }
 
         state.complete();

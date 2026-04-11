@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext } from "./commands/Base.sol";
-import { Channels } from "./utils/Channels.sol";
+import { State } from "./utils/State.sol";
 import { BorrowAgainstBalanceToBalance, BorrowAgainstCustodyToBalance } from "./commands/Borrow.sol";
 import { Burn } from "./commands/Burn.sol";
 import { Create } from "./commands/Create.sol";

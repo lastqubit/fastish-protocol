@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Cursors, Cur, Keys, Schemas, Writer, Writers } from "../Cursors.sol";
+import {CommandContext, CommandBase, State} from "./Base.sol";
+import {Cursors, Cur, Keys, Schemas, Writer, Writers} from "../Cursors.sol";
 using Cursors for Cur;
 using Writers for Writer;
 
@@ -23,7 +23,7 @@ abstract contract Provision is CommandBase, ProvisionHook {
     uint internal immutable provisionId = commandId(PROVISION);
 
     constructor() {
-        emit Command(host, PROVISION, INPUT, provisionId, Channels.Setup, Channels.Custodies);
+        emit Command(host, PROVISION, INPUT, provisionId, State.Empty, State.Custodies);
     }
 
     function provision(
@@ -51,7 +51,7 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
     uint internal immutable provisionFromBalanceId = commandId(PFB);
 
     constructor() {
-        emit Command(host, PFB, Schemas.Node, provisionFromBalanceId, Channels.Balances, Channels.Custodies);
+        emit Command(host, PFB, Schemas.Node, provisionFromBalanceId, State.Balances, State.Custodies);
     }
 
     function provisionFromBalance(
@@ -59,22 +59,16 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
     ) external payable onlyCommand(provisionFromBalanceId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
+        Writer memory writer = Writers.allocCustodies(stateCount);
         uint toHost = request.nodeAfter(0);
         if (toHost == 0) revert Cursors.ZeroNode();
-        Writer memory writer = Writers.allocCustodies(stateCount);
 
         while (state.i < state.bound) {
-            AssetAmount memory balance = state.unpackBalanceValue();
-            provision(c.account, toHost, balance.asset, balance.meta, balance.amount);
-            writer.appendCustody(toHost, balance.asset, balance.meta, balance.amount);
+            (bytes32 asset, bytes32 meta, uint amount) = state.unpackBalance();
+            provision(c.account, toHost, asset, meta, amount);
+            writer.appendCustody(toHost, asset, meta, amount);
         }
 
         return state.complete(writer);
     }
 }
-
-
-
-
-
-

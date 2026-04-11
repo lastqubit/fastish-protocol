@@ -19,9 +19,11 @@ import {
 
 describe("Cursors", () => {
   let helper: Awaited<ReturnType<typeof deploy>>;
+  let operation: Awaited<ReturnType<typeof deploy>>;
 
   before(async () => {
     helper = await deploy("TestCursorHelper");
+    operation = await deploy("TestOperation");
   });
 
   describe("Writers", () => {
@@ -145,15 +147,15 @@ describe("Cursors", () => {
       expect(i).to.equal(149n);
     });
 
-    it("complete reverts ZeroCursor when bound is not initialized", async () => {
-      await expect(helper.testCursorCompleteEmpty("0x", 0n))
+    it("complete reverts ZeroCursor when prime run is empty", async () => {
+      await expect(helper.testCursorCompleteEmpty("0x", 1n))
         .to.be.revertedWithCustomError(helper, "ZeroCursor");
     });
 
-    it("complete reverts ZeroCursor when prime input remains", async () => {
+    it("complete reverts IncompleteCursor when prime input remains", async () => {
       const source = concat(encodeBalanceBlock(asset, meta, 1n), encodeBalanceBlock(asset, meta, 2n));
       await expect(helper.testCursorCompletePartial(source, 1n))
-        .to.be.revertedWithCustomError(helper, "ZeroCursor");
+        .to.be.revertedWithCustomError(helper, "IncompleteCursor");
     });
 
     it("complete succeeds after the prime run is consumed", async () => {
@@ -208,6 +210,28 @@ describe("Cursors", () => {
     it("authLast reverts MalformedBlocks when trailing auth is missing", async () => {
       await expect(helper.testAuthLast(encodeAmountBlock(asset, meta, amount), 1n, 77n))
         .to.be.revertedWithCustomError(helper, "MalformedBlocks");
+    });
+
+    it("accepts matching 2:1 ratio between state and request prime runs", async () => {
+      const state = concat(
+        encodeBalanceBlock(asset, meta, 1n),
+        encodeBalanceBlock(asset, meta, 2n),
+      );
+      const request = encodeAmountBlock(asset, meta, 3n);
+
+      expect(await operation.testCheckCursorRatio(state, 2n, request, 1n)).to.equal(true);
+    });
+
+    it("reverts BadRatio when state and request prime runs break the expected ratio", async () => {
+      const state = concat(
+        encodeBalanceBlock(asset, meta, 1n),
+        encodeBalanceBlock(asset, meta, 2n),
+        encodeBalanceBlock(asset, meta, 3n),
+      );
+      const request = encodeAmountBlock(asset, meta, 4n);
+
+      await expect(operation.testCheckCursorRatio(state, 2n, request, 1n))
+        .to.be.revertedWithCustomError(operation, "BadRatio");
     });
   });
 

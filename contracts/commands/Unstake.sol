@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { AssetAmount, Cur, Cursors, Writer, Writers } from "../Cursors.sol";
 
 string constant UBTB = "unstakeBalanceToBalances";
@@ -15,7 +15,7 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, UBTB, input, unstakeBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        emit Command(host, UBTB, input, unstakeBalanceToBalancesId, State.Balances, State.Balances);
     }
 
     /// @dev Override to unstake or redeem a balance position.

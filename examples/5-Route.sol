@@ -14,7 +14,7 @@ pragma solidity ^0.8.33;
 // and an AMOUNT block. The command reads both, forwards the asset to the target
 // host, and returns a CUSTODY block confirming the held asset.
 
-import { CommandBase, CommandContext, Channels } from "../contracts/Commands.sol";
+import { CommandBase, CommandContext, State } from "../contracts/Commands.sol";
 import { Cursors, Cur, Schemas } from "../contracts/Cursors.sol";
 
 using Cursors for Cur;
@@ -33,7 +33,7 @@ abstract contract MyCommand is CommandBase {
 
     constructor() {
         // CUSTODIES = this command returns CUSTODY blocks (assets held by another host).
-        emit Command(host, NAME, INPUT, myCommandId, Channels.Setup, Channels.Custodies);
+        emit Command(host, NAME, INPUT, myCommandId, State.Empty, State.Custodies);
     }
 
     // sendToHost is the virtual hook implementers override to move the asset.
@@ -44,8 +44,7 @@ abstract contract MyCommand is CommandBase {
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
         // Create a cursor for the request, then unwrap the bundle into a
         // second cursor over its member stream.
-        Cur memory input = cursor(c.request);
-        input = input.bundle();
+        Cur memory input = cursor(c.request).bundle();
 
         // The first bundled member is the ROUTE block.
         uint host = input.unpackRouteUint();

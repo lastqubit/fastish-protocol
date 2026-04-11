@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, Channels } from "./Base.sol";
+import { CommandBase, CommandContext, State } from "./Base.sol";
 import { Cursors, Cur } from "../Cursors.sol";
 
 string constant NAME = "create";
@@ -12,7 +12,7 @@ abstract contract Create is CommandBase {
     uint internal immutable createId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, NAME, input, createId, Channels.Setup, Channels.Setup);
+        emit Command(host, NAME, input, createId, State.Empty, State.Empty);
     }
 
     /// @dev Override to create or initialize an object described by `input`.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, Channels } from "./Base.sol";
+import { CommandBase, CommandContext, State } from "./Base.sol";
 import { Cursors, Cur, Writers, Writer } from "../Cursors.sol";
 using Cursors for Cur;
 using Writers for Writer;
@@ -14,7 +14,7 @@ abstract contract MintToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, NAME, input, mintToBalancesId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, input, mintToBalancesId, State.Empty, State.Balances);
     }
 
     /// @dev Override to mint balances described by the current `input` stream

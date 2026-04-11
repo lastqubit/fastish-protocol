@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { AssetAmount, HostAmount, Cur, Cursors, Writer, Writers } from "../Cursors.sol";
 
 string constant RDBTB = "redeemFromBalanceToBalances";
@@ -16,7 +16,7 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RDBTB, input, redeemFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        emit Command(host, RDBTB, input, redeemFromBalanceToBalancesId, State.Balances, State.Balances);
     }
 
     /// @dev Override to redeem a balance position into balances.
@@ -53,7 +53,7 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RDCTB, input, redeemFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        emit Command(host, RDCTB, input, redeemFromCustodyToBalancesId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to redeem a custody position into balances.

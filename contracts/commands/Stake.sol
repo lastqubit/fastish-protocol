@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { AssetAmount, HostAmount, Cur, Cursors, Writer, Writers } from "../Cursors.sol";
 
 string constant SBTB = "stakeBalanceToBalances";
@@ -17,7 +17,7 @@ abstract contract StakeBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, SBTB, input, stakeBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        emit Command(host, SBTB, input, stakeBalanceToBalancesId, State.Balances, State.Balances);
     }
 
     /// @dev Override to stake a balance position and append resulting balances
@@ -54,7 +54,7 @@ abstract contract StakeCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, SCTB, input, stakeCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        emit Command(host, SCTB, input, stakeCustodyToBalancesId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to stake a custody position and append resulting balances
@@ -89,7 +89,7 @@ abstract contract StakeCustodyToPosition is CommandBase {
     uint internal immutable stakeCustodyToPositionId = commandId(SCTP);
 
     constructor(string memory input) {
-        emit Command(host, SCTP, input, stakeCustodyToPositionId, Channels.Custodies, Channels.Setup);
+        emit Command(host, SCTP, input, stakeCustodyToPositionId, State.Custodies, State.Empty);
     }
 
     /// @dev Override to stake a custody position into a non-balance setup

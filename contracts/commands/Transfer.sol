@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { Cursors, Cur, Schemas } from "../Cursors.sol";
 using Cursors for Cur;
 
@@ -12,7 +12,7 @@ abstract contract Transfer is CommandBase {
     uint internal immutable transferId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, INPUT, transferId, Channels.Setup, Channels.Setup);
+        emit Command(host, NAME, INPUT, transferId, State.Empty, State.Empty);
     }
 
     /// @dev Override to transfer funds from `from` to `to`.

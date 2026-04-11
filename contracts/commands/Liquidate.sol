@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase, Channels} from "./Base.sol";
+import {CommandContext, CommandBase, State} from "./Base.sol";
 import {AssetAmount, HostAmount, Cur, Cursors, Writers, Writer} from "../Cursors.sol";
 
 string constant LFBTB = "liquidateFromBalanceToBalances";
@@ -16,7 +16,7 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, LFBTB, input, liquidateFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        emit Command(host, LFBTB, input, liquidateFromBalanceToBalancesId, State.Balances, State.Balances);
     }
 
     /// @dev Override to liquidate using a balance repayment amount.
@@ -53,7 +53,7 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, LFCTB, input, liquidateFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        emit Command(host, LFCTB, input, liquidateFromCustodyToBalancesId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to liquidate using a custody repayment amount.

@@ -17,17 +17,13 @@ abstract contract OperationBase is AccessControl {
         return Cursors.open(source);
     }
 
-    function cursor(bytes calldata source, uint g) internal pure returns (Cur memory cur, uint count) {
+    function cursor(bytes calldata source, uint group) internal pure returns (Cur memory cur, uint count) {
         cur = Cursors.open(source);
-        (, count) = cur.primeRun(g);
-        if (count == 0) revert Cursors.ZeroCursor();
+        (, count) = cur.primeRun(group);
     }
 
     function checkRatio(uint lc, uint lg, uint rc, uint rg) internal pure {
-        if (lg == 0 || rg == 0) revert Cursors.ZeroGroup();
-        if (lc == 0 || rc == 0) revert Cursors.ZeroCursor();
-        if (lc % lg != 0 || rc % rg != 0) revert Cursors.BadRatio();
-        if (lc / lg != rc / rg) revert Cursors.BadRatio();
+        if (lg > 0 && rg > 0 && lc * rg != rc * lg) revert Cursors.BadRatio();
     }
 
     function callTo(uint node, uint value, bytes memory data) internal returns (bytes memory out) {
@@ -39,7 +35,6 @@ abstract contract OperationBase is AccessControl {
         }
     }
 }
-
 
 
 

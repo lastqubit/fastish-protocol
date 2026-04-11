@@ -136,10 +136,10 @@ describe("BorrowAgainstCustodyToBalance", () => {
 
   // ── Error cases ────────────────────────────────────────────────────────────
 
-  it("reverts EmptyRequest when state has no CUSTODY blocks", async () => {
+  it("reverts ZeroCursor when state has no CUSTODY blocks", async () => {
     const request = encodeRouteBlock("0x01");
     await expect(callAs(0, ctx({ request })))
-      .to.be.revertedWithCustomError(host, "EmptyRequest");
+      .to.be.revertedWithCustomError(host, "ZeroCursor");
   });
 
   it("uses a zero-initialized input block when a custody is missing a matching request block", async () => {

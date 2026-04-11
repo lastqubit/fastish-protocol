@@ -10,7 +10,7 @@ pragma solidity ^0.8.33;
 // Use Writers when you need to build the response incrementally rather than
 // returning a single pre-encoded block.
 
-import {CommandBase, CommandContext, Channels} from "../contracts/Commands.sol";
+import {CommandBase, CommandContext, State} from "../contracts/Commands.sol";
 import {Cur, Cursors, Writer, Writers, Schemas} from "../contracts/Cursors.sol";
 
 using Cursors for Cur;
@@ -22,7 +22,7 @@ abstract contract MyCommand is CommandBase {
     uint internal immutable myCommandId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Amount, myCommandId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, Schemas.Amount, myCommandId, State.Empty, State.Balances);
     }
 
     function myCommand(

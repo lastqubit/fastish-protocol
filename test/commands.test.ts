@@ -114,10 +114,10 @@ describe("Commands", () => {
       ).to.be.revertedWithCustomError(host, "UnauthorizedCaller");
     });
 
-    it("reverts EmptyRequest when request has no AMOUNT blocks", async () => {
+    it("reverts ZeroCursor when request has no AMOUNT blocks", async () => {
       await expect(
         callAs(0, "deposit", ctx({ request: "0x" }))
-      ).to.be.revertedWithCustomError(host, "EmptyRequest");
+      ).to.be.revertedWithCustomError(host, "ZeroCursor");
     });
 
     it("reverts MalformedBlocks for request with only 4 garbage bytes", async () => {
@@ -299,9 +299,9 @@ describe("Commands", () => {
       expect(result).to.equal(encodeBalanceBlock(asset, meta, 100n));
     });
 
-    it("reverts EmptyRequest when request has no AMOUNT blocks", async () => {
+    it("reverts ZeroCursor when request has no AMOUNT blocks", async () => {
       await expect(callAs(0, "debitAccount", ctx()))
-        .to.be.revertedWithCustomError(host, "EmptyRequest");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
 
     it("processes multiple AMOUNT blocks and emits DebitFromCalled for each", async () => {
@@ -398,11 +398,11 @@ describe("Commands", () => {
       expect(result).to.equal(encodeCustodyBlock(hostId, asset, meta, 600n));
     });
 
-    it("reverts EmptyRequest when state has no BALANCE blocks", async () => {
+    it("reverts ZeroCursor when state has no BALANCE blocks", async () => {
       const hostId = 123456n;
       const request = encodeNodeBlock(hostId);
       await expect(callAs(0, "provisionFromBalance", ctx({ request })))
-        .to.be.revertedWithCustomError(host, "EmptyRequest");
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
 
     it("reverts ZeroNode when no NODE block and backup is 0", async () => {

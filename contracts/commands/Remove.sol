@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, Channels } from "./Base.sol";
+import { CommandBase, CommandContext, State } from "./Base.sol";
 import { Cursors, Cur } from "../Cursors.sol";
 
 string constant NAME = "remove";
@@ -12,7 +12,7 @@ abstract contract Remove is CommandBase {
     uint internal immutable removeId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, NAME, input, removeId, Channels.Setup, Channels.Setup);
+        emit Command(host, NAME, input, removeId, State.Empty, State.Empty);
     }
 
     /// @dev Override to remove or dismantle an object described by `input`.

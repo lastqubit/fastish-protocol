@@ -17,6 +17,7 @@ library Cursors {
     error MalformedBlocks();
     error InvalidBlock();
     error ZeroCursor();
+    error IncompleteCursor();
     error ZeroGroup();
     error ZeroRecipient();
     error ZeroNode();
@@ -77,6 +78,7 @@ library Cursors {
         if (group == 0) revert ZeroGroup();
         key = cur.len < 4 ? bytes4(0) : bytes4(msg.data[cur.offset:cur.offset + 4]);
         (count, cur.bound) = countRun(cur, cur.i, key);
+        if (count == 0) revert ZeroCursor();
         if (count % group != 0) revert BadRatio();
     }
 
@@ -108,11 +110,11 @@ library Cursors {
     }
 
     function complete(Cur memory cur) internal pure {
-        if (cur.bound == 0 || cur.i < cur.bound) revert ZeroCursor();
+        if (cur.bound == 0 || cur.i != cur.bound) revert IncompleteCursor();
     }
 
     function complete(Cur memory cur, Writer memory writer) internal pure returns (bytes memory) {
-        if (cur.bound == 0 || cur.i < cur.bound) revert ZeroCursor();
+        if (cur.bound == 0 || cur.i != cur.bound) revert IncompleteCursor();
         return Writers.finish(writer);
     }
 
@@ -341,6 +343,14 @@ library Cursors {
         value.asset = bytes32(msg.data[abs + 32:abs + 64]);
         value.meta = bytes32(msg.data[abs + 64:abs + 96]);
         value.amount = uint(bytes32(msg.data[abs + 96:abs + 128]));
+    }
+
+    function unpackAllocation(Cur memory cur) internal pure returns (uint host, bytes32 asset, bytes32 meta, uint amount) {
+        uint abs = consume(cur, Keys.Allocation, 128, 128);
+        host = uint(bytes32(msg.data[abs:abs + 32]));
+        asset = bytes32(msg.data[abs + 32:abs + 64]);
+        meta = bytes32(msg.data[abs + 64:abs + 96]);
+        amount = uint(bytes32(msg.data[abs + 96:abs + 128]));
     }
 
     function unpackAllocationValue(Cur memory cur) internal pure returns (HostAmount memory value) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Channels } from "./utils/Channels.sol";
+import { State } from "./utils/State.sol";
 import { Accounts } from "./utils/Accounts.sol";
 import { Amounts, Assets } from "./utils/Assets.sol";
 import { ECDSA } from "./utils/ECDSA.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { AssetAmount, Cur, Cursors, HostAmount, Writer, Writers } from "../Cursors.sol";
 using Cursors for Cur;
 using Writers for Writer;
@@ -13,7 +13,7 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
     uint internal immutable swapExactBalanceToBalanceId = commandId(SEBTB);
 
     constructor(string memory input) {
-        emit Command(host, SEBTB, input, swapExactBalanceToBalanceId, Channels.Balances, Channels.Balances);
+        emit Command(host, SEBTB, input, swapExactBalanceToBalanceId, State.Balances, State.Balances);
     }
 
     /// @dev Override to swap an exact balance input into a balance output.
@@ -46,7 +46,7 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
     uint internal immutable swapExactCustodyToBalanceId = commandId(SECTB);
 
     constructor(string memory input) {
-        emit Command(host, SECTB, input, swapExactCustodyToBalanceId, Channels.Custodies, Channels.Balances);
+        emit Command(host, SECTB, input, swapExactCustodyToBalanceId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to swap an exact custody input into a balance output.

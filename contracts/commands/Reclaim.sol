@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { Cursors, Cur, Writers, Writer } from "../Cursors.sol";
 
 string constant NAME = "reclaimToBalances";
@@ -15,7 +15,7 @@ abstract contract ReclaimToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, NAME, input, reclaimToBalancesId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, input, reclaimToBalancesId, State.Empty, State.Balances);
     }
 
     /// @dev Override to reclaim balances described by the current `input`

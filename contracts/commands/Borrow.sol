@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { AssetAmount, HostAmount, Cur, Cursors, Writer, Writers } from "../Cursors.sol";
 
 string constant BABTB = "borrowAgainstBalanceToBalance";
@@ -14,7 +14,7 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     uint internal immutable borrowAgainstCustodyToBalanceId = commandId(BACTB);
 
     constructor(string memory input) {
-        emit Command(host, BACTB, input, borrowAgainstCustodyToBalanceId, Channels.Custodies, Channels.Balances);
+        emit Command(host, BACTB, input, borrowAgainstCustodyToBalanceId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to borrow against a custody position.
@@ -47,7 +47,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     uint internal immutable borrowAgainstBalanceToBalanceId = commandId(BABTB);
 
     constructor(string memory input) {
-        emit Command(host, BABTB, input, borrowAgainstBalanceToBalanceId, Channels.Balances, Channels.Balances);
+        emit Command(host, BABTB, input, borrowAgainstBalanceToBalanceId, State.Balances, State.Balances);
     }
 
     /// @dev Override to borrow against a balance position.

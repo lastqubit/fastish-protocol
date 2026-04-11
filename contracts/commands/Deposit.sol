@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { Cursors, Cur, Schemas, Writer, Writers } from "../Cursors.sol";
 
 string constant NAME = "deposit";
@@ -14,7 +14,7 @@ abstract contract Deposit is CommandBase {
     uint internal immutable depositId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Amount, depositId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, Schemas.Amount, depositId, State.Empty, State.Balances);
     }
 
     /// @dev Override to receive externally sourced funds for `account`.

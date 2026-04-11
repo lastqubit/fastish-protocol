@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
 import { AssetAmount, Cur, Cursors, HostAmount, Writer, Writers } from "../Cursors.sol";
 
 using Cursors for Cur;
@@ -18,7 +18,7 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, ALFCTB, input, addLiquidityFromCustodiesToBalancesId, Channels.Custodies, Channels.Balances);
+        emit Command(host, ALFCTB, input, addLiquidityFromCustodiesToBalancesId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to add liquidity from the current `custodies` stream
@@ -56,7 +56,7 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RLFCTB, input, removeLiquidityFromCustodyToBalancesId, Channels.Custodies, Channels.Balances);
+        emit Command(host, RLFCTB, input, removeLiquidityFromCustodyToBalancesId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to remove liquidity from a custody position.
@@ -93,7 +93,7 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, ALFBTB, input, addLiquidityFromBalancesToBalancesId, Channels.Balances, Channels.Balances);
+        emit Command(host, ALFBTB, input, addLiquidityFromBalancesToBalancesId, State.Balances, State.Balances);
     }
 
     /// @dev Override to add liquidity from the current `balances` stream
@@ -130,7 +130,7 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RLFBTB, input, removeLiquidityFromBalanceToBalancesId, Channels.Balances, Channels.Balances);
+        emit Command(host, RLFBTB, input, removeLiquidityFromBalanceToBalancesId, State.Balances, State.Balances);
     }
 
     /// @dev Override to remove liquidity from a balance position.
