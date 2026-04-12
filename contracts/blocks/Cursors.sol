@@ -219,7 +219,7 @@ library Cursors {
     /// @param value 32-byte payload.
     /// @return Encoded block bytes.
     function create32(bytes4 key, bytes32 value) internal pure returns (bytes memory) {
-        return bytes.concat(key, bytes4(uint32(0x20)), bytes4(uint32(0x20)), value);
+        return bytes.concat(key, bytes4(uint32(0x20)), value);
     }
 
     /// @notice Encode a block with two 32-byte payload words (64-byte payload).
@@ -228,7 +228,7 @@ library Cursors {
     /// @param b Second payload word.
     /// @return Encoded block bytes.
     function create64(bytes4 key, bytes32 a, bytes32 b) internal pure returns (bytes memory) {
-        return bytes.concat(key, bytes4(uint32(0x40)), bytes4(uint32(0x40)), a, b);
+        return bytes.concat(key, bytes4(uint32(0x40)), a, b);
     }
 
     /// @notice Encode a block with three 32-byte payload words (96-byte payload).
@@ -238,7 +238,7 @@ library Cursors {
     /// @param c Third payload word.
     /// @return Encoded block bytes.
     function create96(bytes4 key, bytes32 a, bytes32 b, bytes32 c) internal pure returns (bytes memory) {
-        return bytes.concat(key, bytes4(uint32(0x60)), bytes4(uint32(0x60)), a, b, c);
+        return bytes.concat(key, bytes4(uint32(0x60)), a, b, c);
     }
 
     /// @notice Encode a block with four 32-byte payload words (128-byte payload).
@@ -249,7 +249,7 @@ library Cursors {
     /// @param d Fourth payload word.
     /// @return Encoded block bytes.
     function create128(bytes4 key, bytes32 a, bytes32 b, bytes32 c, bytes32 d) internal pure returns (bytes memory) {
-        return bytes.concat(key, bytes4(uint32(0x80)), bytes4(uint32(0x80)), a, b, c, d);
+        return bytes.concat(key, bytes4(uint32(0x80)), a, b, c, d);
     }
 
     /// @notice Encode a BOUNTY block.

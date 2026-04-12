@@ -44,6 +44,23 @@ contract TestCursorHelper {
         return w.dst;
     }
 
+    function testToBountyBlock(uint amount, bytes32 relayer) external pure returns (bytes memory) {
+        return Cursors.toBountyBlock(amount, relayer);
+    }
+
+    function testToBalanceBlock(bytes32 asset, bytes32 meta, uint amount) external pure returns (bytes memory) {
+        return Cursors.toBalanceBlock(asset, meta, amount);
+    }
+
+    function testToCustodyBlock(
+        uint host_,
+        bytes32 asset,
+        bytes32 meta,
+        uint amount
+    ) external pure returns (bytes memory) {
+        return Cursors.toCustodyBlock(host_, asset, meta, amount);
+    }
+
     function testWriterFinishIncomplete() external pure returns (bytes memory) {
         Writer memory w = Writers.alloc(Sizes.Balance);
         return Writers.finish(w);

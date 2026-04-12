@@ -62,6 +62,28 @@ describe("Cursors", () => {
       expect(await helper.testToTxValue(data)).to.deep.equal([from_, to_, asset, meta, amount]);
     });
 
+    it("toBalanceBlock returns a valid encoded BALANCE block", async () => {
+      const data: string = await helper.testToBalanceBlock(asset, meta, amount);
+      expect(ethers.getBytes(data).length).to.equal(104);
+      expect(data.slice(0, 10)).to.equal(Keys.Balance);
+      expect(await helper.testUnpackBalance(data)).to.deep.equal([asset, meta, amount]);
+    });
+
+    it("toCustodyBlock returns a valid encoded CUSTODY block", async () => {
+      const data: string = await helper.testToCustodyBlock(1234n, asset, meta, amount);
+      expect(ethers.getBytes(data).length).to.equal(136);
+      expect(data.slice(0, 10)).to.equal(Keys.Custody);
+    });
+
+    it("toBountyBlock returns a valid encoded BOUNTY block", async () => {
+      const relayer = ethers.zeroPadValue("0x05", 32);
+      const data: string = await helper.testToBountyBlock(amount, relayer);
+      const bytes = ethers.getBytes(data);
+      expect(bytes.length).to.equal(72);
+      expect(data.slice(0, 10)).to.equal(Keys.Bounty);
+      expect(ethers.hexlify(bytes.slice(4, 8))).to.equal("0x00000040");
+    });
+
     it("finish reverts EmptyRequest when writer is unused", async () => {
       await expect(helper.testWriterFinishIncomplete()).to.be.revertedWithCustomError(helper, "EmptyRequest");
     });
