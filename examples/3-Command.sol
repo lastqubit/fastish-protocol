@@ -11,10 +11,10 @@ pragma solidity ^0.8.33;
 //   2. A Command event emitted in the constructor to announce the command to the protocol.
 //   3. The onlyCommand modifier on the entrypoint to enforce the trusted caller and target.
 
-import {CommandBase, CommandContext, Channels} from "../contracts/Commands.sol";
-import {Cursors, Cursor, Schemas} from "../contracts/Cursors.sol";
+import {CommandBase, CommandContext, State} from "../contracts/Commands.sol";
+import {Cursors, Cur, Schemas} from "../contracts/Cursors.sol";
 
-using Cursors for Cursor;
+using Cursors for Cur;
 
 // NAME is the human-readable command name. It is used to derive the command ID
 // and is published in the Command event so off-chain tooling can discover it.
@@ -29,7 +29,7 @@ abstract contract MyCommand is CommandBase {
         // Announce this command to the rootzero protocol.
         // Args: host id, command name, request schema, command id, input channel, output channel.
         // SETUP = no structured input channel; BALANCES = this command returns BALANCE blocks.
-        emit Command(host, NAME, Schemas.Amount, myCommandId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, Schemas.Amount, myCommandId, State.Empty, State.Balances);
     }
 
     function myCommand(
@@ -38,14 +38,16 @@ abstract contract MyCommand is CommandBase {
         // onlyCommand checks that msg.sender is the trusted rootzero runtime and that
         // c.target matches this command's ID (or is 0, meaning "any command").
 
-        // Open the first request block as a cursor and decode the AMOUNT.
-        Cursor memory input = Cursors.openBlock(c.request, 0);
+        // Create a request cursor using the shared command helper and decode
+        // the first AMOUNT block.
+        Cur memory input = cursor(c.request);
         (bytes32 asset, bytes32 meta, uint amount) = input.unpackAmount();
 
         // Apply your app logic here (e.g. debit the account), then return a BALANCE block.
         return Cursors.toBalanceBlock(asset, meta, amount);
     }
 }
+
 
 
 

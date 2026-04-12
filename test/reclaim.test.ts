@@ -112,9 +112,9 @@ describe("ReclaimToBalances", () => {
 
   // ── Error cases ────────────────────────────────────────────────────────────
 
-  it("reverts EmptyRequest when request has no input blocks", async () => {
+  it("reverts ZeroCursor when request has no input blocks", async () => {
     await expect(callAs(0, ctx()))
-      .to.be.revertedWithCustomError(host, "EmptyRequest");
+      .to.be.revertedWithCustomError(host, "ZeroCursor");
   });
 });
 

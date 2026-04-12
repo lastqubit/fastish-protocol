@@ -1,82 +1,85 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, HostAmount, Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
+import { AssetAmount, HostAmount, Cur, Cursors, Writer, Writers } from "../Cursors.sol";
 
 string constant BABTB = "borrowAgainstBalanceToBalance";
 string constant BACTB = "borrowAgainstCustodyToBalance";
 
-using Cursors for Cursor;
+using Cursors for Cur;
 using Writers for Writer;
 
+/// @title BorrowAgainstCustodyToBalance
+/// @notice Command that issues loans against CUSTODY state positions, emitting BALANCE outputs.
 abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     uint internal immutable borrowAgainstCustodyToBalanceId = commandId(BACTB);
 
     constructor(string memory input) {
-        emit Command(host, BACTB, input, borrowAgainstCustodyToBalanceId, Channels.Custodies, Channels.Balances);
+        emit Command(host, BACTB, input, borrowAgainstCustodyToBalanceId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to borrow against a custody position.
-    /// `input` is the request cursor for the current iteration; implementations
-    /// validate and unpack it as needed.
+    /// `request` is the live auxiliary request cursor for this command;
+    /// implementations validate and unpack it as needed.
     function borrowAgainstCustodyToBalance(
         bytes32 account,
         HostAmount memory custody,
-        Cursor memory input
+        Cur memory request
     ) internal virtual returns (AssetAmount memory);
 
     function borrowAgainstCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(borrowAgainstCustodyToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Cursors.openRun(c.state, 0, Keys.Custody);
-        Writer memory writer = Writers.allocBalances(count);
-        Cursor memory input;
+        (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
+        Cur memory request = cursor(c.request);
+        Writer memory writer = Writers.allocBalances(stateCount);
 
-        while (custodies.i < custodies.end) {
-            input = Cursors.openBlock(c.request, input.next);
-            HostAmount memory custody = custodies.unpackCustodyValue();
-            AssetAmount memory out = borrowAgainstCustodyToBalance(c.account, custody, input);
+        while (state.i < state.bound) {
+            HostAmount memory custody = state.unpackCustodyValue();
+            AssetAmount memory out = borrowAgainstCustodyToBalance(c.account, custody, request);
             writer.appendNonZeroBalance(out);
         }
 
-        return writer.finish();
+        return state.complete(writer);
     }
 }
 
+/// @title BorrowAgainstBalanceToBalance
+/// @notice Command that issues loans against BALANCE state positions, emitting BALANCE outputs.
 abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     uint internal immutable borrowAgainstBalanceToBalanceId = commandId(BABTB);
 
     constructor(string memory input) {
-        emit Command(host, BABTB, input, borrowAgainstBalanceToBalanceId, Channels.Balances, Channels.Balances);
+        emit Command(host, BABTB, input, borrowAgainstBalanceToBalanceId, State.Balances, State.Balances);
     }
 
     /// @dev Override to borrow against a balance position.
-    /// `input` is the request cursor for the current iteration; implementations
-    /// validate and unpack it as needed.
+    /// `request` is the live auxiliary request cursor for this command;
+    /// implementations validate and unpack it as needed.
     function borrowAgainstBalanceToBalance(
         bytes32 account,
         AssetAmount memory balance,
-        Cursor memory input
+        Cur memory request
     ) internal virtual returns (AssetAmount memory);
 
     function borrowAgainstBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(borrowAgainstBalanceToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
-        Writer memory writer = Writers.allocBalances(count);
-        Cursor memory input;
+        (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
+        Cur memory request = cursor(c.request);
+        Writer memory writer = Writers.allocBalances(stateCount);
 
-        while (balances.i < balances.end) {
-            input = Cursors.openBlock(c.request, input.next);
-            AssetAmount memory balance = balances.unpackBalanceValue();
-            AssetAmount memory out = borrowAgainstBalanceToBalance(c.account, balance, input);
+        while (state.i < state.bound) {
+            AssetAmount memory balance = state.unpackBalanceValue();
+            AssetAmount memory out = borrowAgainstBalanceToBalance(c.account, balance, request);
             writer.appendNonZeroBalance(out);
         }
 
-        return writer.finish();
+        return state.complete(writer);
     }
 }
+
 
 
 

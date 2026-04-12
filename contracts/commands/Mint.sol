@@ -1,20 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, Channels } from "./Base.sol";
-import { Cursors, Cursor, Writers, Writer, Keys } from "../Cursors.sol";
-using Cursors for Cursor;
+import { CommandBase, CommandContext, State } from "./Base.sol";
+import { Cursors, Cur, Writers, Writer } from "../Cursors.sol";
+using Cursors for Cur;
 using Writers for Writer;
 
 string constant NAME = "mintToBalances";
 
+/// @title MintToBalances
+/// @notice Command that mints new BALANCE outputs from a request stream.
+/// The output-to-input ratio is set at construction via `scaledRatio`.
+/// The hook receives both the request cursor and output writer directly to allow
+/// flexible parsing patterns.
 abstract contract MintToBalances is CommandBase {
     uint internal immutable mintToBalancesId = commandId(NAME);
     uint private immutable outScale;
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, NAME, input, mintToBalancesId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, input, mintToBalancesId, State.Empty, State.Balances);
     }
 
     /// @dev Override to mint balances described by the current `input` stream
@@ -24,24 +29,25 @@ abstract contract MintToBalances is CommandBase {
     /// capacity implied by this command's configured `scaledRatio`.
     function mintToBalances(
         bytes32 account,
-        Cursor memory input,
+        Cur memory input,
         Writer memory out
     ) internal virtual;
 
     function mintToBalances(
         CommandContext calldata c
     ) external payable onlyCommand(mintToBalancesId, c.target) returns (bytes memory) {
-        (Cursor memory inputs, uint count) = Cursors.openInput(c.request, 0);
+        (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
 
-        while (inputs.i < inputs.end) {
-            Cursor memory input = inputs.take();
-            mintToBalances(c.account, input, writer);
+        while (request.i < request.bound) {
+            mintToBalances(c.account, request, writer);
         }
 
-        return writer.finish();
+        return request.complete(writer);
     }
 }
+
+
 
 
 

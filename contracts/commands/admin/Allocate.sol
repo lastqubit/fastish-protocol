@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, Channels } from "../Base.sol";
-import { Cursors, Cursor, HostAmount, Keys, Schemas } from "../../Cursors.sol";
-using Cursors for Cursor;
+import { CommandBase, CommandContext, State } from "../Base.sol";
+import { Cursors, Cur, Schemas } from "../../Cursors.sol";
+using Cursors for Cur;
 
 string constant NAME = "allocate";
 
+/// @title Allocate
+/// @notice Admin command that applies cross-host allocation entries via a virtual hook.
+/// Each ALLOCATION block in the request calls `allocate`. Only callable by the admin account.
 abstract contract Allocate is CommandBase {
     uint internal immutable allocateId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Allocation, allocateId, Channels.Setup, Channels.Setup);
+        emit Command(host, NAME, Schemas.Allocation, allocateId, State.Empty, State.Empty);
     }
 
     /// @dev Override to apply a single allocation entry.
@@ -19,16 +22,18 @@ abstract contract Allocate is CommandBase {
     function allocate(uint host, bytes32 asset, bytes32 meta, uint amount) internal virtual;
 
     function allocate(CommandContext calldata c) external payable onlyAdmin(c.account) onlyCommand(allocateId, c.target) returns (bytes memory) {
-        Cursor memory allocations = Cursors.openRun(c.request, 0, Keys.Allocation, 1);
+        (Cur memory request, , ) = cursor(c.request, 1);
 
-        while (allocations.i < allocations.end) {
-            HostAmount memory v = allocations.unpackAllocationValue();
-            allocate(v.host, v.asset, v.meta, v.amount);
+        while (request.i < request.bound) {
+            (uint host, bytes32 asset, bytes32 meta, uint amount) = request.unpackAllocation();
+            allocate(host, asset, meta, amount);
         }
 
-        return allocations.complete();
+        request.complete();
+        return "";
     }
 }
+
 
 
 

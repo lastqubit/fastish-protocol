@@ -10,10 +10,10 @@ pragma solidity ^0.8.33;
 // Use Writers when you need to build the response incrementally rather than
 // returning a single pre-encoded block.
 
-import {CommandBase, CommandContext, Channels} from "../contracts/Commands.sol";
-import {Cursors, Cursor, Writers, Writer, Keys, Schemas} from "../contracts/Cursors.sol";
+import {CommandBase, CommandContext, State} from "../contracts/Commands.sol";
+import {Cur, Cursors, Writer, Writers, Schemas} from "../contracts/Cursors.sol";
 
-using Cursors for Cursor;
+using Cursors for Cur;
 using Writers for Writer;
 
 string constant NAME = "myCommand";
@@ -22,19 +22,19 @@ abstract contract MyCommand is CommandBase {
     uint internal immutable myCommandId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Amount, myCommandId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, Schemas.Amount, myCommandId, State.Empty, State.Balances);
     }
 
     function myCommand(
         CommandContext calldata c
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
-        // Bound a cursor to the contiguous AMOUNT prefix and count how many
-        // output BALANCE blocks we need to allocate.
-        (Cursor memory inputs, uint count) = Cursors.openRun(c.request, 0, Keys.Amount);
+        // Create the request cursor in the same way commands do, then size
+        // the writer from the block count returned by primeRun.
+        (Cur memory inputs, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocBalances(count);
 
-        // Walk every AMOUNT block in the request.
-        while (inputs.i < inputs.end) {
+        // Walk every AMOUNT block in the prime run of the request.
+        while (inputs.i < inputs.bound) {
             // Unpack asset, meta, and amount from the next AMOUNT block.
             (bytes32 asset, bytes32 meta, uint amount) = inputs.unpackAmount();
 
@@ -42,10 +42,13 @@ abstract contract MyCommand is CommandBase {
             writer.appendBalance(asset, meta, amount);
         }
 
-        // Finalize and return the encoded BALANCE blocks.
-        return writer.done();
+        // Finalize by checking the cursor completed its prime run, then
+        // return the encoded BALANCE blocks.
+        return inputs.complete(writer);
     }
 }
+
+
 
 
 

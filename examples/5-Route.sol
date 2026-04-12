@@ -6,17 +6,18 @@ pragma solidity ^0.8.33;
 // Route blocks let a command accept arbitrary command-specific parameters
 // alongside standard protocol blocks, without breaking the rootzero wire format.
 //
-// A route block wraps command-specific parameters without breaking the rootzero
-// wire format. It can also be bundled with standard protocol blocks.
+// In the current cursor model, bundled inputs are handled explicitly:
+// create a cursor for the request, call `bundle()`, then consume the bundle
+// members from the returned cursor.
 //
 // This example expects a bundle containing a ROUTE block carrying a `host` ID
 // and an AMOUNT block. The command reads both, forwards the asset to the target
 // host, and returns a CUSTODY block confirming the held asset.
 
-import { CommandBase, CommandContext, Channels } from "../contracts/Commands.sol";
-import { Cursors, Cursor, Schemas } from "../contracts/Cursors.sol";
+import { CommandBase, CommandContext, State } from "../contracts/Commands.sol";
+import { Cursors, Cur, Schemas } from "../contracts/Cursors.sol";
 
-using Cursors for Cursor;
+using Cursors for Cur;
 
 string constant NAME = "myCommand";
 
@@ -32,7 +33,7 @@ abstract contract MyCommand is CommandBase {
 
     constructor() {
         // CUSTODIES = this command returns CUSTODY blocks (assets held by another host).
-        emit Command(host, NAME, INPUT, myCommandId, Channels.Setup, Channels.Custodies);
+        emit Command(host, NAME, INPUT, myCommandId, State.Empty, State.Custodies);
     }
 
     // sendToHost is the virtual hook implementers override to move the asset.
@@ -41,8 +42,9 @@ abstract contract MyCommand is CommandBase {
     function myCommand(
         CommandContext calldata c
     ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
-        // Open the bundled request as a cursor over its member stream.
-        Cursor memory input = Cursors.openBlock(c.request, 0);
+        // Create a cursor for the request, then unwrap the bundle into a
+        // second cursor over its member stream.
+        Cur memory input = cursor(c.request).bundle();
 
         // The first bundled member is the ROUTE block.
         uint host = input.unpackRouteUint();
@@ -57,6 +59,7 @@ abstract contract MyCommand is CommandBase {
         return Cursors.toCustodyBlock(host, asset, meta, amount);
     }
 }
+
 
 
 

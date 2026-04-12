@@ -1,81 +1,86 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { AssetAmount, Cursors, Cursor, HostAmount, Keys, Writer, Writers } from "../Cursors.sol";
-using Cursors for Cursor;
+import { CommandContext, CommandBase, State } from "./Base.sol";
+import { AssetAmount, Cur, Cursors, HostAmount, Writer, Writers } from "../Cursors.sol";
+using Cursors for Cur;
 using Writers for Writer;
 
 string constant SEBTB = "swapExactBalanceToBalance";
 string constant SECTB = "swapExactCustodyToBalance";
 
+/// @title SwapExactBalanceToBalance
+/// @notice Command that swaps each BALANCE state block into a new BALANCE output
+/// using a virtual hook. Each state balance is passed individually to `swapExactBalanceToBalance`.
 abstract contract SwapExactBalanceToBalance is CommandBase {
     uint internal immutable swapExactBalanceToBalanceId = commandId(SEBTB);
 
     constructor(string memory input) {
-        emit Command(host, SEBTB, input, swapExactBalanceToBalanceId, Channels.Balances, Channels.Balances);
+        emit Command(host, SEBTB, input, swapExactBalanceToBalanceId, State.Balances, State.Balances);
     }
 
     /// @dev Override to swap an exact balance input into a balance output.
-    /// `input` is the request cursor for the current iteration; implementations
-    /// validate and unpack it as needed.
+    /// `request` is the live auxiliary request cursor for this command;
+    /// implementations validate and unpack it as needed.
     function swapExactBalanceToBalance(
         bytes32 account,
         AssetAmount memory balance,
-        Cursor memory input
+        Cur memory request
     ) internal virtual returns (AssetAmount memory out);
 
     function swapExactBalanceToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactBalanceToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory balances, uint count) = Cursors.openRun(c.state, 0, Keys.Balance);
-        Writer memory writer = Writers.allocBalances(count);
-        Cursor memory input;
+        (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
+        Cur memory request = cursor(c.request);
+        Writer memory writer = Writers.allocBalances(stateCount);
 
-        while (balances.i < balances.end) {
-            input = Cursors.openBlock(c.request, input.next);
-            AssetAmount memory balance = balances.unpackBalanceValue();
-            AssetAmount memory out = swapExactBalanceToBalance(c.account, balance, input);
+        while (state.i < state.bound) {
+            AssetAmount memory balance = state.unpackBalanceValue();
+            AssetAmount memory out = swapExactBalanceToBalance(c.account, balance, request);
             writer.appendNonZeroBalance(out);
         }
 
-        return writer.finish();
+        return state.complete(writer);
     }
 }
 
+/// @title SwapExactCustodyToBalance
+/// @notice Command that swaps each CUSTODY state block into a BALANCE output
+/// using a virtual hook. Each custody position is passed individually to `swapExactCustodyToBalance`.
 abstract contract SwapExactCustodyToBalance is CommandBase {
     uint internal immutable swapExactCustodyToBalanceId = commandId(SECTB);
 
     constructor(string memory input) {
-        emit Command(host, SECTB, input, swapExactCustodyToBalanceId, Channels.Custodies, Channels.Balances);
+        emit Command(host, SECTB, input, swapExactCustodyToBalanceId, State.Custodies, State.Balances);
     }
 
     /// @dev Override to swap an exact custody input into a balance output.
-    /// `input` is the request cursor for the current iteration; implementations
-    /// validate and unpack it as needed.
+    /// `request` is the live auxiliary request cursor for this command;
+    /// implementations validate and unpack it as needed.
     function swapExactCustodyToBalance(
         bytes32 account,
         HostAmount memory custody,
-        Cursor memory input
+        Cur memory request
     ) internal virtual returns (AssetAmount memory out);
 
     function swapExactCustodyToBalance(
         CommandContext calldata c
     ) external payable onlyCommand(swapExactCustodyToBalanceId, c.target) returns (bytes memory) {
-        (Cursor memory custodies, uint count) = Cursors.openRun(c.state, 0, Keys.Custody);
-        Writer memory writer = Writers.allocBalances(count);
-        Cursor memory input;
+        (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
+        Cur memory request = cursor(c.request);
+        Writer memory writer = Writers.allocBalances(stateCount);
 
-        while (custodies.i < custodies.end) {
-            input = Cursors.openBlock(c.request, input.next);
-            HostAmount memory custody = custodies.unpackCustodyValue();
-            AssetAmount memory out = swapExactCustodyToBalance(c.account, custody, input);
+        while (state.i < state.bound) {
+            HostAmount memory custody = state.unpackCustodyValue();
+            AssetAmount memory out = swapExactCustodyToBalance(c.account, custody, request);
             writer.appendNonZeroBalance(out);
         }
 
-        return writer.finish();
+        return state.complete(writer);
     }
 }
+
 
 
 

@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
 const outDir = path.join(root, "dist", "package");
 const contractsDir = path.join(root, "contracts");
+const docsDir = path.join(root, "docs");
 
 const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 
@@ -25,6 +26,7 @@ await cp(contractsDir, outDir, {
 });
 await cp(path.join(root, "README.md"), path.join(outDir, "README.md"));
 await cp(path.join(root, "LICENSE"), path.join(outDir, "LICENSE"));
+await cp(docsDir, path.join(outDir, "docs"), { recursive: true });
 
 const outPkg = {
   name: pkg.name,
@@ -33,7 +35,7 @@ const outPkg = {
   private: false,
   license: pkg.license,
   type: pkg.type,
-  files: ["**/*.sol", "README.md", "LICENSE"],
+  files: ["**/*.sol", "README.md", "LICENSE", "docs/GETTING_STARTED.md"],
   publishConfig: pkg.publishConfig
 };
 

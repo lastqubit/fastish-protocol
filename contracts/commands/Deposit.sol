@@ -1,24 +1,32 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, Channels } from "./Base.sol";
-import { Cursors, Cursor, Keys, Schemas, Writer, Writers } from "../Cursors.sol";
+import { CommandContext, CommandBase, State } from "./Base.sol";
+import { Cursors, Cur, Schemas, Writer, Writers } from "../Cursors.sol";
 
 string constant NAME = "deposit";
 
-using Cursors for Cursor;
+using Cursors for Cur;
 using Writers for Writer;
 
-// @dev Use `deposit` for externally sourced assets; use `debitAccountToBalance` for internal balance deductions.
+/// @title Deposit
+/// @notice Command that receives externally sourced assets and records them as BALANCE state.
+/// Use `deposit` for assets arriving from outside the protocol (e.g. ERC-20 transfers, ETH).
+/// For internal balance deductions, use `debitAccount` instead.
 abstract contract Deposit is CommandBase {
     uint internal immutable depositId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Amount, depositId, Channels.Setup, Channels.Balances);
+        emit Command(host, NAME, Schemas.Amount, depositId, State.Empty, State.Balances);
     }
 
-    /// @dev Override to receive externally sourced funds for `account`.
-    /// Called once per AMOUNT block and followed by a matching BALANCE output.
+    /// @notice Override to receive externally sourced funds for `account`.
+    /// Called once per AMOUNT block. A matching BALANCE block is appended to the
+    /// output after each call.
+    /// @param account Recipient account identifier.
+    /// @param asset Asset identifier.
+    /// @param meta Asset metadata slot.
+    /// @param amount Amount received.
     function deposit(
         bytes32 account,
         bytes32 asset,
@@ -29,18 +37,20 @@ abstract contract Deposit is CommandBase {
     function deposit(
         CommandContext calldata c
     ) external payable onlyCommand(depositId, c.target) returns (bytes memory) {
-        (Cursor memory inputs, uint count) = Cursors.openRun(c.request, 0, Keys.Amount);
+        (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocBalances(count);
 
-        while (inputs.i < inputs.end) {
-            (bytes32 asset, bytes32 meta, uint amount) = inputs.unpackAmount();
+        while (request.i < request.bound) {
+            (bytes32 asset, bytes32 meta, uint amount) = request.unpackAmount();
             deposit(c.account, asset, meta, amount);
             writer.appendBalance(asset, meta, amount);
         }
 
-        return writer.done();
+        return request.complete(writer);
     }
 }
+
+
 
 
 
