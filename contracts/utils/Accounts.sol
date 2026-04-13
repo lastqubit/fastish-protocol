@@ -70,6 +70,17 @@ library Accounts {
         return account == toKeccak(raw);
     }
 
+    /// @notice Assert that `account` uses the Account layout tag and return it unchanged.
+    /// Ignores width, chain binding, and subtype details.
+    /// @param account Account ID to validate.
+    /// @return The same `account` value if valid.
+    function ensure(bytes32 account) internal pure returns (bytes32) {
+        if (uint8(uint(account) >> 232) != Layout.Account) {
+            revert InvalidAccount();
+        }
+        return account;
+    }
+
     /// @notice Assert that `account` belongs to the EVM account family and return it unchanged.
     /// @param account Account ID to validate.
     /// @return The same `account` value if valid.

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import {CommandContext, CommandBase, State} from "./Base.sol";
-import {Cursors, Cur, Keys, Schemas, Writer, Writers} from "../Cursors.sol";
+import {Cursors, Cur, Schemas, Writer, Writers} from "../Cursors.sol";
 using Cursors for Cur;
 using Writers for Writer;
 
@@ -38,8 +38,6 @@ abstract contract Provision is CommandBase, ProvisionHook {
         CommandContext calldata c
     ) external payable onlyCommand(provisionId, c.target) returns (bytes memory) {
         (Cur memory request, uint count, ) = cursor(c.request, 1);
-        (bytes4 key, ) = request.peek(0);
-        if (key != Keys.Bundle) revert Writers.EmptyRequest();
         Writer memory writer = Writers.allocCustodies(count);
 
         while (request.i < request.bound) {

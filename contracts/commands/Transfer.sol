@@ -3,6 +3,7 @@ pragma solidity ^0.8.33;
 
 import { CommandContext, CommandBase, State } from "./Base.sol";
 import { Cursors, Cur, Schemas, Tx } from "../Cursors.sol";
+import { Accounts } from "../utils/Accounts.sol";
 using Cursors for Cur;
 
 string constant NAME = "transfer";
@@ -38,7 +39,7 @@ abstract contract Transfer is CommandBase, TransferHook {
 
         while (input.i < input.bound) {
             Cur memory bundle = input.bundle();
-            value.to = bundle.unpackRecipient();
+            value.to = Accounts.ensure(bundle.unpackRecipient());
             (value.asset, value.meta, value.amount) = bundle.unpackAmount();
             transfer(value);
         }

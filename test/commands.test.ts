@@ -485,11 +485,11 @@ describe("Commands", () => {
       expect(result).to.equal(encodeCustodyBlock(hostId, asset, ethers.ZeroHash, 700n));
     });
 
-    it("reverts EmptyRequest when no AMOUNT blocks", async () => {
+    it("reverts InvalidBlock when request is not bundled", async () => {
       const hostId = 654321n;
       const request = encodeNodeBlock(hostId);
       await expect(callAs(0, "provision", ctx({ request })))
-        .to.be.revertedWithCustomError(host, "EmptyRequest");
+        .to.be.revertedWithCustomError(host, "InvalidBlock");
     });
 
     it("emits ProvisionCalled for each bundled AMOUNT and NODE pair in a batch", async () => {
