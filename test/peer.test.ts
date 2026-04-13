@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { deploy, getSigner } from "./helpers/setup.js";
-import { concat, encodeRouteBlock } from "./helpers/blocks.js";
+import { concat, encodeRouteBlock, encodeTxBlock } from "./helpers/blocks.js";
+import { ethers } from "ethers";
 import "./helpers/matchers.js";
 
 describe("Peer Commands", () => {
@@ -12,7 +13,11 @@ describe("Peer Commands", () => {
     host = await deploy("TestPeerHost", commander);
   });
 
-  async function callAs(signerIndex: number, method: "peerPull(bytes)" | "peerPush(bytes)", request = "0x") {
+  async function callAs(
+    signerIndex: number,
+    method: "peerPull(bytes)" | "peerPush(bytes)" | "peerSettle(bytes)",
+    request = "0x"
+  ) {
     const signer = await getSigner(signerIndex);
     return (host.connect(signer) as any)[method](request);
   }
@@ -74,6 +79,48 @@ describe("Peer Commands", () => {
 
     it("reverts UnauthorizedCaller for an untrusted caller", async () => {
       await expect(callAs(1, method, encodeRouteBlock("0x01")))
+        .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
+    });
+
+    it("reverts ZeroCursor when request is empty", async () => {
+      await expect(callAs(0, method))
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
+    });
+  });
+
+  describe("peerSettle", () => {
+    const method = "peerSettle(bytes)";
+    const from_ = ethers.zeroPadValue("0x11", 32);
+    const to_ = ethers.zeroPadValue("0x22", 32);
+    const asset = ethers.zeroPadValue("0xaa", 32);
+    const meta = ethers.zeroPadValue("0xbb", 32);
+
+    it("emits PeerSettleCalled for a single TX block", async () => {
+      const tx = await callAs(0, method, encodeTxBlock(from_, to_, asset, meta, 123n));
+      await expect(tx).to.emit(host, "PeerSettleCalled").withArgs(from_, to_, asset, meta, 123n);
+    });
+
+    it("emits PeerSettleCalled for each TX block when multiple are present", async () => {
+      const from2 = ethers.zeroPadValue("0x33", 32);
+      const tx = await callAs(
+        0,
+        method,
+        concat(
+          encodeTxBlock(from_, to_, asset, meta, 123n),
+          encodeTxBlock(from2, to_, asset, meta, 456n),
+        )
+      );
+      await expect(tx).to.emit(host, "PeerSettleCalled").withArgs(from_, to_, asset, meta, 123n);
+      await expect(tx).to.emit(host, "PeerSettleCalled").withArgs(from2, to_, asset, meta, 456n);
+    });
+
+    it("returns empty bytes after processing tx blocks", async () => {
+      const result: string = await (host as any)[method].staticCall(encodeTxBlock(from_, to_, asset, meta, 123n));
+      expect(result).to.equal("0x");
+    });
+
+    it("reverts UnauthorizedCaller for an untrusted caller", async () => {
+      await expect(callAs(1, method, encodeTxBlock(from_, to_, asset, meta, 123n)))
         .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
     });
 
