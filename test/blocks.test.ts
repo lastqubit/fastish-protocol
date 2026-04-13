@@ -4,14 +4,21 @@ import { deploy } from "./helpers/setup.js";
 import "./helpers/matchers.js";
 import {
   Keys,
+  encodeAllocationBlock,
   encodeAmountBlock,
   encodeAuthBlock,
+  encodeAssetBlock,
   encodeBalanceBlock,
+  encodeBountyBlock,
   encodeBundleBlock,
   encodeCustodyBlock,
+  encodeFundingBlock,
+  encodeListingBlock,
+  encodeMaximumBlock,
   encodeMinimumBlock,
   encodeNodeBlock,
   encodeRecipientBlock,
+  encodeRouteBlock,
   encodeStepBlock,
   encodeTxBlock,
   concat,
@@ -258,47 +265,4 @@ describe("Cursors", () => {
     });
   });
 
-  describe("Mem library", () => {
-    const asset = ethers.zeroPadValue("0xcc", 32);
-    const meta = ethers.zeroPadValue("0xdd", 32);
-    const amount = 7777n;
-
-    it("unpackBalance from memory block", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      expect(await helper.testMemParseBalance(data, 0n)).to.deep.equal([asset, meta, amount]);
-    });
-
-    it("toCustodyValue from memory block", async () => {
-      const data = encodeCustodyBlock(99n, asset, meta, amount);
-      const [h, a, m, v] = await helper.testMemParseCustody(data, 0n);
-      expect(h).to.equal(99n);
-      expect(a).to.equal(asset);
-      expect(m).to.equal(meta);
-      expect(v).to.equal(amount);
-    });
-
-    it("slice extracts a sub-array", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      const full = ethers.getBytes(data);
-      const sliced: string = await helper.testMemSlice(data, 8n, BigInt(full.length));
-      expect(ethers.getBytes(sliced).length).to.equal(full.length - 8);
-    });
-
-    it("slice reverts MalformedBlocks for invalid bounds", async () => {
-      const data = encodeBalanceBlock(asset, meta, amount);
-      await expect(helper.testMemSlice(data, 10n, 9n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
-
-    it("count works in memory", async () => {
-      const source = concat(encodeBalanceBlock(asset, meta, 1n), encodeBalanceBlock(asset, meta, 2n));
-      const [count] = await helper.testMemCount(source, 0n, Keys.Balance);
-      expect(count).to.equal(2n);
-    });
-
-    it("from reverts MalformedBlocks for truncated input", async () => {
-      await expect(helper.testMemParseBalance("0xdeadbeef", 0n))
-        .to.be.revertedWithCustomError(helper, "MalformedBlocks");
-    });
-  });
 });

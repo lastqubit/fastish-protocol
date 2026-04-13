@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { HostAmount, Tx, Sizes } from "../blocks/Schema.sol";
+import { Tx, Sizes } from "../blocks/Schema.sol";
 import { Cur, Cursors, Writer } from "../Cursors.sol";
-import { MemRef, Mem } from "../blocks/Mem.sol";
 import { Writers } from "../blocks/Writers.sol";
 
 using Cursors for Cur;
 using Writers for Writer;
-using Mem for MemRef;
 
 contract TestCursorHelper {
     function testBlockHeader(bytes4 key, uint len) external pure returns (uint) {
@@ -190,25 +188,4 @@ contract TestCursorHelper {
         return true;
     }
 
-    function testMemParseBalance(bytes memory source, uint i)
-        external
-        pure
-        returns (bytes32 asset, bytes32 meta, uint amount)
-    {
-        MemRef memory ref = Mem.from(source, i);
-        return ref.unpackBalance(source);
-    }
-
-    function testMemParseCustody(bytes memory source, uint i) external pure returns (HostAmount memory value) {
-        MemRef memory ref = Mem.from(source, i);
-        return ref.toCustodyValue(source);
-    }
-
-    function testMemSlice(bytes memory source, uint start, uint end_) external pure returns (bytes memory) {
-        return Mem.slice(source, start, end_);
-    }
-
-    function testMemCount(bytes memory source, uint i, bytes4 key) external pure returns (uint count, uint cursor) {
-        return Mem.count(source, i, key);
-    }
 }

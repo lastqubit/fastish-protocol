@@ -778,6 +778,15 @@ library Cursors {
         cur.i += 104;
     }
 
+    /// @notice Consume a MINIMUM block, assert it matches the expected asset and meta, and require `amount` to satisfy it.
+    /// @param cur Cursor; advanced past the block.
+    /// @param asset Expected asset identifier.
+    /// @param meta Expected metadata slot.
+    /// @param amount Actual amount that must be at least the minimum from the block.
+    function requireMinimum(Cur memory cur, bytes32 asset, bytes32 meta, uint amount) internal pure {
+        if (requireMinimum(cur, asset, meta) > amount) revert UnexpectedValue();
+    }
+
     /// @notice Consume a MAXIMUM block and assert it matches the expected asset and meta.
     /// @param cur Cursor; advanced past the block.
     /// @param asset Expected asset identifier.
@@ -786,6 +795,15 @@ library Cursors {
     function requireMaximum(Cur memory cur, bytes32 asset, bytes32 meta) internal pure returns (uint amount) {
         amount = expectMaximum(cur, cur.i, asset, meta);
         cur.i += 104;
+    }
+
+    /// @notice Consume a MAXIMUM block, assert it matches the expected asset and meta, and require `amount` to satisfy it.
+    /// @param cur Cursor; advanced past the block.
+    /// @param asset Expected asset identifier.
+    /// @param meta Expected metadata slot.
+    /// @param amount Actual amount that must be at most the maximum from the block.
+    function requireMaximum(Cur memory cur, bytes32 asset, bytes32 meta, uint amount) internal pure {
+        if (requireMaximum(cur, asset, meta) < amount) revert UnexpectedValue();
     }
 
     /// @notice Consume a CUSTODY block and assert it belongs to the expected host.
