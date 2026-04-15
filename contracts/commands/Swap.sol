@@ -16,7 +16,7 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
     uint internal immutable swapExactBalanceToBalanceId = commandId(SEBTB);
 
     constructor(string memory input) {
-        emit Command(host, SEBTB, input, swapExactBalanceToBalanceId, State.Balances, State.Balances);
+        emit Command(host, SEBTB, input, swapExactBalanceToBalanceId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to swap an exact balance input into a balance output.
@@ -30,7 +30,7 @@ abstract contract SwapExactBalanceToBalance is CommandBase {
 
     function swapExactBalanceToBalance(
         CommandContext calldata c
-    ) external payable onlyCommand(swapExactBalanceToBalanceId, c.target) returns (bytes memory) {
+    ) external onlyCommand(swapExactBalanceToBalanceId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocBalances(stateCount);
@@ -52,7 +52,7 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
     uint internal immutable swapExactCustodyToBalanceId = commandId(SECTB);
 
     constructor(string memory input) {
-        emit Command(host, SECTB, input, swapExactCustodyToBalanceId, State.Custodies, State.Balances);
+        emit Command(host, SECTB, input, swapExactCustodyToBalanceId, State.Custodies, State.Balances, false);
     }
 
     /// @dev Override to swap an exact custody input into a balance output.
@@ -66,7 +66,7 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
 
     function swapExactCustodyToBalance(
         CommandContext calldata c
-    ) external payable onlyCommand(swapExactCustodyToBalanceId, c.target) returns (bytes memory) {
+    ) external onlyCommand(swapExactCustodyToBalanceId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocBalances(stateCount);
@@ -80,6 +80,7 @@ abstract contract SwapExactCustodyToBalance is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 

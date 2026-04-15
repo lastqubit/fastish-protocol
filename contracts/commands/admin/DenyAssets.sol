@@ -14,7 +14,7 @@ abstract contract DenyAssets is CommandBase {
     uint internal immutable denyAssetsId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Asset, denyAssetsId, State.Empty, State.Empty);
+        emit Command(host, NAME, Schemas.Asset, denyAssetsId, State.Empty, State.Empty, true);
     }
 
     /// @dev Override to deny a single asset/meta pair.
@@ -35,6 +35,7 @@ abstract contract DenyAssets is CommandBase {
         return "";
     }
 }
+
 
 
 

@@ -18,7 +18,7 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, UBTB, input, unstakeBalanceToBalancesId, State.Balances, State.Balances);
+        emit Command(host, UBTB, input, unstakeBalanceToBalancesId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to unstake or redeem a balance position.
@@ -35,7 +35,7 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
 
     function unstakeBalanceToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(unstakeBalanceToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(unstakeBalanceToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -48,6 +48,7 @@ abstract contract UnstakeBalanceToBalances is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 

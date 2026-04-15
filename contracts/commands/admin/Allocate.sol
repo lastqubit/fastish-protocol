@@ -14,7 +14,7 @@ abstract contract Allocate is CommandBase {
     uint internal immutable allocateId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Allocation, allocateId, State.Empty, State.Empty);
+        emit Command(host, NAME, Schemas.Allocation, allocateId, State.Empty, State.Empty, true);
     }
 
     /// @dev Override to apply a single allocation entry.
@@ -33,6 +33,7 @@ abstract contract Allocate is CommandBase {
         return "";
     }
 }
+
 
 
 

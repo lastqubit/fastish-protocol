@@ -24,7 +24,7 @@ abstract contract Transfer is CommandBase, TransferHook {
     uint internal immutable transferId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, INPUT, transferId, State.Empty, State.Empty);
+        emit Command(host, NAME, INPUT, transferId, State.Empty, State.Empty, false);
     }
 
     /// @notice Override to customize request parsing or batching for transfers.
@@ -50,10 +50,11 @@ abstract contract Transfer is CommandBase, TransferHook {
 
     function transfer(
         CommandContext calldata c
-    ) external payable onlyCommand(transferId, c.target) returns (bytes memory) {
+    ) external onlyCommand(transferId, c.target) returns (bytes memory) {
         return transfer(c.account, c.request);
     }
 }
+
 
 
 

@@ -15,7 +15,7 @@ abstract contract Init is CommandBase {
     uint internal immutable initId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, NAME, input, initId, State.Empty, State.Empty);
+        emit Command(host, NAME, input, initId, State.Empty, State.Empty, true);
     }
 
     /// @notice Override to run host initialization logic.
@@ -30,6 +30,7 @@ abstract contract Init is CommandBase {
         return "";
     }
 }
+
 
 
 

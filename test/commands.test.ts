@@ -126,6 +126,44 @@ describe("Commands", () => {
       ).to.be.revertedWithCustomError(host, "MalformedBlocks");
     });
   });
+  describe("depositPayable", () => {
+    it("passes a shared value budget through to the hook", async () => {
+      const asset1 = ethers.zeroPadValue("0x03", 32);
+      const asset2 = ethers.zeroPadValue("0x04", 32);
+      const meta = ethers.ZeroHash;
+      const request = concat(
+        encodeAmountBlock(asset1, meta, 3n),
+        encodeAmountBlock(asset2, meta, 7n)
+      );
+
+      const tx = await callAs(0, "depositPayable", ctx({ request }), { value: 10n });
+      await expect(tx).to.emit(host, "DepositPayableCalled")
+        .withArgs(userAccount, asset1, meta, 3n, 7n);
+      await expect(tx).to.emit(host, "DepositPayableCalled")
+        .withArgs(userAccount, asset2, meta, 7n, 0n);
+    });
+
+    it("returns BALANCE blocks matching the deposited amounts", async () => {
+      const asset = ethers.zeroPadValue("0x05", 32);
+      const meta = ethers.ZeroHash;
+      const request = encodeAmountBlock(asset, meta, 8n);
+
+      const result: string = await host.depositPayable.staticCall(ctx({ request }), { value: 8n });
+      expect(result).to.equal(encodeBalanceBlock(asset, meta, 8n));
+    });
+
+    it("accepts the explicit depositPayable command id as the target", async () => {
+      const asset = ethers.zeroPadValue("0x06", 32);
+      const meta = ethers.ZeroHash;
+      const request = encodeAmountBlock(asset, meta, 5n);
+      const target = await host.getDepositPayableId();
+
+      await expect(callAs(0, "depositPayable", ctx({ target, request }), { value: 5n }))
+        .to.emit(host, "DepositPayableCalled")
+        .withArgs(userAccount, asset, meta, 5n, 0n);
+    });
+  });
+
 
   // ── Withdraw ──────────────────────────────────────────────────────────────
 
@@ -465,10 +503,7 @@ describe("Commands", () => {
       const asset = ethers.zeroPadValue("0x70", 32);
       const meta  = ethers.ZeroHash;
       const hostId = 654321n;
-      const request = encodeBundleBlock(
-        encodeNodeBlock(hostId),
-        encodeAmountBlock(asset, meta, 700n),
-      );
+      const request = encodeCustodyBlock(hostId, asset, meta, 700n);
       const tx = await callAs(0, "provision", ctx({ request }));
       await expect(tx).to.emit(host, "ProvisionCalled")
         .withArgs(hostId, userAccount, asset, meta, 700n);
@@ -477,57 +512,42 @@ describe("Commands", () => {
     it("returns CUSTODY blocks", async () => {
       const asset = ethers.zeroPadValue("0x70", 32);
       const hostId = 654321n;
-      const request = encodeBundleBlock(
-        encodeNodeBlock(hostId),
-        encodeAmountBlock(asset, ethers.ZeroHash, 700n),
-      );
+      const request = encodeCustodyBlock(hostId, asset, ethers.ZeroHash, 700n);
       const result: string = await host.provision.staticCall(ctx({ request }));
       expect(result).to.equal(encodeCustodyBlock(hostId, asset, ethers.ZeroHash, 700n));
     });
 
-    it("reverts InvalidBlock when request is not bundled", async () => {
+    it("reverts InvalidBlock when request is not a CUSTODY block", async () => {
       const hostId = 654321n;
       const request = encodeNodeBlock(hostId);
       await expect(callAs(0, "provision", ctx({ request })))
         .to.be.revertedWithCustomError(host, "InvalidBlock");
     });
 
-    it("emits ProvisionCalled for each bundled AMOUNT and NODE pair in a batch", async () => {
+    it("emits ProvisionCalled for each CUSTODY block in a batch", async () => {
       const asset1 = ethers.zeroPadValue("0x71", 32);
       const asset2 = ethers.zeroPadValue("0x72", 32);
       const meta   = ethers.ZeroHash;
       const host1  = 111n;
       const host2  = 222n;
       const request = concat(
-        encodeBundleBlock(
-          encodeNodeBlock(host1),
-          encodeAmountBlock(asset1, meta, 100n),
-        ),
-        encodeBundleBlock(
-          encodeNodeBlock(host2),
-          encodeAmountBlock(asset2, meta, 200n),
-        ),
+        encodeCustodyBlock(host1, asset1, meta, 100n),
+        encodeCustodyBlock(host2, asset2, meta, 200n),
       );
       const tx = await callAs(0, "provision", ctx({ request }));
       await expect(tx).to.emit(host, "ProvisionCalled").withArgs(host1, userAccount, asset1, meta, 100n);
       await expect(tx).to.emit(host, "ProvisionCalled").withArgs(host2, userAccount, asset2, meta, 200n);
     });
 
-    it("returns one CUSTODY block per bundled AMOUNT and NODE pair in a batch", async () => {
+    it("returns one CUSTODY block per request CUSTODY block in a batch", async () => {
       const asset1 = ethers.zeroPadValue("0x73", 32);
       const asset2 = ethers.zeroPadValue("0x74", 32);
       const meta   = ethers.ZeroHash;
       const host1  = 333n;
       const host2  = 444n;
       const request = concat(
-        encodeBundleBlock(
-          encodeNodeBlock(host1),
-          encodeAmountBlock(asset1, meta, 100n),
-        ),
-        encodeBundleBlock(
-          encodeNodeBlock(host2),
-          encodeAmountBlock(asset2, meta, 200n),
-        ),
+        encodeCustodyBlock(host1, asset1, meta, 100n),
+        encodeCustodyBlock(host2, asset2, meta, 200n),
       );
       const result: string = await host.provision.staticCall(ctx({ request }));
       expect(result).to.equal(concat(
@@ -536,13 +556,55 @@ describe("Commands", () => {
       ));
     });
   });
+  describe("provisionPayable", () => {
+    it("passes a shared value budget through to the hook", async () => {
+      const asset1 = ethers.zeroPadValue("0x75", 32);
+      const asset2 = ethers.zeroPadValue("0x76", 32);
+      const meta = ethers.ZeroHash;
+      const host1 = 555n;
+      const host2 = 666n;
+      const request = concat(
+        encodeCustodyBlock(host1, asset1, meta, 3n),
+        encodeCustodyBlock(host2, asset2, meta, 7n),
+      );
+
+      const tx = await callAs(0, "provisionPayable", ctx({ request }), { value: 10n });
+      await expect(tx).to.emit(host, "ProvisionPayableCalled")
+        .withArgs(host1, userAccount, asset1, meta, 3n, 7n);
+      await expect(tx).to.emit(host, "ProvisionPayableCalled")
+        .withArgs(host2, userAccount, asset2, meta, 7n, 0n);
+    });
+
+    it("returns one CUSTODY block per request CUSTODY block", async () => {
+      const asset = ethers.zeroPadValue("0x77", 32);
+      const meta = ethers.ZeroHash;
+      const hostId = 777n;
+      const request = encodeCustodyBlock(hostId, asset, meta, 8n);
+
+      const result: string = await host.provisionPayable.staticCall(ctx({ request }), { value: 8n });
+      expect(result).to.equal(encodeCustodyBlock(hostId, asset, meta, 8n));
+    });
+
+    it("accepts the explicit provisionPayable command id as the target", async () => {
+      const asset = ethers.zeroPadValue("0x78", 32);
+      const meta = ethers.ZeroHash;
+      const hostId = 888n;
+      const request = encodeCustodyBlock(hostId, asset, meta, 5n);
+      const target = await host.getProvisionPayableId();
+
+      await expect(callAs(0, "provisionPayable", ctx({ target, request }), { value: 5n }))
+        .to.emit(host, "ProvisionPayableCalled")
+        .withArgs(hostId, userAccount, asset, meta, 5n, 0n);
+    });
+  });
+
 
   // ── Pipe ──────────────────────────────────────────────────────────────────
 
-  describe("pipe", () => {
+  describe("pipePayable", () => {
     it("executes STEP blocks and emits StepDispatched", async () => {
       const request = encodeStepBlock(0n, 0n, "0x");
-      const tx = await callAs(0, "pipe", ctx({ account: userAccount, request }));
+      const tx = await callAs(0, "pipePayable", ctx({ account: userAccount, request }));
       await expect(tx).to.emit(host, "StepDispatched");
     });
 
@@ -551,7 +613,7 @@ describe("Commands", () => {
         encodeStepBlock(0n, 0n, "0x"),
         encodeStepBlock(0n, 0n, "0x")
       );
-      const tx = await callAs(0, "pipe", ctx({ account: userAccount, request }));
+      const tx = await callAs(0, "pipePayable", ctx({ account: userAccount, request }));
       const count: bigint = await host.stepCount();
       expect(count).to.be.gte(2n);
     });
@@ -562,7 +624,7 @@ describe("Commands", () => {
         encodeStepBlock(22n, 9n, "0xabcd")
       );
       const startCount = await host.stepCount();
-      const tx = await callAs(0, "pipe", ctx({ account: userAccount, request }), { value: 16n });
+      const tx = await callAs(0, "pipePayable", ctx({ account: userAccount, request }), { value: 16n });
       await expect(tx).to.emit(host, "StepDispatched").withArgs(11n, startCount, 7n);
       await expect(tx).to.emit(host, "StepDispatched").withArgs(22n, startCount + 1n, 9n);
     });
@@ -574,30 +636,33 @@ describe("Commands", () => {
         123n
       );
       const request = encodeStepBlock(0n, 0n, "0x");
-      const result = await host.pipe.staticCall(ctx({ account: userAccount, state, request }));
+      const result = await host.pipePayable.staticCall(ctx({ account: userAccount, state, request }));
       expect(result).to.equal(state);
     });
 
     it("reverts InvalidAccount when account is admin account", async () => {
       const request = encodeStepBlock(0n, 0n, "0x");
       await expect(
-        callAs(0, "pipe", ctx({ account: adminAccount, request }))
+        callAs(0, "pipePayable", ctx({ account: adminAccount, request }))
       ).to.be.revertedWithCustomError(host, "InvalidAccount");
     });
 
     it("reverts ZeroCursor when no STEP blocks", async () => {
-      await expect(callAs(0, "pipe", ctx({ account: userAccount })))
+      await expect(callAs(0, "pipePayable", ctx({ account: userAccount })))
         .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
+
 
     it("tracks ETH value budget — reverts InsufficientValue when step requests too much", async () => {
       const largeValue = ethers.parseEther("1000");
       const request = encodeStepBlock(0n, largeValue, "0x");
       await expect(
-        (host.connect(await getSigner(0)) as any).pipe(ctx({ account: userAccount, request }), { value: 0n })
+        (host.connect(await getSigner(0)) as any).pipePayable(ctx({ account: userAccount, request }), { value: 0n })
       ).to.be.revertedWithCustomError(host, "InsufficientValue");
     });
   });
 });
+
+
 
 

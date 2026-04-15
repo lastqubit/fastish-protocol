@@ -15,7 +15,7 @@ abstract contract Authorize is CommandBase {
     uint internal immutable authorizeId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Node, authorizeId, State.Empty, State.Empty);
+        emit Command(host, NAME, Schemas.Node, authorizeId, State.Empty, State.Empty, true);
     }
 
     function authorize(
@@ -32,6 +32,7 @@ abstract contract Authorize is CommandBase {
         return "";
     }
 }
+
 
 
 

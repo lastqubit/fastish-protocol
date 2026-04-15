@@ -15,7 +15,7 @@ abstract contract Destroy is CommandBase {
     uint internal immutable destroyId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, NAME, input, destroyId, State.Empty, State.Empty);
+        emit Command(host, NAME, input, destroyId, State.Empty, State.Empty, true);
     }
 
     /// @notice Override to run host teardown or destruction logic.
@@ -30,6 +30,7 @@ abstract contract Destroy is CommandBase {
         return "";
     }
 }
+
 
 
 

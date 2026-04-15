@@ -19,7 +19,7 @@ abstract contract MintToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, NAME, input, mintToBalancesId, State.Empty, State.Balances);
+        emit Command(host, NAME, input, mintToBalancesId, State.Empty, State.Balances, false);
     }
 
     /// @dev Override to mint balances described by the current `input` stream
@@ -35,7 +35,7 @@ abstract contract MintToBalances is CommandBase {
 
     function mintToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(mintToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(mintToBalancesId, c.target) returns (bytes memory) {
         (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
 
@@ -46,6 +46,7 @@ abstract contract MintToBalances is CommandBase {
         return request.complete(writer);
     }
 }
+
 
 
 

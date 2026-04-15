@@ -2,35 +2,38 @@
 pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
-import { Deposit } from "../commands/Deposit.sol";
+import { Deposit, DepositPayable } from "../commands/Deposit.sol";
 import { Withdraw } from "../commands/Withdraw.sol";
 import { Transfer } from "../commands/Transfer.sol";
 import { CreditAccount } from "../commands/Credit.sol";
 import { DebitAccount } from "../commands/Debit.sol";
 import { Settle } from "../commands/Settle.sol";
-import { Provision, ProvisionFromBalance } from "../commands/Provision.sol";
-import { Pipe } from "../commands/Pipe.sol";
+import { Provision, ProvisionPayable, ProvisionFromBalance } from "../commands/Provision.sol";
+import { PipePayable } from "../commands/Pipe.sol";
 import { AllowAssets } from "../commands/admin/AllowAssets.sol";
 import { DenyAssets } from "../commands/admin/DenyAssets.sol";
 import { Destroy } from "../commands/admin/Destroy.sol";
 import { Init } from "../commands/admin/Init.sol";
 import { Allocate } from "../commands/admin/Allocate.sol";
-import { Tx } from "../blocks/Schema.sol";
+import { HostAmount, Tx } from "../blocks/Schema.sol";
 import { Cursors, Cursors, Cur, Keys } from "../Cursors.sol";
+import { Budget, Values } from "../utils/Value.sol";
 
 using Cursors for Cur;
 
 contract TestHost is
     Host,
     Deposit,
+    DepositPayable,
     Withdraw,
     Transfer,
     CreditAccount,
     DebitAccount,
     Settle,
     Provision,
+    ProvisionPayable,
     ProvisionFromBalance,
-    Pipe,
+    PipePayable,
     Init,
     Destroy,
     AllowAssets,
@@ -38,12 +41,14 @@ contract TestHost is
     Allocate
 {
     event DepositCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount);
+    event DepositPayableCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint remaining);
     event WithdrawCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount);
     event TransferCalled(bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount);
     event CreditToCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint returned);
     event DebitFromCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint returned);
     event SettleCalled(bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount);
     event ProvisionCalled(uint host_, bytes32 account, bytes32 asset, bytes32 meta, uint amount);
+    event ProvisionPayableCalled(uint host_, bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint remaining);
     event InitCalled(bytes inputData);
     event DestroyCalled(bytes inputData);
     event AllowAssetCalled(bytes32 asset, bytes32 meta);
@@ -57,6 +62,16 @@ contract TestHost is
 
     function deposit(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
         emit DepositCalled(account, asset, meta, amount);
+    }
+
+    function deposit(
+        bytes32 account,
+        bytes32 asset,
+        bytes32 meta,
+        uint amount,
+        Budget memory budget
+    ) internal override {
+        emit DepositPayableCalled(account, asset, meta, Values.use(budget, amount), budget.remaining);
     }
 
     function withdraw(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
@@ -76,8 +91,18 @@ contract TestHost is
         emit DebitFromCalled(account, asset, meta, amount, amount);
     }
 
-    function provision(bytes32 account, uint host_, bytes32 asset, bytes32 meta, uint amount) internal override {
-        emit ProvisionCalled(host_, account, asset, meta, amount);
+    function provision(bytes32 account, HostAmount memory custody) internal override {
+        emit ProvisionCalled(custody.host, account, custody.asset, custody.meta, custody.amount);
+    }
+
+    function provision(
+        bytes32 account,
+        HostAmount memory custody,
+        Budget memory budget
+    ) internal override {
+        emit ProvisionPayableCalled(
+            custody.host, account, custody.asset, custody.meta, Values.use(budget, custody.amount), budget.remaining
+        );
     }
 
     function init(Cur memory input) internal override {
@@ -136,6 +161,10 @@ contract TestHost is
         return depositId;
     }
 
+    function getDepositPayableId() external view returns (uint) {
+        return depositPayableId;
+    }
+
     function getWithdrawId() external view returns (uint) {
         return withdrawId;
     }
@@ -162,6 +191,10 @@ contract TestHost is
 
     function getProvisionId() external view returns (uint) {
         return provisionId;
+    }
+
+    function getProvisionPayableId() external view returns (uint) {
+        return provisionPayableId;
     }
 
     function getPipeId() external view returns (uint) {

@@ -15,7 +15,7 @@ abstract contract Withdraw is CommandBase {
     uint internal immutable withdrawId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Recipient, withdrawId, State.Balances, State.Empty);
+        emit Command(host, NAME, Schemas.Recipient, withdrawId, State.Balances, State.Empty, false);
     }
 
     /// @notice Override to send funds to `account`.
@@ -28,7 +28,7 @@ abstract contract Withdraw is CommandBase {
 
     function withdraw(
         CommandContext calldata c
-    ) external payable onlyCommand(withdrawId, c.target) returns (bytes memory) {
+    ) external onlyCommand(withdrawId, c.target) returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         bytes32 to = request.recipientAfter(c.account);
@@ -42,6 +42,7 @@ abstract contract Withdraw is CommandBase {
         return "";
     }
 }
+
 
 
 

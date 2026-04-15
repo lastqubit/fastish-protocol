@@ -14,7 +14,7 @@ abstract contract AllowAssets is CommandBase {
     uint internal immutable allowAssetsId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Asset, allowAssetsId, State.Empty, State.Empty);
+        emit Command(host, NAME, Schemas.Asset, allowAssetsId, State.Empty, State.Empty, true);
     }
 
     /// @dev Override to allow a single asset/meta pair.
@@ -35,6 +35,7 @@ abstract contract AllowAssets is CommandBase {
         return "";
     }
 }
+
 
 
 

@@ -19,7 +19,7 @@ abstract contract RepayFromBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RFBTB, input, repayFromBalanceToBalancesId, State.Balances, State.Balances);
+        emit Command(host, RFBTB, input, repayFromBalanceToBalancesId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to repay debt using a balance amount.
@@ -36,7 +36,7 @@ abstract contract RepayFromBalanceToBalances is CommandBase {
 
     function repayFromBalanceToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(repayFromBalanceToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(repayFromBalanceToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -59,7 +59,7 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RFCTB, input, repayFromCustodyToBalancesId, State.Custodies, State.Balances);
+        emit Command(host, RFCTB, input, repayFromCustodyToBalancesId, State.Custodies, State.Balances, false);
     }
 
     /// @dev Override to repay debt using a custody amount.
@@ -76,7 +76,7 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
 
     function repayFromCustodyToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(repayFromCustodyToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(repayFromCustodyToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -89,6 +89,7 @@ abstract contract RepayFromCustodyToBalances is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 

@@ -15,7 +15,7 @@ abstract contract Relocate is CommandBase {
     uint internal immutable relocateId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Funding, relocateId, State.Empty, State.Empty);
+        emit Command(host, NAME, Schemas.Funding, relocateId, State.Empty, State.Empty, true);
     }
 
     function relocate(
@@ -32,6 +32,7 @@ abstract contract Relocate is CommandBase {
         return "";
     }
 }
+
 
 
 

@@ -11,13 +11,13 @@ import { Burn } from "./commands/Burn.sol";
 import { Create } from "./commands/Create.sol";
 import { CreditAccount } from "./commands/Credit.sol";
 import { DebitAccount } from "./commands/Debit.sol";
-import { Deposit } from "./commands/Deposit.sol";
+import { Deposit, DepositPayable } from "./commands/Deposit.sol";
 import { Remove } from "./commands/Remove.sol";
 import { AddLiquidityFromBalancesToBalances, AddLiquidityFromCustodiesToBalances, RemoveLiquidityFromBalanceToBalances, RemoveLiquidityFromCustodyToBalances } from "./commands/Liquidity.sol";
 import { LiquidateFromBalanceToBalances, LiquidateFromCustodyToBalances } from "./commands/Liquidate.sol";
 import { MintToBalances } from "./commands/Mint.sol";
-import { Pipe } from "./commands/Pipe.sol";
-import { Provision, ProvisionFromBalance } from "./commands/Provision.sol";
+import { PipePayable } from "./commands/Pipe.sol";
+import { Provision, ProvisionPayable, ProvisionFromBalance } from "./commands/Provision.sol";
 import { ReclaimToBalances } from "./commands/Reclaim.sol";
 import { RedeemFromBalanceToBalances, RedeemFromCustodyToBalances } from "./commands/Redeem.sol";
 import { RepayFromBalanceToBalances, RepayFromCustodyToBalances } from "./commands/Repay.sol";
@@ -41,6 +41,7 @@ import { PeerAllowAssets } from "./peer/AllowAssets.sol";
 import { PeerDenyAssets } from "./peer/DenyAssets.sol";
 import { PeerPull } from "./peer/Pull.sol";
 import { PeerPush } from "./peer/Push.sol";
+
 
 
 

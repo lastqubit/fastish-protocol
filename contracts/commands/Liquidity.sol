@@ -21,7 +21,7 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, ALFCTB, input, addLiquidityFromCustodiesToBalancesId, State.Custodies, State.Balances);
+        emit Command(host, ALFCTB, input, addLiquidityFromCustodiesToBalancesId, State.Custodies, State.Balances, false);
     }
 
     /// @dev Override to add liquidity from the current `custodies` stream
@@ -40,7 +40,7 @@ abstract contract AddLiquidityFromCustodiesToBalances is CommandBase {
 
     function addLiquidityFromCustodiesToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(addLiquidityFromCustodiesToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(addLiquidityFromCustodiesToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -61,7 +61,7 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RLFCTB, input, removeLiquidityFromCustodyToBalancesId, State.Custodies, State.Balances);
+        emit Command(host, RLFCTB, input, removeLiquidityFromCustodyToBalancesId, State.Custodies, State.Balances, false);
     }
 
     /// @dev Override to remove liquidity from a custody position.
@@ -78,7 +78,7 @@ abstract contract RemoveLiquidityFromCustodyToBalances is CommandBase {
 
     function removeLiquidityFromCustodyToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(removeLiquidityFromCustodyToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(removeLiquidityFromCustodyToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -101,7 +101,7 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, ALFBTB, input, addLiquidityFromBalancesToBalancesId, State.Balances, State.Balances);
+        emit Command(host, ALFBTB, input, addLiquidityFromBalancesToBalancesId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to add liquidity from the current `balances` stream
@@ -119,7 +119,7 @@ abstract contract AddLiquidityFromBalancesToBalances is CommandBase {
 
     function addLiquidityFromBalancesToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(addLiquidityFromBalancesToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(addLiquidityFromBalancesToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -140,7 +140,7 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RLFBTB, input, removeLiquidityFromBalanceToBalancesId, State.Balances, State.Balances);
+        emit Command(host, RLFBTB, input, removeLiquidityFromBalanceToBalancesId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to remove liquidity from a balance position.
@@ -157,7 +157,7 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
 
     function removeLiquidityFromBalanceToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(removeLiquidityFromBalanceToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(removeLiquidityFromBalanceToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -170,6 +170,7 @@ abstract contract RemoveLiquidityFromBalanceToBalances is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 
