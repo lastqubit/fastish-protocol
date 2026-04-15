@@ -15,10 +15,10 @@ abstract contract Settle is CommandBase, TransferHook {
     uint internal immutable settleId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, "", settleId, State.Transactions, State.Empty);
+        emit Command(host, NAME, "", settleId, State.Transactions, State.Empty, false);
     }
 
-    function settle(CommandContext calldata c) external payable onlyCommand(settleId, c.target) returns (bytes memory) {
+    function settle(CommandContext calldata c) external onlyCommand(settleId, c.target) returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
 
         while (state.i < state.bound) {
@@ -30,6 +30,7 @@ abstract contract Settle is CommandBase, TransferHook {
         return "";
     }
 }
+
 
 
 

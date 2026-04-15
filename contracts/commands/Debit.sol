@@ -17,7 +17,7 @@ abstract contract DebitAccount is CommandBase {
     uint internal immutable debitAccountId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Amount, debitAccountId, State.Empty, State.Balances);
+        emit Command(host, NAME, Schemas.Amount, debitAccountId, State.Empty, State.Balances, false);
     }
 
     /// @notice Override to debit externally managed funds from `account`.
@@ -46,10 +46,11 @@ abstract contract DebitAccount is CommandBase {
 
     function debitAccount(
         CommandContext calldata c
-    ) external payable onlyCommand(debitAccountId, c.target) returns (bytes memory) {
+    ) external onlyCommand(debitAccountId, c.target) returns (bytes memory) {
         return debitAccount(c.account, c.request);
     }
 }
+
 
 
 

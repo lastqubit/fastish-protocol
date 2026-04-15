@@ -19,7 +19,7 @@ abstract contract ReclaimToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, NAME, input, reclaimToBalancesId, State.Empty, State.Balances);
+        emit Command(host, NAME, input, reclaimToBalancesId, State.Empty, State.Balances, false);
     }
 
     /// @dev Override to reclaim balances described by the current `input`
@@ -36,7 +36,7 @@ abstract contract ReclaimToBalances is CommandBase {
 
     function reclaimToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(reclaimToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(reclaimToBalancesId, c.target) returns (bytes memory) {
         (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocScaledBalances(count, outScale);
 
@@ -47,6 +47,7 @@ abstract contract ReclaimToBalances is CommandBase {
         return request.complete(writer);
     }
 }
+
 
 
 

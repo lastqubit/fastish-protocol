@@ -16,14 +16,14 @@ abstract contract Create is CommandBase {
     uint internal immutable createId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, NAME, input, createId, State.Empty, State.Empty);
+        emit Command(host, NAME, input, createId, State.Empty, State.Empty, false);
     }
 
     /// @dev Override to create or initialize an object described by `input`.
     /// Called once per top-level request item.
     function create(bytes32 account, Cur memory input) internal virtual;
 
-    function create(CommandContext calldata c) external payable onlyCommand(createId, c.target) returns (bytes memory) {
+    function create(CommandContext calldata c) external onlyCommand(createId, c.target) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {
@@ -34,6 +34,7 @@ abstract contract Create is CommandBase {
         return "";
     }
 }
+
 
 
 

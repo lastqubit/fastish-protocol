@@ -15,7 +15,7 @@ abstract contract Destroy is CommandBase {
     uint internal immutable destroyId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, NAME, input, destroyId, State.Empty, State.Empty);
+        emit Command(host, NAME, input, destroyId, State.Empty, State.Empty, false);
     }
 
     /// @notice Override to run host teardown or destruction logic.
@@ -24,12 +24,13 @@ abstract contract Destroy is CommandBase {
 
     function destroy(
         CommandContext calldata c
-    ) external payable onlyAdmin(c.account) onlyCommand(destroyId, c.target) returns (bytes memory) {
+    ) external onlyAdmin(c.account) onlyCommand(destroyId, c.target) returns (bytes memory) {
         Cur memory input = cursor(c.request);
         destroy(input);
         return "";
     }
 }
+
 
 
 

@@ -6,6 +6,7 @@ import {Cur} from "../Cursors.sol";
 import {CommandEvent} from "../events/Command.sol";
 import {State} from "../utils/State.sol";
 import {Ids, Selectors} from "../utils/Ids.sol";
+import {Budget, Values} from "../utils/Value.sol";
 
 /// @notice Execution context passed to every command invocation.
 struct CommandContext {
@@ -63,3 +64,30 @@ abstract contract CommandBase is OperationBase, CommandEvent {
         return Ids.toCommand(Selectors.command(name), address(this));
     }
 }
+
+/// @title CommandPayable
+/// @notice Abstract base for commands that accept native value (`msg.value`).
+/// Provides a shared settlement hook for any unspent value remaining in the
+/// command's mutable budget after execution completes.
+abstract contract CommandPayable is CommandBase {
+    /// @dev Thrown when a payable command completes with unspent native value.
+    /// Override `settleValue` to implement refund or forwarding behavior instead.
+    error UnusedValue(uint remaining);
+
+    /// @notice Settle any remaining native value after command execution.
+    /// The default implementation rejects leftover value by reverting with
+    /// `UnusedValue(remaining)`. Override this hook to refund or redirect
+    /// unused value for specific payable commands.
+    /// @param account Caller's account identifier for the current invocation.
+    /// @param budget Mutable native-value budget used during command execution.
+    function settleValue(
+        bytes32 account,
+        Budget memory budget
+    ) internal virtual {
+        account;
+        uint remaining = Values.drain(budget);
+        if (remaining != 0) revert UnusedValue(remaining);
+    }
+}
+
+

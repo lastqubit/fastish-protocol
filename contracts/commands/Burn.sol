@@ -14,7 +14,7 @@ abstract contract Burn is CommandBase {
     uint internal immutable burnId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, "", burnId, State.Balances, State.Empty);
+        emit Command(host, NAME, "", burnId, State.Balances, State.Empty, false);
     }
 
     /// @notice Override to burn or consume the provided balance amount.
@@ -26,7 +26,7 @@ abstract contract Burn is CommandBase {
     /// @return Amount actually burned (may differ from `amount` for partial burns).
     function burn(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual returns (uint);
 
-    function burn(CommandContext calldata c) external payable onlyCommand(burnId, c.target) returns (bytes memory) {
+    function burn(CommandContext calldata c) external onlyCommand(burnId, c.target) returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
 
         while (state.i < state.bound) {
@@ -38,6 +38,7 @@ abstract contract Burn is CommandBase {
         return "";
     }
 }
+
 
 
 

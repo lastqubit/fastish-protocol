@@ -16,14 +16,14 @@ abstract contract Remove is CommandBase {
     uint internal immutable removeId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, NAME, input, removeId, State.Empty, State.Empty);
+        emit Command(host, NAME, input, removeId, State.Empty, State.Empty, false);
     }
 
     /// @dev Override to remove or dismantle an object described by `input`.
     /// Called once per top-level request item.
     function remove(bytes32 account, Cur memory input) internal virtual;
 
-    function remove(CommandContext calldata c) external payable onlyCommand(removeId, c.target) returns (bytes memory) {
+    function remove(CommandContext calldata c) external onlyCommand(removeId, c.target) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {
@@ -34,6 +34,7 @@ abstract contract Remove is CommandBase {
         return "";
     }
 }
+
 
 
 

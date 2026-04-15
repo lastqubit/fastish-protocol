@@ -19,7 +19,7 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, LFBTB, input, liquidateFromBalanceToBalancesId, State.Balances, State.Balances);
+        emit Command(host, LFBTB, input, liquidateFromBalanceToBalancesId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to liquidate using a balance repayment amount.
@@ -36,7 +36,7 @@ abstract contract LiquidateFromBalanceToBalances is CommandBase {
 
     function liquidateFromBalanceToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(liquidateFromBalanceToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(liquidateFromBalanceToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -59,7 +59,7 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, LFCTB, input, liquidateFromCustodyToBalancesId, State.Custodies, State.Balances);
+        emit Command(host, LFCTB, input, liquidateFromCustodyToBalancesId, State.Custodies, State.Balances, false);
     }
 
     /// @dev Override to liquidate using a custody repayment amount.
@@ -76,7 +76,7 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
 
     function liquidateFromCustodyToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(liquidateFromCustodyToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(liquidateFromCustodyToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -89,6 +89,7 @@ abstract contract LiquidateFromCustodyToBalances is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 

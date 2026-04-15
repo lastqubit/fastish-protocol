@@ -16,7 +16,7 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
     uint internal immutable borrowAgainstCustodyToBalanceId = commandId(BACTB);
 
     constructor(string memory input) {
-        emit Command(host, BACTB, input, borrowAgainstCustodyToBalanceId, State.Custodies, State.Balances);
+        emit Command(host, BACTB, input, borrowAgainstCustodyToBalanceId, State.Custodies, State.Balances, false);
     }
 
     /// @dev Override to borrow against a custody position.
@@ -30,7 +30,7 @@ abstract contract BorrowAgainstCustodyToBalance is CommandBase {
 
     function borrowAgainstCustodyToBalance(
         CommandContext calldata c
-    ) external payable onlyCommand(borrowAgainstCustodyToBalanceId, c.target) returns (bytes memory) {
+    ) external onlyCommand(borrowAgainstCustodyToBalanceId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocBalances(stateCount);
@@ -51,7 +51,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
     uint internal immutable borrowAgainstBalanceToBalanceId = commandId(BABTB);
 
     constructor(string memory input) {
-        emit Command(host, BABTB, input, borrowAgainstBalanceToBalanceId, State.Balances, State.Balances);
+        emit Command(host, BABTB, input, borrowAgainstBalanceToBalanceId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to borrow against a balance position.
@@ -65,7 +65,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
 
     function borrowAgainstBalanceToBalance(
         CommandContext calldata c
-    ) external payable onlyCommand(borrowAgainstBalanceToBalanceId, c.target) returns (bytes memory) {
+    ) external onlyCommand(borrowAgainstBalanceToBalanceId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocBalances(stateCount);
@@ -79,6 +79,7 @@ abstract contract BorrowAgainstBalanceToBalance is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 

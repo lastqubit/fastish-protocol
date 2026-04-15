@@ -15,7 +15,7 @@ abstract contract Supply is CommandBase {
     uint internal immutable supplyId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, "", supplyId, State.Custodies, State.Empty);
+        emit Command(host, NAME, "", supplyId, State.Custodies, State.Empty, false);
     }
 
     /// @notice Override to consume or supply a single custody position.
@@ -25,7 +25,7 @@ abstract contract Supply is CommandBase {
     function supply(bytes32 account, HostAmount memory value) internal virtual;
 
     /// @notice Execute the supply command.
-    function supply(CommandContext calldata c) external payable onlyCommand(supplyId, c.target) returns (bytes memory) {
+    function supply(CommandContext calldata c) external onlyCommand(supplyId, c.target) returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
         
         while (state.i < state.bound) {
@@ -37,4 +37,5 @@ abstract contract Supply is CommandBase {
         return "";
     }
 }
+
 

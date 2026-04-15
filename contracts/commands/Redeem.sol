@@ -19,7 +19,7 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RDBTB, input, redeemFromBalanceToBalancesId, State.Balances, State.Balances);
+        emit Command(host, RDBTB, input, redeemFromBalanceToBalancesId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to redeem a balance position into balances.
@@ -36,7 +36,7 @@ abstract contract RedeemFromBalanceToBalances is CommandBase {
 
     function redeemFromBalanceToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(redeemFromBalanceToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(redeemFromBalanceToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -59,7 +59,7 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, RDCTB, input, redeemFromCustodyToBalancesId, State.Custodies, State.Balances);
+        emit Command(host, RDCTB, input, redeemFromCustodyToBalancesId, State.Custodies, State.Balances, false);
     }
 
     /// @dev Override to redeem a custody position into balances.
@@ -76,7 +76,7 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
 
     function redeemFromCustodyToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(redeemFromCustodyToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(redeemFromCustodyToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -89,6 +89,7 @@ abstract contract RedeemFromCustodyToBalances is CommandBase {
         return state.complete(writer);
     }
 }
+
 
 
 

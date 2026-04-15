@@ -20,7 +20,7 @@ abstract contract StakeBalanceToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, SBTB, input, stakeBalanceToBalancesId, State.Balances, State.Balances);
+        emit Command(host, SBTB, input, stakeBalanceToBalancesId, State.Balances, State.Balances, false);
     }
 
     /// @dev Override to stake a balance position and append resulting balances
@@ -37,7 +37,7 @@ abstract contract StakeBalanceToBalances is CommandBase {
 
     function stakeBalanceToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(stakeBalanceToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(stakeBalanceToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -60,7 +60,7 @@ abstract contract StakeCustodyToBalances is CommandBase {
 
     constructor(string memory input, uint scaledRatio) {
         outScale = scaledRatio;
-        emit Command(host, SCTB, input, stakeCustodyToBalancesId, State.Custodies, State.Balances);
+        emit Command(host, SCTB, input, stakeCustodyToBalancesId, State.Custodies, State.Balances, false);
     }
 
     /// @dev Override to stake a custody position and append resulting balances
@@ -77,7 +77,7 @@ abstract contract StakeCustodyToBalances is CommandBase {
 
     function stakeCustodyToBalances(
         CommandContext calldata c
-    ) external payable onlyCommand(stakeCustodyToBalancesId, c.target) returns (bytes memory) {
+    ) external onlyCommand(stakeCustodyToBalancesId, c.target) returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocScaledBalances(stateCount, outScale);
@@ -98,7 +98,7 @@ abstract contract StakeCustodyToPosition is CommandBase {
     uint internal immutable stakeCustodyToPositionId = commandId(SCTP);
 
     constructor(string memory input) {
-        emit Command(host, SCTP, input, stakeCustodyToPositionId, State.Custodies, State.Empty);
+        emit Command(host, SCTP, input, stakeCustodyToPositionId, State.Custodies, State.Empty, false);
     }
 
     /// @dev Override to stake a custody position into a non-balance setup
@@ -107,7 +107,7 @@ abstract contract StakeCustodyToPosition is CommandBase {
 
     function stakeCustodyToPosition(
         CommandContext calldata c
-    ) external payable onlyCommand(stakeCustodyToPositionId, c.target) returns (bytes memory) {
+    ) external onlyCommand(stakeCustodyToPositionId, c.target) returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
 
@@ -120,6 +120,7 @@ abstract contract StakeCustodyToPosition is CommandBase {
         return "";
     }
 }
+
 
 
 

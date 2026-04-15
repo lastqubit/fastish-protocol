@@ -15,7 +15,7 @@ abstract contract CreditAccount is CommandBase {
     uint internal immutable creditAccountId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Recipient, creditAccountId, State.Balances, State.Empty);
+        emit Command(host, NAME, Schemas.Recipient, creditAccountId, State.Balances, State.Empty, false);
     }
 
     /// @notice Override to credit externally managed funds to `account`.
@@ -28,7 +28,7 @@ abstract contract CreditAccount is CommandBase {
 
     function creditAccount(
         CommandContext calldata c
-    ) external payable onlyCommand(creditAccountId, c.target) returns (bytes memory) {
+    ) external onlyCommand(creditAccountId, c.target) returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         bytes32 to = request.recipientAfter(c.account);
@@ -42,6 +42,7 @@ abstract contract CreditAccount is CommandBase {
         return "";
     }
 }
+
 
 
 
