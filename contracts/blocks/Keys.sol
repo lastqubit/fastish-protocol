@@ -14,14 +14,24 @@ library Keys {
     bytes4 constant Custody = bytes4(keccak256("custody(uint host, bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Minimum acceptable output — (bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant Minimum = bytes4(keccak256("minimum(bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev Pair of minimum amounts — (uint a, uint b)
+    bytes4 constant Minimums = bytes4(keccak256("minimums(uint a, uint b)"));
     /// @dev Maximum allowable spend — (bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant Maximum = bytes4(keccak256("maximum(bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev Pair of maximum amounts — (uint a, uint b)
+    bytes4 constant Maximums = bytes4(keccak256("maximums(uint a, uint b)"));
+    /// @dev Signed min/max bounds — (int min, int max)
+    bytes4 constant Bounds = bytes4(keccak256("bounds(int min, int max)"));
+    /// @dev Fee amount — (uint amount)
+    bytes4 constant Fee = bytes4(keccak256("fee(uint amount)"));
     /// @dev Hard stop / iteration sentinel — ()
     bytes4 constant Break = bytes4(keccak256("break()"));
     /// @dev Bundle wrapper — (bytes data); payload is an embedded block stream
     bytes4 constant Bundle = bytes4(keccak256("bundle(bytes data)"));
     /// @dev Extensible routing field — (bytes data); layout is command-defined
     bytes4 constant Route = bytes4(keccak256("route(bytes data)"));
+    /// @dev Opaque path payload — (bytes data); e.g. a Uniswap path encoding
+    bytes4 constant Path = bytes4(keccak256("path(bytes data)"));
     /// @dev Plain scalar amount — (uint amount)
     bytes4 constant Quantity = bytes4(keccak256("quantity(uint amount)"));
     /// @dev Ratio or rate value — (uint value)

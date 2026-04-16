@@ -10,6 +10,10 @@ export const Keys = {
   Amount: blockKey("amount(bytes32 asset, bytes32 meta, uint amount)"),
   Balance: blockKey("balance(bytes32 asset, bytes32 meta, uint amount)"),
   Custody: blockKey("custody(uint host, bytes32 asset, bytes32 meta, uint amount)"),
+  Minimums: blockKey("minimums(uint a, uint b)"),
+  Maximums: blockKey("maximums(uint a, uint b)"),
+  Bounds: blockKey("bounds(int min, int max)"),
+  Fee: blockKey("fee(uint amount)"),
   Recipient: blockKey("recipient(bytes32 account)"),
   Node: blockKey("node(uint id)"),
   Funding: blockKey("funding(uint host, uint amount)"),
@@ -26,6 +30,7 @@ export const Keys = {
   Bounty: blockKey("bounty(uint amount, bytes32 relayer)"),
   Bundle: blockKey("bundle(bytes data)"),
   Route: blockKey("route(bytes data)"),
+  Path: blockKey("path(bytes data)"),
 } as const;
 
 // Pad a bigint or hex string to 32 bytes
@@ -34,6 +39,10 @@ export function pad32(value: bigint | string): string {
     return ethers.zeroPadValue(ethers.toBeHex(value), 32);
   }
   return ethers.zeroPadValue(value, 32);
+}
+
+export function padInt32(value: bigint): string {
+  return ethers.zeroPadValue(ethers.toBeHex(BigInt.asUintN(256, value)), 32);
 }
 
 const USER_PREFIX = 0x20010102n;
@@ -100,6 +109,22 @@ export function encodeQuantityBlock(amount: bigint): string {
   return block(Keys.Quantity, pad32(amount));
 }
 
+export function encodeBoundsBlock(min: bigint, max: bigint): string {
+  return block(Keys.Bounds, ethers.concat([padInt32(min), padInt32(max)]));
+}
+
+export function encodeMinimumsBlock(a: bigint, b: bigint): string {
+  return block(Keys.Minimums, ethers.concat([pad32(a), pad32(b)]));
+}
+
+export function encodeMaximumsBlock(a: bigint, b: bigint): string {
+  return block(Keys.Maximums, ethers.concat([pad32(a), pad32(b)]));
+}
+
+export function encodeFeeBlock(amount: bigint): string {
+  return block(Keys.Fee, pad32(amount));
+}
+
 export function encodeAllocationBlock(host: bigint, asset: string, meta: string, amount: bigint): string {
   return block(Keys.Allocation, ethers.concat([pad32(host), pad32(asset), pad32(meta), pad32(amount)]));
 }
@@ -118,6 +143,10 @@ export function encodeStepBlock(target: bigint, value: bigint, request: string):
 
 export function encodeRouteBlock(data: string): string {
   return block(Keys.Route, data);
+}
+
+export function encodePathBlock(data: string): string {
+  return block(Keys.Path, data);
 }
 
 export function encodeBreakBlock(): string {

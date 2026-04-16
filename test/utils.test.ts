@@ -195,6 +195,29 @@ describe("Utils", () => {
       expect(result).to.equal(expected);
     });
 
+    it("isSortedErc20Assets reports whether ERC20 assets are in canonical address order", async () => {
+      const a = await utils.testToErc20Asset("0x00000000000000000000000000000000000000b0");
+      const b = await utils.testToErc20Asset("0x00000000000000000000000000000000000000a0");
+
+      expect(await utils.testIsSortedErc20Assets(a, b)).to.equal(false);
+      expect(await utils.testIsSortedErc20Assets(b, a)).to.equal(true);
+    });
+
+    it("erc20Addrs returns token addresses in input order and reports whether they are canonical", async () => {
+      const a = await utils.testToErc20Asset("0x00000000000000000000000000000000000000b0");
+      const b = await utils.testToErc20Asset("0x00000000000000000000000000000000000000a0");
+
+      const [addrA1, addrB1, ordered1] = await utils.testErc20Addrs(a, b);
+      expect(addrA1.toLowerCase()).to.equal("0x00000000000000000000000000000000000000b0");
+      expect(addrB1.toLowerCase()).to.equal("0x00000000000000000000000000000000000000a0");
+      expect(ordered1).to.equal(false);
+
+      const [addrA2, addrB2, ordered2] = await utils.testErc20Addrs(b, a);
+      expect(addrA2.toLowerCase()).to.equal("0x00000000000000000000000000000000000000a0");
+      expect(addrB2.toLowerCase()).to.equal("0x00000000000000000000000000000000000000b0");
+      expect(ordered2).to.equal(true);
+    });
+
     it("localErc20Addr extracts token address from ERC20 asset", async () => {
       const token = signerAddress;
       const asset = await utils.testToErc20Asset(token);

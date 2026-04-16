@@ -22,12 +22,12 @@ abstract contract MyCommand is CommandBase {
     uint internal immutable myCommandId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Amount, myCommandId, State.Empty, State.Balances);
+        emit Command(host, NAME, Schemas.Amount, myCommandId, State.Empty, State.Balances, false);
     }
 
     function myCommand(
         CommandContext calldata c
-    ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
+    ) external onlyCommand(myCommandId, c.target) returns (bytes memory) {
         // Create the request cursor in the same way commands do, then size
         // the writer from the block count returned by primeRun.
         (Cur memory inputs, uint count, ) = cursor(c.request, 1);
