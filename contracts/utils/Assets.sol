@@ -62,6 +62,31 @@ library Assets {
         return bytes1(asset) == 0x20 ? asset : keccak256(bytes.concat(asset, meta));
     }
 
+    /// @notice Return true when two local ERC-20 assets are already in canonical token-address order.
+    /// Useful for pair-style integrations that require a stable token ordering
+    /// regardless of the caller's input order.
+    /// Reverts if either asset is not a local ERC-20 asset.
+    /// @param a First ERC-20 asset identifier.
+    /// @param b Second ERC-20 asset identifier.
+    /// @return ordered Whether `a`'s token address is lower than `b`'s token address.
+    function isSortedErc20(bytes32 a, bytes32 b) internal view returns (bool ordered) {
+        return erc20Addr(a) < erc20Addr(b);
+    }
+
+    /// @notice Extract the token addresses for two local ERC-20 assets and report whether they are already ordered.
+    /// The returned addresses preserve the original input order.
+    /// Reverts if either asset is not a local ERC-20 asset.
+    /// @param a First ERC-20 asset identifier.
+    /// @param b Second ERC-20 asset identifier.
+    /// @return addrA Token address extracted from `a`.
+    /// @return addrB Token address extracted from `b`.
+    /// @return ordered Whether `addrA` is lower than `addrB`.
+    function erc20Addrs(bytes32 a, bytes32 b) internal view returns (address addrA, address addrB, bool ordered) {
+        addrA = erc20Addr(a);
+        addrB = erc20Addr(b);
+        ordered = addrA < addrB;
+    }
+
     /// @notice Extract the ERC-20 contract address from an asset ID.
     /// Reverts if `asset` is not a local ERC-20 asset.
     /// @param asset ERC-20 asset identifier.

@@ -75,6 +75,31 @@ contract TestCursorHelper {
         return cur.unpackBalance();
     }
 
+    function testUnpackBounds(bytes calldata source) external pure returns (int min, int max) {
+        Cur memory cur = Cursors.open(source);
+        return cur.unpackBounds();
+    }
+
+    function testUnpackMinimums(bytes calldata source) external pure returns (uint a, uint b) {
+        Cur memory cur = Cursors.open(source);
+        return cur.unpackMinimums();
+    }
+
+    function testUnpackMaximums(bytes calldata source) external pure returns (uint a, uint b) {
+        Cur memory cur = Cursors.open(source);
+        return cur.unpackMaximums();
+    }
+
+    function testUnpackFee(bytes calldata source) external pure returns (uint amount) {
+        Cur memory cur = Cursors.open(source);
+        return cur.unpackFee();
+    }
+
+    function testUnpackPath(bytes calldata source) external pure returns (bytes calldata data) {
+        Cur memory cur = Cursors.open(source);
+        return cur.unpackPath();
+    }
+
     function testToTxValue(bytes calldata source) external pure returns (bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount) {
         Cur memory cur = Cursors.open(source);
         Tx memory value = cur.unpackTxValue();

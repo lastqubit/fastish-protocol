@@ -72,6 +72,14 @@ contract TestUtils {
         return Assets.key(asset, meta);
     }
 
+    function testIsSortedErc20Assets(bytes32 a, bytes32 b) external view returns (bool ordered) {
+        return Assets.isSortedErc20(a, b);
+    }
+
+    function testErc20Addrs(bytes32 a, bytes32 b) external view returns (address addrA, address addrB, bool ordered) {
+        return Assets.erc20Addrs(a, b);
+    }
+
     function testLocalErc20Addr(bytes32 asset) external view returns (address) {
         return Assets.erc20Addr(asset);
     }

@@ -29,12 +29,12 @@ abstract contract MyCommand is CommandBase {
         // Announce this command to the rootzero protocol.
         // Args: host id, command name, request schema, command id, input channel, output channel.
         // SETUP = no structured input channel; BALANCES = this command returns BALANCE blocks.
-        emit Command(host, NAME, Schemas.Amount, myCommandId, State.Empty, State.Balances);
+        emit Command(host, NAME, Schemas.Amount, myCommandId, State.Empty, State.Balances, false);
     }
 
     function myCommand(
         CommandContext calldata c
-    ) external payable onlyCommand(myCommandId, c.target) returns (bytes memory) {
+    ) external onlyCommand(myCommandId, c.target) returns (bytes memory) {
         // onlyCommand checks that msg.sender is the trusted rootzero runtime and that
         // c.target matches this command's ID (or is 0, meaning "any command").
 

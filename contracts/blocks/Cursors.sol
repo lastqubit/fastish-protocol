@@ -260,6 +260,29 @@ library Cursors {
         return create64(Keys.Bounty, bytes32(bounty), relayer);
     }
 
+    /// @notice Encode a MINIMUMS block.
+    /// @param a First minimum amount.
+    /// @param b Second minimum amount.
+    /// @return Encoded MINIMUMS block bytes.
+    function toMinimumsBlock(uint a, uint b) internal pure returns (bytes memory) {
+        return create64(Keys.Minimums, bytes32(a), bytes32(b));
+    }
+
+    /// @notice Encode a MAXIMUMS block.
+    /// @param a First maximum amount.
+    /// @param b Second maximum amount.
+    /// @return Encoded MAXIMUMS block bytes.
+    function toMaximumsBlock(uint a, uint b) internal pure returns (bytes memory) {
+        return create64(Keys.Maximums, bytes32(a), bytes32(b));
+    }
+
+    /// @notice Encode a FEE block.
+    /// @param amount Fee amount.
+    /// @return Encoded FEE block bytes.
+    function toFeeBlock(uint amount) internal pure returns (bytes memory) {
+        return create32(Keys.Fee, bytes32(amount));
+    }
+
     /// @notice Encode a BALANCE block.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
@@ -401,6 +424,26 @@ library Cursors {
         value.amount = uint(bytes32(msg.data[abs + 64:abs + 96]));
     }
 
+    /// @notice Consume a MINIMUMS block and return the two minimum amounts.
+    /// @param cur Cursor; advanced past the block.
+    /// @return a First minimum amount.
+    /// @return b Second minimum amount.
+    function unpackMinimums(Cur memory cur) internal pure returns (uint a, uint b) {
+        uint abs = consume(cur, Keys.Minimums, 64, 64);
+        a = uint(bytes32(msg.data[abs:abs + 32]));
+        b = uint(bytes32(msg.data[abs + 32:abs + 64]));
+    }
+
+    /// @notice Consume a MAXIMUMS block and return the two maximum amounts.
+    /// @param cur Cursor; advanced past the block.
+    /// @return a First maximum amount.
+    /// @return b Second maximum amount.
+    function unpackMaximums(Cur memory cur) internal pure returns (uint a, uint b) {
+        uint abs = consume(cur, Keys.Maximums, 64, 64);
+        a = uint(bytes32(msg.data[abs:abs + 32]));
+        b = uint(bytes32(msg.data[abs + 32:abs + 64]));
+    }
+
     /// @notice Consume a MAXIMUM block and return its fields as separate values.
     /// @param cur Cursor; advanced past the block.
     /// @return asset Asset identifier.
@@ -466,6 +509,26 @@ library Cursors {
     function unpackQuantity(Cur memory cur) internal pure returns (uint amount) {
         uint abs = consume(cur, Keys.Quantity, 32, 32);
         amount = uint(bytes32(msg.data[abs:abs + 32]));
+    }
+
+    /// @notice Consume a FEE block and return the amount.
+    /// @param cur Cursor; advanced past the block.
+    /// @return amount Fee amount.
+    function unpackFee(Cur memory cur) internal pure returns (uint amount) {
+        uint abs = consume(cur, Keys.Fee, 32, 32);
+        amount = uint(bytes32(msg.data[abs:abs + 32]));
+    }
+
+    /// @notice Consume a BOUNDS block and return the signed min and max values.
+    /// @param cur Cursor; advanced past the block.
+    /// @return min Lower signed bound.
+    /// @return max Upper signed bound.
+    function unpackBounds(Cur memory cur) internal pure returns (int min, int max) {
+        uint abs = consume(cur, Keys.Bounds, 64, 64);
+        assembly ("memory-safe") {
+            min := calldataload(abs)
+            max := calldataload(add(abs, 0x20))
+        }
     }
 
     /// @notice Consume an ASSET block and return the asset descriptor fields.
@@ -534,6 +597,16 @@ library Cursors {
     /// @return data Raw route payload bytes.
     function unpackRoute(Cur memory cur) internal pure returns (bytes calldata data) {
         (uint abs, uint next) = expect(cur, cur.i, Keys.Route, 0, 0);
+        data = msg.data[abs:cur.offset + next];
+        cur.i = next;
+    }
+
+    /// @notice Consume a PATH block and return the raw payload as a calldata slice.
+    /// The payload length is variable; the returned slice covers the entire payload.
+    /// @param cur Cursor; advanced past the block.
+    /// @return data Raw path payload bytes.
+    function unpackPath(Cur memory cur) internal pure returns (bytes calldata data) {
+        (uint abs, uint next) = expect(cur, cur.i, Keys.Path, 0, 0);
         data = msg.data[abs:cur.offset + next];
         cur.i = next;
     }

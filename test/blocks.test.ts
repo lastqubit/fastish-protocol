@@ -9,14 +9,19 @@ import {
   encodeAuthBlock,
   encodeAssetBlock,
   encodeBalanceBlock,
+  encodeBoundsBlock,
   encodeBountyBlock,
   encodeBundleBlock,
   encodeCustodyBlock,
+  encodeFeeBlock,
   encodeFundingBlock,
   encodeListingBlock,
+  encodeMaximumsBlock,
   encodeMaximumBlock,
+  encodeMinimumsBlock,
   encodeMinimumBlock,
   encodeNodeBlock,
+  encodePathBlock,
   encodeRecipientBlock,
   encodeRouteBlock,
   encodeStepBlock,
@@ -160,6 +165,32 @@ describe("Cursors", () => {
       expect(value).to.equal(55n);
       expect(outReq).to.equal(req);
       expect(i).to.equal(BigInt(ethers.getBytes(step).length));
+    });
+
+    it("unpackBounds preserves signed min and max values", async () => {
+      const source = encodeBoundsBlock(-5n, 42n);
+      expect(await helper.testUnpackBounds(source)).to.deep.equal([-5n, 42n]);
+    });
+
+    it("unpackMinimums returns the two minimum amounts", async () => {
+      const source = encodeMinimumsBlock(11n, 22n);
+      expect(await helper.testUnpackMinimums(source)).to.deep.equal([11n, 22n]);
+    });
+
+    it("unpackMaximums returns the two maximum amounts", async () => {
+      const source = encodeMaximumsBlock(33n, 44n);
+      expect(await helper.testUnpackMaximums(source)).to.deep.equal([33n, 44n]);
+    });
+
+    it("unpackFee returns the fee amount", async () => {
+      const source = encodeFeeBlock(77n);
+      expect(await helper.testUnpackFee(source)).to.equal(77n);
+    });
+
+    it("unpackPath returns the raw path payload", async () => {
+      const path = "0x1234567890abcdef";
+      const source = encodePathBlock(path);
+      expect(await helper.testUnpackPath(source)).to.equal(path);
     });
 
     it("requireAmount validates and advances by one fixed-size block", async () => {
