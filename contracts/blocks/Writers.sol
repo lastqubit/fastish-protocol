@@ -247,6 +247,17 @@ library Writers {
         }
     }
 
+    /// @notice Write an ABI-style boolean as a 32-byte scalar payload block.
+    /// Encodes `false` as `bytes32(0)` and `true` as `bytes32(uint(1))`.
+    /// @param dst Destination buffer; must have at least `i + Sizes.B32` bytes.
+    /// @param i Write offset within `dst`.
+    /// @param key Block type key.
+    /// @param value Boolean value to encode.
+    /// @return next Byte offset immediately after the written block.
+    function writeBool(bytes memory dst, uint i, bytes4 key, bool value) internal pure returns (uint next) {
+        return write32(dst, i, key, value ? bytes32(uint(1)) : bytes32(0));
+    }
+
     /// @notice Write a fixed-width 64-byte-payload block directly into `dst` at byte offset `i`.
     /// @param dst Destination buffer; must have at least `i + Sizes.B64` bytes.
     /// @param i Write offset within `dst`.
@@ -512,6 +523,16 @@ library Writers {
     function append32(Writer memory writer, bytes4 key, bytes32 a) internal pure {
         writer.i = write32(writer.dst, writer.i, key, a);
     }
+
+    /// @notice Append an ABI-style boolean as a 32-byte scalar payload block.
+    /// Encodes `false` as `bytes32(0)` and `true` as `bytes32(uint(1))`.
+    /// @param writer Destination writer; `i` is advanced by `Sizes.B32`.
+    /// @param key Block type key.
+    /// @param value Boolean value to encode.
+    function appendBool(Writer memory writer, bytes4 key, bool value) internal pure {
+        writer.i = writeBool(writer.dst, writer.i, key, value);
+    }
+
 
     /// @notice Append a fixed-width 64-byte-payload block.
     /// @param writer Destination writer; `i` is advanced by `Sizes.B64`.
