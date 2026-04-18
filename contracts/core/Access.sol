@@ -2,6 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { AccessEvent } from "../events/Access.sol";
+import { HostBound } from "./HostBound.sol";
 import { Accounts } from "../utils/Accounts.sol";
 import { Ids } from "../utils/Ids.sol";
 import { addrOr } from "../utils/Utils.sol";
@@ -12,14 +13,12 @@ import { addrOr } from "../utils/Utils.sol";
 /// mapping of externally authorized node IDs. Inbound trust is host-based:
 /// authorized hosts, the commander, and this contract itself may interact
 /// with the host through the guarded command and peer entrypoints.
-abstract contract AccessControl is AccessEvent {
+abstract contract AccessControl is HostBound, AccessEvent {
     /// @dev Trusted commander address. All calls from this address are implicitly trusted.
     /// Defaults to `address(this)` when no external commander is provided.
     address internal immutable commander;
     /// @dev Admin account ID derived from the commander address at construction time.
     bytes32 internal immutable adminAccount;
-    /// @dev This host's node ID, set to `Ids.toHost(address(this))` at construction.
-    uint public immutable host;
 
     /// @dev Mapping from node ID to authorization status.
     /// Authorised nodes may interact with the host as trusted callers or call targets.
@@ -33,7 +32,6 @@ abstract contract AccessControl is AccessEvent {
     constructor(address cmdr) {
         commander = addrOr(cmdr, address(this));
         adminAccount = Accounts.toAdmin(commander);
-        host = Ids.toHost(address(this));
     }
 
     /// @notice Grant or revoke authorization for a node.
