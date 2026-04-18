@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-// Aggregator: re-exports all command and peer abstractions.
-// Import this file to inherit from any command or peer base contract without managing individual paths.
+// Aggregator: re-exports command, admin, and peer abstractions.
+// Import this file to inherit from the full rootzero command surface without managing individual paths.
 
 import { CommandBase, CommandContext, CommandPayable, encodeCommandCall } from "./commands/Base.sol";
 import { State } from "./utils/State.sol";
@@ -27,7 +27,8 @@ import { Init } from "./commands/admin/Init.sol";
 import { RelocatePayable } from "./commands/admin/Relocate.sol";
 import { Allocate } from "./commands/admin/Allocate.sol";
 import { Unauthorize } from "./commands/admin/Unauthorize.sol";
-import { PeerBase } from "./peer/Base.sol";
+import { PeerBase, encodePeerCall } from "./peer/Base.sol";
+import { PeerAssetPull } from "./peer/AssetPull.sol";
 import { PeerAllowAssets } from "./peer/AllowAssets.sol";
 import { PeerDenyAssets } from "./peer/DenyAssets.sol";
 import { PeerPull } from "./peer/Pull.sol";

@@ -515,14 +515,6 @@ library Cursors {
         account = bytes32(msg.data[abs:abs + 32]);
     }
 
-    /// @notice Consume a PARTY block and return the account.
-    /// @param cur Cursor; advanced past the block.
-    /// @return account Counter-party account identifier.
-    function unpackParty(Cur memory cur) internal pure returns (bytes32 account) {
-        uint abs = consume(cur, Keys.Party, 32, 32);
-        account = bytes32(msg.data[abs:abs + 32]);
-    }
-
     /// @notice Consume a RATE block and return the value.
     /// @param cur Cursor; advanced past the block.
     /// @return value Encoded ratio or rate.

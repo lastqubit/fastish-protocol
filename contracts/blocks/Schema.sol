@@ -25,7 +25,6 @@ library Schemas {
     string constant RouteEmpty = "route()";
     string constant Quantity = "quantity(uint amount)";
     string constant Rate = "rate(uint value)";
-    string constant Party = "party(bytes32 account)";
     string constant Recipient = "recipient(bytes32 account)";
     string constant Transaction = "tx(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
     string constant Step = "step(uint target, uint value, bytes request)";

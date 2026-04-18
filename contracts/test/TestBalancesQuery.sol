@@ -3,7 +3,7 @@ pragma solidity ^0.8.33;
 
 import { Accounts } from "../utils/Accounts.sol";
 import { Assets } from "../utils/Assets.sol";
-import { BalancesQuery } from "../queries/Balances.sol";
+import { GetBalances } from "../queries/Balances.sol";
 
 contract TestErc20BalanceToken {
     mapping(address => uint) internal balances;
@@ -17,7 +17,7 @@ contract TestErc20BalanceToken {
     }
 }
 
-contract TestBalancesQuery is BalancesQuery {
+contract TestBalancesQuery is GetBalances {
     TestErc20BalanceToken public immutable token = new TestErc20BalanceToken();
     bytes32 public immutable tokenAsset = Assets.toErc20(address(token));
 
@@ -29,7 +29,7 @@ contract TestBalancesQuery is BalancesQuery {
         return valueAsset;
     }
 
-    function balanceOf(bytes32 account, bytes32 asset, bytes32 meta) internal view override returns (uint amount) {
+    function getBalance(bytes32 account, bytes32 asset, bytes32 meta) internal view override returns (uint amount) {
         Assets.key(asset, meta);
 
         address accountAddr = Accounts.addrEvm(account);

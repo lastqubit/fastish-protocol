@@ -74,6 +74,13 @@ library Writers {
         return alloc96s(count);
     }
 
+    /// @notice Allocate a writer sized for exactly `count` ASSET blocks (1:1 ratio).
+    /// @param count Number of asset blocks to allocate space for.
+    /// @return writer Allocated writer.
+    function allocAssets(uint count) internal pure returns (Writer memory writer) {
+        return alloc64s(count);
+    }
+
     /// @notice Allocate a writer sized for exactly `count` dynamic blocks with a shared payload length.
     /// Each block reserves `Sizes.Header + payloadLen` bytes.
     /// @param count Number of blocks to allocate space for.
@@ -134,6 +141,15 @@ library Writers {
     /// @return writer Allocated writer.
     function allocScaledAmounts(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
         return allocScaled96s(count, scaledRatio);
+    }
+
+    /// @notice Allocate a writer for ASSET blocks with a custom output-to-input ratio.
+    /// @param count Number of input blocks.
+    /// @param scaledRatio Output count multiplier expressed in `ALLOC_SCALE` units
+    ///        (e.g. `ALLOC_SCALE` = 1:1, `2 * ALLOC_SCALE` = 2:1).
+    /// @return writer Allocated writer.
+    function allocScaledAssets(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
+        return allocScaled64s(count, scaledRatio);
     }
 
     /// @notice Allocate a writer for dynamic blocks with a shared payload length and custom output ratio.
@@ -462,6 +478,16 @@ library Writers {
         return write96(dst, i, Keys.Amount, value.asset, value.meta, bytes32(value.amount));
     }
 
+    /// @notice Write an ASSET block directly into `dst` at byte offset `i`.
+    /// @param dst Destination buffer; must have at least `i + Sizes.B64` bytes.
+    /// @param i Write offset within `dst`.
+    /// @param asset Asset identifier.
+    /// @param meta Asset metadata slot.
+    /// @return next Byte offset immediately after the written block.
+    function writeAssetBlock(bytes memory dst, uint i, bytes32 asset, bytes32 meta) internal pure returns (uint next) {
+        return write64(dst, i, Keys.Asset, asset, meta);
+    }
+
     /// @notice Write a BOUNTY block directly into `dst` at byte offset `i`.
     /// @param dst Destination buffer; must have at least `i + Sizes.Bounty` bytes.
     /// @param i Write offset within `dst`.
@@ -641,6 +667,14 @@ library Writers {
     /// @param value Amount fields to encode.
     function appendAmount(Writer memory writer, AssetAmount memory value) internal pure {
         writer.i = writeAmountBlock(writer.dst, writer.i, value);
+    }
+
+    /// @notice Append an ASSET block.
+    /// @param writer Destination writer; `i` is advanced by `Sizes.B64`.
+    /// @param asset Asset identifier.
+    /// @param meta Asset metadata slot.
+    function appendAsset(Writer memory writer, bytes32 asset, bytes32 meta) internal pure {
+        writer.i = writeAssetBlock(writer.dst, writer.i, asset, meta);
     }
 
     /// @notice Append a BALANCE block only if `amount > 0`; silently skips zero amounts.

@@ -10,7 +10,8 @@ using Cursors for Cur;
 
 /// @title PeerPush
 /// @notice Peer that receives assets pushed from a remote host into this one.
-/// Each block in the request is dispatched to `peerPush(Cur)`. Restricted to trusted peers.
+/// Each block in the request is dispatched to `peerPush(peer, input)`, where `peer`
+/// is derived from `msg.sender`. Restricted to trusted peers.
 abstract contract PeerPush is PeerBase {
     uint internal immutable peerPushId = peerId(NAME);
 
@@ -19,15 +20,17 @@ abstract contract PeerPush is PeerBase {
     }
 
     /// @notice Override to process a single incoming block from the push request.
+    /// @param peer Host node ID derived from the caller address.
     /// @param input Cursor positioned at the current input block; advance it before returning.
-    function peerPush(Cur memory input) internal virtual;
+    function peerPush(uint peer, Cur memory input) internal virtual;
 
     /// @notice Execute the push peer call.
     function peerPush(bytes calldata request) external onlyPeer returns (bytes memory) {
         (Cur memory input, , ) = cursor(request, 1);
+        uint peer = caller();
 
         while (input.i < input.bound) {
-            peerPush(input);
+            peerPush(peer, input);
         }
 
         input.complete();

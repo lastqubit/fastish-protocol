@@ -8,18 +8,17 @@ import {QueryBase} from "./Base.sol";
 using Cursors for Cur;
 
 string constant NAME = "isAllowedAsset";
-string constant INPUT = Schemas.Asset;
 string constant OUTPUT = "response(uint allowed)";
 
-/// @title AssetsQuery
+/// @title IsAllowedAsset
 /// @notice Rootzero query that checks whether one or more `(asset, meta)` tuples are allowed.
 /// The request is a run of `ASSET` blocks.
 /// The response returns one `RESPONSE` block per query entry, preserving request order.
-abstract contract AssetsQuery is QueryBase {
+abstract contract IsAllowedAsset is QueryBase {
     uint public immutable isAllowedAssetId = queryId(NAME);
 
     constructor() {
-        emit Query(host, NAME, INPUT, OUTPUT, isAllowedAssetId);
+        emit Query(host, NAME, Schemas.Asset, OUTPUT, isAllowedAssetId);
     }
 
     /// @notice Resolve whether one asset tuple is allowed.
@@ -27,7 +26,7 @@ abstract contract AssetsQuery is QueryBase {
     /// @param asset Requested asset identifier.
     /// @param meta Requested asset metadata slot.
     /// @return allowed Whether the asset tuple is allowed.
-    function allowedAsset(bytes32 asset, bytes32 meta) internal view virtual returns (bool allowed);
+    function isAllowedAsset(bytes32 asset, bytes32 meta) internal view virtual returns (bool allowed);
 
     /// @notice Resolve allowlist status for a run of requested `(asset, meta)` tuples.
     /// @param request Block-stream request consisting of `asset(asset, meta)*`.
@@ -38,7 +37,8 @@ abstract contract AssetsQuery is QueryBase {
 
         while (query.i < query.bound) {
             (bytes32 asset, bytes32 meta) = query.unpackAsset();
-            Writers.appendBool(response, Keys.Response, allowedAsset(asset, meta));
+            bool allowed = isAllowedAsset(asset, meta);
+            Writers.appendBool(response, Keys.Response, allowed);
         }
 
         return query.complete(response);

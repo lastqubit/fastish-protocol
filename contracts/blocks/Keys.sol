@@ -41,7 +41,6 @@ library Keys {
     /// @dev Ratio or rate value — (uint value)
     bytes4 constant Rate = bytes4(keccak256("rate(uint value)"));
     /// @dev Counter-party account — (bytes32 account)
-    bytes4 constant Party = bytes4(keccak256("party(bytes32 account)"));
     /// @dev Destination account — (bytes32 account)
     bytes4 constant Recipient = bytes4(keccak256("recipient(bytes32 account)"));
     /// @dev Transfer record passed through the pipeline — (bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)

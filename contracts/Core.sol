@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-// Aggregator: re-exports all core protocol contracts (Access, Balances, Host, Operation, Validator).
-// Import this file to bring the full host base layer into scope.
+// Aggregator: re-exports the core host, access, cursor, and validation layer.
+// Import this file to bring the full rootzero host base layer into scope.
 
 import { AccessControl } from "./core/Access.sol";
 import { Balances } from "./core/Balances.sol";

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { deploy, getSigner } from "./helpers/setup.js";
+import { deploy, getProvider, getSigner } from "./helpers/setup.js";
 import { concat, encodeRouteBlock, encodeTxBlock, encodeUserAccount } from "./helpers/blocks.js";
 import { ethers } from "ethers";
 import "./helpers/matchers.js";
@@ -22,21 +22,32 @@ describe("Peer Commands", () => {
     return (host.connect(signer) as any)[method](request);
   }
 
+  async function callerHost(signerIndex: number) {
+    const signer = await getSigner(signerIndex);
+    const addr = await signer.getAddress();
+    const provider = await getProvider();
+    const network = await provider.getNetwork();
+    const HOST_PREFIX = 0x20010201n;
+    return (HOST_PREFIX << 224n) | (network.chainId << 192n) | BigInt(addr);
+  }
+
   describe("peerPull", () => {
     const method = "peerPull(bytes)";
 
     it("emits PeerPullCalled for a single input block", async () => {
       const inputData = "0xabcd";
+      const peer = await callerHost(0);
       const tx = await callAs(0, method, encodeRouteBlock(inputData));
-      await expect(tx).to.emit(host, "PeerPullCalled").withArgs(inputData);
+      await expect(tx).to.emit(host, "PeerPullCalled").withArgs(peer, inputData);
     });
 
     it("emits PeerPullCalled for each input block when multiple are present", async () => {
       const input1 = "0x1111";
       const input2 = "0x2222";
+      const peer = await callerHost(0);
       const tx = await callAs(0, method, concat(encodeRouteBlock(input1), encodeRouteBlock(input2)));
-      await expect(tx).to.emit(host, "PeerPullCalled").withArgs(input1);
-      await expect(tx).to.emit(host, "PeerPullCalled").withArgs(input2);
+      await expect(tx).to.emit(host, "PeerPullCalled").withArgs(peer, input1);
+      await expect(tx).to.emit(host, "PeerPullCalled").withArgs(peer, input2);
     });
 
     it("returns empty bytes after processing input blocks", async () => {
@@ -60,16 +71,18 @@ describe("Peer Commands", () => {
 
     it("emits PeerPushCalled for a single input block", async () => {
       const inputData = "0xbeef";
+      const peer = await callerHost(0);
       const tx = await callAs(0, method, encodeRouteBlock(inputData));
-      await expect(tx).to.emit(host, "PeerPushCalled").withArgs(inputData);
+      await expect(tx).to.emit(host, "PeerPushCalled").withArgs(peer, inputData);
     });
 
     it("emits PeerPushCalled for each input block when multiple are present", async () => {
       const input1 = "0x3333";
       const input2 = "0x4444";
+      const peer = await callerHost(0);
       const tx = await callAs(0, method, concat(encodeRouteBlock(input1), encodeRouteBlock(input2)));
-      await expect(tx).to.emit(host, "PeerPushCalled").withArgs(input1);
-      await expect(tx).to.emit(host, "PeerPushCalled").withArgs(input2);
+      await expect(tx).to.emit(host, "PeerPushCalled").withArgs(peer, input1);
+      await expect(tx).to.emit(host, "PeerPushCalled").withArgs(peer, input2);
     });
 
     it("returns empty bytes after processing input blocks", async () => {

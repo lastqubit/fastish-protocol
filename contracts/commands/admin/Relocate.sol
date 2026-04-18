@@ -26,8 +26,8 @@ abstract contract RelocatePayable is CommandPayable {
         Budget memory budget = Values.fromMsg();
 
         while (request.i < request.bound) {
-            (uint host, uint amount) = request.unpackFunding();
-            callTo(host, Values.use(budget, amount), "");
+            (uint peer, uint amount) = request.unpackFunding();
+            callTo(peer, Values.use(budget, amount), "");
         }
 
         request.complete();

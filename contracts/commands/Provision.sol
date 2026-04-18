@@ -29,11 +29,7 @@ abstract contract ProvisionPayableHook {
     /// @param account Caller's account identifier.
     /// @param custody Destination host plus asset amount to provision.
     /// @param budget Mutable native-value budget drawn from `msg.value`.
-    function provision(
-        bytes32 account,
-        HostAmount memory custody,
-        Budget memory budget
-    ) internal virtual;
+    function provision(bytes32 account, HostAmount memory custody, Budget memory budget) internal virtual;
 }
 
 /// @title Provision
@@ -46,9 +42,7 @@ abstract contract Provision is CommandBase, ProvisionHook {
         emit Command(host, PROVISION, Schemas.Custody, provisionId, State.Empty, State.Custodies, false);
     }
 
-    function provision(
-        CommandContext calldata c
-    ) external onlyCommand(provisionId, c.target) returns (bytes memory) {
+    function provision(CommandContext calldata c) external onlyCommand(provisionId, c.target) returns (bytes memory) {
         (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocCustodies(count);
 
@@ -107,12 +101,12 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocCustodies(stateCount);
-        uint toHost = request.nodeAfter(0);
-        if (toHost == 0) revert Cursors.ZeroNode();
+        uint peer = request.nodeAfter(0);
+        if (peer == 0) revert Cursors.ZeroNode();
 
         while (state.i < state.bound) {
             (bytes32 asset, bytes32 meta, uint amount) = state.unpackBalance();
-            HostAmount memory custody = HostAmount(toHost, asset, meta, amount);
+            HostAmount memory custody = HostAmount(peer, asset, meta, amount);
             provision(c.account, custody);
             writer.appendCustody(custody);
         }
@@ -120,4 +114,3 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
         return state.complete(writer);
     }
 }
-
