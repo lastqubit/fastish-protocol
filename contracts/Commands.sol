@@ -1,42 +1,34 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-// Aggregator: re-exports all command and peer abstractions.
-// Import this file to inherit from any command or peer base contract without managing individual paths.
+// Aggregator: re-exports command, admin, and peer abstractions.
+// Import this file to inherit from the full rootzero command surface without managing individual paths.
 
-import { CommandBase, CommandContext, CommandPayable } from "./commands/Base.sol";
+import { CommandBase, CommandContext, CommandPayable, encodeCommandCall } from "./commands/Base.sol";
 import { State } from "./utils/State.sol";
-import { BorrowAgainstBalanceToBalance, BorrowAgainstCustodyToBalance } from "./commands/Borrow.sol";
 import { Burn } from "./commands/Burn.sol";
 import { Create } from "./commands/Create.sol";
 import { CreditAccount } from "./commands/Credit.sol";
 import { DebitAccount } from "./commands/Debit.sol";
 import { Deposit, DepositPayable } from "./commands/Deposit.sol";
 import { Remove } from "./commands/Remove.sol";
-import { AddLiquidityFromBalancesToBalances, AddLiquidityFromCustodiesToBalances, RemoveLiquidityFromBalanceToBalances, RemoveLiquidityFromCustodyToBalances } from "./commands/Liquidity.sol";
-import { LiquidateFromBalanceToBalances, LiquidateFromCustodyToBalances } from "./commands/Liquidate.sol";
-import { MintToBalances } from "./commands/Mint.sol";
 import { PipePayable } from "./commands/Pipe.sol";
 import { Provision, ProvisionPayable, ProvisionFromBalance } from "./commands/Provision.sol";
-import { ReclaimToBalances } from "./commands/Reclaim.sol";
-import { RedeemFromBalanceToBalances, RedeemFromCustodyToBalances } from "./commands/Redeem.sol";
-import { RepayFromBalanceToBalances, RepayFromCustodyToBalances } from "./commands/Repay.sol";
 import { Settle } from "./commands/Settle.sol";
-import { StakeBalanceToBalances, StakeCustodyToBalances, StakeCustodyToPosition } from "./commands/Stake.sol";
+import { StakeCustodyToPosition } from "./commands/Stake.sol";
 import { Supply } from "./commands/Supply.sol";
-import { SwapExactBalanceToBalance, SwapExactCustodyToBalance } from "./commands/Swap.sol";
 import { Transfer } from "./commands/Transfer.sol";
-import { UnstakeBalanceToBalances } from "./commands/Unstake.sol";
 import { Withdraw } from "./commands/Withdraw.sol";
-import { AllowAssets } from "./commands/admin/AllowAssets.sol";
+import { AllowAssets, AllowAssetsHook } from "./commands/admin/AllowAssets.sol";
 import { Destroy } from "./commands/admin/Destroy.sol";
 import { Authorize } from "./commands/admin/Authorize.sol";
-import { DenyAssets } from "./commands/admin/DenyAssets.sol";
+import { DenyAssets, DenyAssetsHook } from "./commands/admin/DenyAssets.sol";
 import { Init } from "./commands/admin/Init.sol";
 import { RelocatePayable } from "./commands/admin/Relocate.sol";
 import { Allocate } from "./commands/admin/Allocate.sol";
 import { Unauthorize } from "./commands/admin/Unauthorize.sol";
-import { PeerBase } from "./peer/Base.sol";
+import { PeerBase, encodePeerCall } from "./peer/Base.sol";
+import { PeerAssetPull } from "./peer/AssetPull.sol";
 import { PeerAllowAssets } from "./peer/AllowAssets.sol";
 import { PeerDenyAssets } from "./peer/DenyAssets.sol";
 import { PeerPull } from "./peer/Pull.sol";

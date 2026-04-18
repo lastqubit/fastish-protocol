@@ -19,11 +19,12 @@ library Schemas {
     string constant Fee = "fee(uint amount)";
     string constant Break = "break()";
     string constant Route = "route(bytes data)";
+    string constant Query = "query(bytes data)";
+    string constant Response = "response(bytes data)";
     string constant Path = "path(bytes data)";
     string constant RouteEmpty = "route()";
     string constant Quantity = "quantity(uint amount)";
     string constant Rate = "rate(uint value)";
-    string constant Party = "party(bytes32 account)";
     string constant Recipient = "recipient(bytes32 account)";
     string constant Transaction = "tx(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
     string constant Step = "step(uint target, uint value, bytes request)";
@@ -72,7 +73,11 @@ library Schemas {
 // - `->` separates request and response shapes, appears at most once, and is omitted when no output is modeled
 // - top-level blocks of the same type should be grouped together
 // - primary / driving blocks should appear before auxiliary blocks
-// - `route(<fields...>)` is a reserved extensible schema form whose key is always `Keys.Route`
+// - `route(<fields...>)`, `query(<fields...>)`, and `response(<fields...>)` are reserved
+//   extensible schema forms whose keys are always `Keys.Route`, `Keys.Query`, and
+//   `Keys.Response` respectively
+// - these extensible forms work like dynamic `bytes` blocks: they may carry arbitrary
+//   payload bytes while keeping one fixed key per semantic block type
 // - `&` compiles to a `Keys.Bundle` block whose self payload is the bundled member block stream
 // - canonical blocks are `amount(...)` for request amounts, `balance(...)` for state balances,
 //   `minimum(...)` for result floors, `maximum(...)` for spend ceilings, and `quantity(...)`
@@ -90,26 +95,42 @@ library Schemas {
 /// @title Sizes
 /// @notice Total byte sizes for fixed-width block types, including the 8-byte header (4-byte key + 4-byte payloadLen).
 library Sizes {
+    /// @dev Shared block header size: 4-byte key + 4-byte payload length.
+    uint constant Header = 8;
+    /// @dev One fixed-width payload word.
+    uint constant Word = 32;
+    /// @dev 8 header + 32 payload = 40 bytes total.
+    uint constant B32 = Header + Word;
+    /// @dev 8 header + 64 payload = 72 bytes total.
+    uint constant B64 = Header + 2 * Word;
+    /// @dev 8 header + 96 payload = 104 bytes total.
+    uint constant B96 = Header + 3 * Word;
+    /// @dev 8 header + 128 payload = 136 bytes total.
+    uint constant B128 = Header + 4 * Word;
+    /// @dev 8 header + 160 payload = 168 bytes total.
+    uint constant B160 = Header + 5 * Word;
     /// @dev AUTH proof segment only: 20-byte signer + 65-byte signature = 85 bytes
     uint constant Proof = 85;
     /// @dev AUTH block: 8 header + 32 cid + 32 deadline + 85 proof = 157 bytes
-    uint constant Auth = 157;
+    uint constant Auth = B64 + Proof;
+    /// @dev AMOUNT block: 8 header + 32 asset + 32 meta + 32 amount = 104 bytes
+    uint constant Amount = B96;
     /// @dev BALANCE block: 8 header + 32 asset + 32 meta + 32 amount = 104 bytes
-    uint constant Balance = 104;
+    uint constant Balance = B96;
     /// @dev MINIMUMS block: 8 header + 32 a + 32 b = 72 bytes
-    uint constant Minimums = 72;
+    uint constant Minimums = B64;
     /// @dev MAXIMUMS block: 8 header + 32 a + 32 b = 72 bytes
-    uint constant Maximums = 72;
+    uint constant Maximums = B64;
     /// @dev BOUNDS block: 8 header + 32 min + 32 max = 72 bytes
-    uint constant Bounds = 72;
+    uint constant Bounds = B64;
     /// @dev FEE block: 8 header + 32 amount = 40 bytes
-    uint constant Fee = 40;
+    uint constant Fee = B32;
     /// @dev BOUNTY block: 8 header + 32 amount + 32 relayer = 72 bytes
-    uint constant Bounty = 72;
+    uint constant Bounty = B64;
     /// @dev CUSTODY block: 8 header + 32 host + 32 asset + 32 meta + 32 amount = 136 bytes
-    uint constant Custody = 136;
+    uint constant Custody = B128;
     /// @dev TRANSACTION block: 8 header + 32 from + 32 to + 32 asset + 32 meta + 32 amount = 168 bytes
-    uint constant Transaction = 168;
+    uint constant Transaction = B160;
 }
 
 /// @notice Asset and amount pair; used for balance and amount blocks.

@@ -11,8 +11,8 @@ import { Ids } from "../utils/Ids.sol";
 using Cursors for Cur;
 
 contract TestPeerHost is Host, PeerPull, PeerPush, PeerSettle {
-    event PeerPullCalled(bytes inputData);
-    event PeerPushCalled(bytes inputData);
+    event PeerPullCalled(uint peer, bytes inputData);
+    event PeerPushCalled(uint peer, bytes inputData);
     event PeerSettleCalled(bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount);
 
     constructor(address cmdr)
@@ -23,24 +23,24 @@ contract TestPeerHost is Host, PeerPull, PeerPush, PeerSettle {
         if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
     }
 
-    function peerPull(Cur memory input) internal override {
+    function peerPull(uint peer, Cur memory input) internal override {
         (bytes4 key, uint len) = input.peek(input.i);
         uint next = input.i + 8 + len;
         bytes calldata inputData = key == Keys.Route
             ? input.unpackRoute()
             : msg.data[input.offset + input.i:input.offset + next];
         input.i = next;
-        emit PeerPullCalled(inputData);
+        emit PeerPullCalled(peer, inputData);
     }
 
-    function peerPush(Cur memory input) internal override {
+    function peerPush(uint peer, Cur memory input) internal override {
         (bytes4 key, uint len) = input.peek(input.i);
         uint next = input.i + 8 + len;
         bytes calldata inputData = key == Keys.Route
             ? input.unpackRoute()
             : msg.data[input.offset + input.i:input.offset + next];
         input.i = next;
-        emit PeerPushCalled(inputData);
+        emit PeerPushCalled(peer, inputData);
     }
 
     function transfer(Tx memory value) internal override {
