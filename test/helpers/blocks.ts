@@ -29,6 +29,7 @@ export const Keys = {
   Auth: blockKey("auth(uint cid, uint deadline, bytes proof)"),
   Bounty: blockKey("bounty(uint amount, bytes32 relayer)"),
   Bundle: blockKey("bundle(bytes data)"),
+  List: blockKey("list(bytes data)"),
   Route: blockKey("route(bytes data)"),
   Query: blockKey("query(bytes data)"),
   Response: blockKey("response(bytes data)"),
@@ -165,6 +166,10 @@ export function encodeBreakBlock(): string {
 
 export function encodeBundleBlock(...members: string[]): string {
   return block(Keys.Bundle, concat(...members));
+}
+
+export function encodeListBlock(...members: string[]): string {
+  return block(Keys.List, concat(...members));
 }
 
 export function encodeRouteBlockWithAmount(data: string, asset: string, meta: string, amount: bigint): string {
