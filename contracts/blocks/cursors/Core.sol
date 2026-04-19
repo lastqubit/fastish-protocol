@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {HostAsset, AssetAmount, HostAmount, Tx, Keys, Sizes} from "./Schema.sol";
-import {ALLOC_SCALE, Writer, Writers} from "./Writers.sol";
+import {HostAsset, AssetAmount, HostAmount, Tx, Keys, Sizes} from "../Schema.sol";
+import {ALLOC_SCALE, Writer, Writers} from "../Writers.sol";
 
 /// @notice Zero-copy view into a calldata block stream.
 /// All positions (`i`, `bound`) are byte offsets relative to the start of the source region.
@@ -74,6 +74,18 @@ library Cursors {
         return cur;
     }
 
+    /// @notice Create a subcursor over the half-open range `[from, to)` within the source region.
+    /// The returned cursor starts at position zero within that sliced region.
+    /// @param cur Source cursor.
+    /// @param from Start byte offset within the source region (inclusive).
+    /// @param to End byte offset within the source region (exclusive).
+    /// @return out Cursor scoped to the requested sub-range.
+    function slice(Cur memory cur, uint from, uint to) internal pure returns (Cur memory out) {
+        if (from > to || to > cur.len) revert MalformedBlocks();
+        out.offset = cur.offset + from;
+        out.len = to - from;
+    }
+
     /// @notice Read a block header at position `i` without advancing the cursor.
     /// @param cur Source cursor.
     /// @param i Byte offset of the block header within the source region.
@@ -141,7 +153,7 @@ library Cursors {
     /// @return quotient Number of groups represented by the run (`count / group`).
     function primeRun(Cur memory cur, uint group) internal pure returns (bytes4 key, uint count, uint quotient) {
         if (group == 0) revert ZeroGroup();
-        key = cur.len < 4 ? bytes4(0) : bytes4(msg.data[cur.offset:cur.offset + 4]);
+        key = cur.i + 4 > cur.len ? bytes4(0) : bytes4(msg.data[cur.offset + cur.i:cur.offset + cur.i + 4]);
         (count, cur.bound) = countRun(cur, cur.i, key);
         if (count == 0) revert ZeroCursor();
         if (count % group != 0) revert BadRatio();
@@ -182,16 +194,48 @@ library Cursors {
         cur.i = next;
     }
 
-    /// @notice Parse a Bundle block at the current position and return an inner cursor.
-    /// Advances `cur.i` past the bundle block.
-    /// @param cur Outer cursor; advanced by one bundle block.
-    /// @return out Inner cursor scoped to the bundle's embedded block stream.
-    function bundle(Cur memory cur) internal pure returns (Cur memory out) {
-        (uint abs, uint next) = expect(cur, cur.i, Keys.Bundle, 0, 0);
-        uint len = next - (abs - cur.offset);
-        out.offset = abs;
-        out.len = len;
-        cur.i = next;
+    /// @notice Enter a Bundle block at the current position and return the next offset.
+    /// Advances `cur.i` past the bundle header so the bundled members can be parsed
+    /// directly from the same cursor. The returned `next` is the byte offset
+    /// immediately after the bundle payload, relative to the current cursor region.
+    /// @param cur Cursor positioned at a bundle block; advanced past the 8-byte header.
+    /// @return next Byte offset immediately after the bundle payload.
+    function bundle(Cur memory cur) internal pure returns (uint next) {
+        (, next) = expect(cur, cur.i, Keys.Bundle, 0, 0);
+        cur.i += 8;
+    }
+
+    /// @notice Enter a List block at the current position and return the next offset.
+    /// Advances `cur.i` past the list header so the list members can be parsed
+    /// directly from the same cursor. The returned `next` is the byte offset
+    /// immediately after the list payload, relative to the current cursor region.
+    /// @param cur Cursor positioned at a list block; advanced past the 8-byte header.
+    /// @return next Byte offset immediately after the list payload.
+    function list(Cur memory cur) internal pure returns (uint next) {
+        (, next) = expect(cur, cur.i, Keys.List, 0, 0);
+        cur.i += 8;
+    }
+
+    /// @notice Enter a List block, prime its member run, and return the raw block count.
+    /// @param cur Cursor positioned at a list block; advanced past the 8-byte header.
+    /// @param group Expected block group size for the list item stream.
+    /// @return count Total number of blocks in the list payload (a multiple of `group`).
+    /// @return next Byte offset immediately after the list payload.
+    function list(Cur memory cur, uint group) internal pure returns (uint count, uint next) {
+        next = list(cur);
+        (, count, ) = cur.primeRun(group);
+        if (cur.bound != next) revert IncompleteCursor();
+    }
+
+    /// @notice Enter a List block, prime its member run, and require an exact raw block count.
+    /// @param cur Cursor positioned at a list block; advanced past the 8-byte header.
+    /// @param group Expected block group size for the list item stream.
+    /// @param requiredCount Required number of blocks in the list payload.
+    /// @return next Byte offset immediately after the list payload.
+    function list(Cur memory cur, uint group, uint requiredCount) internal pure returns (uint next) {
+        uint count;
+        (count, next) = list(cur, group);
+        if (count != requiredCount) revert BadRatio();
     }
 
     /// @notice Assert that the cursor has consumed exactly up to `bound`.
@@ -199,6 +243,32 @@ library Cursors {
     /// @param cur Cursor to check.
     function complete(Cur memory cur) internal pure {
         if (cur.bound == 0 || cur.i != cur.bound) revert IncompleteCursor();
+    }
+
+    /// @notice Assert that the cursor has consumed its entire source region.
+    /// Reverts with `IncompleteCursor` when `cur.i != cur.len`.
+    /// @param cur Cursor to check.
+    function end(Cur memory cur) internal pure {
+        if (cur.i != cur.len) revert IncompleteCursor();
+    }
+
+    /// @notice Resume parsing after a nested region delimited by `resumeAt`.
+    /// Reverts with `IncompleteCursor` if `cur.i` has advanced past `resumeAt` or `resumeAt`
+    /// exceeds the cursor region length. Otherwise moves `cur.i` to `end`.
+    /// @param cur Cursor to advance.
+    /// @param resumeAt Relative end offset of the nested region to resume after.
+    function resume(Cur memory cur, uint resumeAt) internal pure {
+        if (resumeAt > cur.len || cur.i > resumeAt) revert IncompleteCursor();
+        cur.i = resumeAt;
+    }
+
+    /// @notice Ensure that parsing has reached an exact nested-region boundary.
+    /// Reverts with `IncompleteCursor` if `ensureAt` exceeds the cursor region length
+    /// or `cur.i != ensureAt`.
+    /// @param cur Cursor to check.
+    /// @param ensureAt Relative offset that `cur.i` must match exactly.
+    function ensure(Cur memory cur, uint ensureAt) internal pure {
+        if (ensureAt > cur.len || cur.i != ensureAt) revert IncompleteCursor();
     }
 
     /// @notice Assert completion and finalise a writer in one step.

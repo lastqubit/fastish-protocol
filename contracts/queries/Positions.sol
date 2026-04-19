@@ -9,19 +9,7 @@ using Cursors for Cur;
 
 string constant NAME = "getAssetPosition";
 
-/// @title PositionsQuery
-/// @notice Rootzero query that resolves one dynamic position response for each requested asset tuple.
-/// The request is a run of `ASSET` blocks.
-/// The response returns one dynamic `RESPONSE` block per asset entry, preserving request order.
-abstract contract AssetPosition is QueryBase {
-    uint public immutable getAssetPositionId = queryId(NAME);
-    uint internal immutable positionResponseSize;
-
-    constructor(string memory output, uint responseSize) {
-        positionResponseSize = responseSize;
-        emit Query(host, NAME, Schemas.Asset, output, getAssetPositionId);
-    }
-
+abstract contract AssetPositionHook {
     /// @notice Resolve the position payload for one requested asset tuple.
     /// Concrete implementations must append exactly one `RESPONSE` block whose payload
     /// length matches `positionResponseSize`.
@@ -29,6 +17,20 @@ abstract contract AssetPosition is QueryBase {
     /// @param meta Requested asset metadata slot.
     /// @param response Destination writer for the response stream.
     function appendAssetPosition(bytes32 asset, bytes32 meta, Writer memory response) internal view virtual;
+}
+
+/// @title PositionsQuery
+/// @notice Rootzero query that resolves one dynamic position response for each requested asset tuple.
+/// The request is a run of `ASSET` blocks.
+/// The response returns one dynamic `RESPONSE` block per asset entry, preserving request order.
+abstract contract AssetPosition is QueryBase, AssetPositionHook {
+    uint public immutable getAssetPositionId = queryId(NAME);
+    uint internal immutable positionResponseSize;
+
+    constructor(string memory output, uint responseSize) {
+        positionResponseSize = responseSize;
+        emit Query(host, NAME, Schemas.Asset, output, getAssetPositionId);
+    }
 
     /// @notice Resolve positions for a run of requested `(asset, meta)` tuples.
     /// @dev Allocates from the configured fixed response payload length so each hook call

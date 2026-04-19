@@ -9,17 +9,7 @@ string constant NAME = "debitAccount";
 using Cursors for Cur;
 using Writers for Writer;
 
-/// @title DebitAccount
-/// @notice Command that deducts AMOUNT blocks from an account and emits matching BALANCE state.
-/// Use for internally recording debits. The virtual `debitAccount` hook is called once per
-/// AMOUNT block; the default batch implementation handles the full request loop.
-abstract contract DebitAccount is CommandBase {
-    uint internal immutable debitAccountId = commandId(NAME);
-
-    constructor() {
-        emit Command(host, NAME, Schemas.Amount, debitAccountId, State.Empty, State.Balances, false);
-    }
-
+abstract contract DebitAccountHook {
     /// @notice Override to debit externally managed funds from `account`.
     /// Called once per AMOUNT block before a matching BALANCE is emitted.
     /// @param account Source account identifier.
@@ -27,6 +17,18 @@ abstract contract DebitAccount is CommandBase {
     /// @param meta Asset metadata slot.
     /// @param amount Amount to debit.
     function debitAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+}
+
+/// @title DebitAccount
+/// @notice Command that deducts AMOUNT blocks from an account and emits matching BALANCE state.
+/// Use for internally recording debits. The virtual `debitAccount` hook is called once per
+/// AMOUNT block; the default batch implementation handles the full request loop.
+abstract contract DebitAccount is CommandBase, DebitAccountHook {
+    uint internal immutable debitAccountId = commandId(NAME);
+
+    constructor() {
+        emit Command(host, NAME, Schemas.Amount, debitAccountId, State.Empty, State.Balances, false);
+    }
 
     /// @notice Override to customize request parsing or batching for debits.
     /// The default implementation iterates AMOUNT blocks, calls

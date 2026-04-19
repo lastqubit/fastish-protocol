@@ -10,23 +10,25 @@ using Cursors for Cur;
 string constant NAME = "isAllowedAsset";
 string constant OUTPUT = "response(uint allowed)";
 
-/// @title IsAllowedAsset
-/// @notice Rootzero query that checks whether one or more `(asset, meta)` tuples are allowed.
-/// The request is a run of `ASSET` blocks.
-/// The response returns one `RESPONSE` block per query entry, preserving request order.
-abstract contract IsAllowedAsset is QueryBase {
-    uint public immutable isAllowedAssetId = queryId(NAME);
-
-    constructor() {
-        emit Query(host, NAME, Schemas.Asset, OUTPUT, isAllowedAssetId);
-    }
-
+abstract contract IsAllowedAssetHook {
     /// @notice Resolve whether one asset tuple is allowed.
     /// Concrete implementations define the allowlist policy.
     /// @param asset Requested asset identifier.
     /// @param meta Requested asset metadata slot.
     /// @return allowed Whether the asset tuple is allowed.
     function isAllowedAsset(bytes32 asset, bytes32 meta) internal view virtual returns (bool allowed);
+}
+
+/// @title IsAllowedAsset
+/// @notice Rootzero query that checks whether one or more `(asset, meta)` tuples are allowed.
+/// The request is a run of `ASSET` blocks.
+/// The response returns one `RESPONSE` block per query entry, preserving request order.
+abstract contract IsAllowedAsset is QueryBase, IsAllowedAssetHook {
+    uint public immutable isAllowedAssetId = queryId(NAME);
+
+    constructor() {
+        emit Query(host, NAME, Schemas.Asset, OUTPUT, isAllowedAssetId);
+    }
 
     /// @notice Resolve allowlist status for a run of requested `(asset, meta)` tuples.
     /// @param request Block-stream request consisting of `asset(asset, meta)*`.

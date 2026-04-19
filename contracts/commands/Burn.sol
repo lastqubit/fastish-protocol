@@ -7,16 +7,7 @@ using Cursors for Cur;
 
 string constant NAME = "burn";
 
-/// @title Burn
-/// @notice Command that irreversibly destroys each BALANCE state block via a virtual hook.
-/// Produces no output state.
-abstract contract Burn is CommandBase {
-    uint internal immutable burnId = commandId(NAME);
-
-    constructor() {
-        emit Command(host, NAME, "", burnId, State.Balances, State.Empty, false);
-    }
-
+abstract contract BurnHook {
     /// @notice Override to burn or consume the provided balance amount.
     /// Called once per BALANCE block in state.
     /// @param account Caller's account identifier.
@@ -25,6 +16,17 @@ abstract contract Burn is CommandBase {
     /// @param amount Amount to burn.
     /// @return Amount actually burned (may differ from `amount` for partial burns).
     function burn(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual returns (uint);
+}
+
+/// @title Burn
+/// @notice Command that irreversibly destroys each BALANCE state block via a virtual hook.
+/// Produces no output state.
+abstract contract Burn is CommandBase, BurnHook {
+    uint internal immutable burnId = commandId(NAME);
+
+    constructor() {
+        emit Command(host, NAME, "", burnId, State.Balances, State.Empty, false);
+    }
 
     function burn(CommandContext calldata c) external onlyCommand(burnId, c.target) returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);

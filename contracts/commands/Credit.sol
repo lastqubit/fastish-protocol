@@ -7,17 +7,7 @@ string constant NAME = "creditAccount";
 
 using Cursors for Cur;
 
-/// @title CreditAccount
-/// @notice Command that delivers BALANCE state blocks to an account via a virtual hook.
-/// Use for internally recording credits that have already been settled externally.
-/// An optional RECIPIENT block in the request overrides the default `c.account` destination.
-abstract contract CreditAccount is CommandBase {
-    uint internal immutable creditAccountId = commandId(NAME);
-
-    constructor() {
-        emit Command(host, NAME, Schemas.Recipient, creditAccountId, State.Balances, State.Empty, false);
-    }
-
+abstract contract CreditAccountHook {
     /// @notice Override to credit externally managed funds to `account`.
     /// Called once per BALANCE block in state.
     /// @param account Recipient account identifier.
@@ -25,6 +15,18 @@ abstract contract CreditAccount is CommandBase {
     /// @param meta Asset metadata slot.
     /// @param amount Amount to credit.
     function creditAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+}
+
+/// @title CreditAccount
+/// @notice Command that delivers BALANCE state blocks to an account via a virtual hook.
+/// Use for internally recording credits that have already been settled externally.
+/// An optional RECIPIENT block in the request overrides the default `c.account` destination.
+abstract contract CreditAccount is CommandBase, CreditAccountHook {
+    uint internal immutable creditAccountId = commandId(NAME);
+
+    constructor() {
+        emit Command(host, NAME, Schemas.Recipient, creditAccountId, State.Balances, State.Empty, false);
+    }
 
     function creditAccount(
         CommandContext calldata c

@@ -7,17 +7,7 @@ using Cursors for Cur;
 
 string constant NAME = "withdraw";
 
-/// @title Withdraw
-/// @notice Command that delivers BALANCE state blocks to an external destination.
-/// Use `withdraw` for assets being sent outside the protocol (e.g. ERC-20 transfers, ETH sends).
-/// For internal balance credits, use `creditAccount` instead.
-abstract contract Withdraw is CommandBase {
-    uint internal immutable withdrawId = commandId(NAME);
-
-    constructor() {
-        emit Command(host, NAME, Schemas.Recipient, withdrawId, State.Balances, State.Empty, false);
-    }
-
+abstract contract WithdrawHook {
     /// @notice Override to send funds to `account`.
     /// Called once per BALANCE block in state.
     /// @param account Destination account identifier (resolved from RECIPIENT block or caller).
@@ -25,6 +15,18 @@ abstract contract Withdraw is CommandBase {
     /// @param meta Asset metadata slot.
     /// @param amount Amount to deliver.
     function withdraw(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+}
+
+/// @title Withdraw
+/// @notice Command that delivers BALANCE state blocks to an external destination.
+/// Use `withdraw` for assets being sent outside the protocol (e.g. ERC-20 transfers, ETH sends).
+/// For internal balance credits, use `creditAccount` instead.
+abstract contract Withdraw is CommandBase, WithdrawHook {
+    uint internal immutable withdrawId = commandId(NAME);
+
+    constructor() {
+        emit Command(host, NAME, Schemas.Recipient, withdrawId, State.Balances, State.Empty, false);
+    }
 
     function withdraw(
         CommandContext calldata c

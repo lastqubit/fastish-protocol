@@ -10,26 +10,7 @@ using Cursors for Cur;
 
 string constant NAME = "pipePayable";
 
-/// @title PipePayable
-/// @notice Command that sequences multiple sub-command STEP invocations in a single transaction.
-/// Each STEP block carries a target node, native value to forward, and an embedded request.
-/// State threads through the steps: each step's output becomes the next step's state.
-/// Admin accounts are not permitted to use `pipePayable`.
-abstract contract PipePayable is CommandPayable {
-    uint internal immutable pipePayableId = commandId(NAME);
-
-    constructor() {
-        emit Command(host, NAME, Schemas.Step, pipePayableId, 0, 0, true);
-    }
-
-    /// @notice Override to execute a single STEP and return the resulting state.
-    /// The returned state is passed as the `state` argument of the next STEP.
-    /// @param target Destination command node ID from the STEP block.
-    /// @param account Caller's account identifier.
-    /// @param state Current threaded state from the previous step.
-    /// @param request Embedded request bytes from the STEP block.
-    /// @param value Native value forwarded with this step.
-    /// @return Next state to thread into the following step.
+abstract contract PipePayableHook {
     function dispatchStep(
         uint target,
         bytes32 account,
@@ -37,6 +18,19 @@ abstract contract PipePayable is CommandPayable {
         bytes calldata request,
         uint value
     ) internal virtual returns (bytes memory);
+}
+
+/// @title PipePayable
+/// @notice Command that sequences multiple sub-command STEP invocations in a single transaction.
+/// Each STEP block carries a target node, native value to forward, and an embedded request.
+/// State threads through the steps: each step's output becomes the next step's state.
+/// Admin accounts are not permitted to use `pipePayable`.
+abstract contract PipePayable is CommandPayable, PipePayableHook {
+    uint internal immutable pipePayableId = commandId(NAME);
+
+    constructor() {
+        emit Command(host, NAME, Schemas.Step, pipePayableId, 0, 0, true);
+    }
 
     function pipe(
         bytes32 account,

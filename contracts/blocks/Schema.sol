@@ -67,10 +67,13 @@ library Schemas {
 // Schema DSL:
 // - `;` separates top-level sibling blocks
 // - `&` bundles adjacent blocks into one bundle block
+// - a bundle may optionally be named in the form `name = a & b`
+// - postfix `[]` marks a repeated list in the simple suffix form, e.g. `asset(...)[]`
+// - a list of bundled items must use an inline named form `name[] = a & b`
 // - bundled blocks preserve member order, so `a & b` differs from `b & a`
 // - a bundle block's self payload is an embedded normal block stream of its bundled members
 // - bundled members keep their ordinary block encoding, so dynamic blocks are allowed inside bundles
-// - `->` separates request and response shapes, appears at most once, and is omitted when no output is modeled
+// - a list block's self payload is an embedded normal block stream representing the repeated items
 // - top-level blocks of the same type should be grouped together
 // - primary / driving blocks should appear before auxiliary blocks
 // - `route(<fields...>)`, `query(<fields...>)`, and `response(<fields...>)` are reserved
@@ -79,6 +82,10 @@ library Schemas {
 // - these extensible forms work like dynamic `bytes` blocks: they may carry arbitrary
 //   payload bytes while keeping one fixed key per semantic block type
 // - `&` compiles to a `Keys.Bundle` block whose self payload is the bundled member block stream
+// - `[]` compiles to a `Keys.List` block whose self payload is the repeated item block stream
+// - `asset(...)[]` means a list whose repeated item is the block `asset(...)`
+// - `steps[] = asset(...) & recipient(...)` means a named list whose repeated item is the bundle
+//   `asset(...) & recipient(...)`
 // - canonical blocks are `amount(...)` for request amounts, `balance(...)` for state balances,
 //   `minimum(...)` for result floors, `maximum(...)` for spend ceilings, and `quantity(...)`
 //   for plain scalar amounts

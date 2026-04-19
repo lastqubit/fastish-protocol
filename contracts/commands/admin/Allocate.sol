@@ -7,19 +7,21 @@ using Cursors for Cur;
 
 string constant NAME = "allocate";
 
+abstract contract AllocateHook {
+    /// @dev Override to apply a single allocation entry.
+    /// Called once per ALLOCATION block in the request.
+    function allocate(uint host, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+}
+
 /// @title Allocate
 /// @notice Admin command that applies cross-host allocation entries via a virtual hook.
 /// Each ALLOCATION block in the request calls `allocate`. Only callable by the admin account.
-abstract contract Allocate is CommandBase {
+abstract contract Allocate is CommandBase, AllocateHook {
     uint internal immutable allocateId = commandId(NAME);
 
     constructor() {
         emit Command(host, NAME, Schemas.Allocation, allocateId, State.Empty, State.Empty, false);
     }
-
-    /// @dev Override to apply a single allocation entry.
-    /// Called once per ALLOCATION block in the request.
-    function allocate(uint host, bytes32 asset, bytes32 meta, uint amount) internal virtual;
 
     function allocate(CommandContext calldata c) external onlyAdmin(c.account) onlyCommand(allocateId, c.target) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);

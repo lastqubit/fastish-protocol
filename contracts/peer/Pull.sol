@@ -8,21 +8,23 @@ string constant NAME = "peerPull";
 
 using Cursors for Cur;
 
+abstract contract PeerPullHook {
+    /// @notice Override to process a single incoming block from the pull request.
+    /// @param peer Host node ID derived from the caller address.
+    /// @param input Cursor positioned at the current input block; advance it before returning.
+    function peerPull(uint peer, Cur memory input) internal virtual;
+}
+
 /// @title PeerPull
 /// @notice Peer that pulls assets from a remote host into this one.
 /// Each block in the request is dispatched to `peerPull(peer, input)`, where `peer`
 /// is derived from `msg.sender`. Restricted to trusted peers.
-abstract contract PeerPull is PeerBase {
+abstract contract PeerPull is PeerBase, PeerPullHook {
     uint internal immutable peerPullId = peerId(NAME);
 
     constructor(string memory input) {
         emit Peer(host, NAME, input, peerPullId, false);
     }
-
-    /// @notice Override to process a single incoming block from the pull request.
-    /// @param peer Host node ID derived from the caller address.
-    /// @param input Cursor positioned at the current input block; advance it before returning.
-    function peerPull(uint peer, Cur memory input) internal virtual;
 
     /// @notice Execute the pull peer call.
     function peerPull(bytes calldata request) external onlyPeer returns (bytes memory) {

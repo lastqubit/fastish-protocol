@@ -28,6 +28,7 @@ library Keys {
     bytes4 constant Break = bytes4(keccak256("break()"));
     /// @dev Bundle wrapper — (bytes data); payload is an embedded block stream
     bytes4 constant Bundle = bytes4(keccak256("bundle(bytes data)"));
+    bytes4 constant List = bytes4(keccak256("list(bytes data)"));
     /// @dev Extensible routing field — (bytes data); layout is command-defined
     bytes4 constant Route = bytes4(keccak256("route(bytes data)"));
     /// @dev Extensible query field - (bytes data); layout is query-defined, key is always `Keys.Query`

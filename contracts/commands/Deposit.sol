@@ -11,17 +11,7 @@ string constant DEPOSIT_PAYABLE = "depositPayable";
 using Cursors for Cur;
 using Writers for Writer;
 
-/// @title Deposit
-/// @notice Command that receives externally sourced assets and records them as BALANCE state.
-/// Use `deposit` for assets arriving from outside the protocol (e.g. ERC-20 transfers, ETH).
-/// For internal balance deductions, use `debitAccount` instead.
-abstract contract Deposit is CommandBase {
-    uint internal immutable depositId = commandId(DEPOSIT);
-
-    constructor() {
-        emit Command(host, DEPOSIT, Schemas.Amount, depositId, State.Empty, State.Balances, false);
-    }
-
+abstract contract DepositHook {
     /// @notice Override to receive externally sourced funds for `account`.
     /// Called once per AMOUNT block. A matching BALANCE block is appended to the
     /// output after each call.
@@ -29,12 +19,31 @@ abstract contract Deposit is CommandBase {
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Amount received.
-    function deposit(
-        bytes32 account,
-        bytes32 asset,
-        bytes32 meta,
-        uint amount
-    ) internal virtual;
+    function deposit(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+}
+
+abstract contract DepositPayableHook {
+    /// @notice Override to receive externally sourced funds for `account`.
+    /// Called once per AMOUNT block. A matching BALANCE block is appended to the
+    /// output after each call.
+    /// @param account Recipient account identifier.
+    /// @param asset Asset identifier.
+    /// @param meta Asset metadata slot.
+    /// @param amount Amount received.
+    /// @param budget Mutable native-value budget drawn from `msg.value`.
+    function deposit(bytes32 account, bytes32 asset, bytes32 meta, uint amount, Budget memory budget) internal virtual;
+}
+
+/// @title Deposit
+/// @notice Command that receives externally sourced assets and records them as BALANCE state.
+/// Use `deposit` for assets arriving from outside the protocol (e.g. ERC-20 transfers, ETH).
+/// For internal balance deductions, use `debitAccount` instead.
+abstract contract Deposit is CommandBase, DepositHook {
+    uint internal immutable depositId = commandId(DEPOSIT);
+
+    constructor() {
+        emit Command(host, DEPOSIT, Schemas.Amount, depositId, State.Empty, State.Balances, false);
+    }
 
     function deposit(
         CommandContext calldata c
@@ -55,28 +64,12 @@ abstract contract Deposit is CommandBase {
 /// @title DepositPayable
 /// @notice Command that receives externally sourced assets and records them as BALANCE state.
 /// Use `depositPayable` when the hook needs tracked access to `msg.value` via a mutable budget.
-abstract contract DepositPayable is CommandPayable {
+abstract contract DepositPayable is CommandPayable, DepositPayableHook {
     uint internal immutable depositPayableId = commandId(DEPOSIT_PAYABLE);
 
     constructor() {
         emit Command(host, DEPOSIT_PAYABLE, Schemas.Amount, depositPayableId, State.Empty, State.Balances, true);
     }
-
-    /// @notice Override to receive externally sourced funds for `account`.
-    /// Called once per AMOUNT block. A matching BALANCE block is appended to the
-    /// output after each call.
-    /// @param account Recipient account identifier.
-    /// @param asset Asset identifier.
-    /// @param meta Asset metadata slot.
-    /// @param amount Amount received.
-    /// @param budget Mutable native-value budget drawn from `msg.value`.
-    function deposit(
-        bytes32 account,
-        bytes32 asset,
-        bytes32 meta,
-        uint amount,
-        Budget memory budget
-    ) internal virtual;
 
     function depositPayable(
         CommandContext calldata c

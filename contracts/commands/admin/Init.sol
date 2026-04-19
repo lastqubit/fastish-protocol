@@ -8,19 +8,21 @@ string constant NAME = "init";
 
 using Cursors for Cur;
 
+abstract contract InitHook {
+    /// @notice Override to run host initialization logic.
+    /// @param input Cursor over the full request byte stream.
+    function init(Cur memory input) internal virtual;
+}
+
 /// @title Init
 /// @notice Admin command that runs host initialization logic via a virtual hook.
 /// The full request is passed to `init` as a cursor. Only callable by the admin account.
-abstract contract Init is CommandBase {
+abstract contract Init is CommandBase, InitHook {
     uint internal immutable initId = commandId(NAME);
 
     constructor(string memory input) {
         emit Command(host, NAME, input, initId, State.Empty, State.Empty, false);
     }
-
-    /// @notice Override to run host initialization logic.
-    /// @param input Cursor over the full request byte stream.
-    function init(Cur memory input) internal virtual;
 
     function init(
         CommandContext calldata c
