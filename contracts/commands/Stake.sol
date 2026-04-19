@@ -8,19 +8,21 @@ string constant SCTP = "stakeCustodyToPosition";
 
 using Cursors for Cur;
 
+abstract contract StakeCustodyToPositionHook {
+    /// @dev Override to stake a custody position into a non-balance setup
+    /// target described by `request`.
+    function stakeCustodyToPosition(bytes32 account, HostAmount memory custody, Cur memory request) internal virtual;
+}
+
 /// @title StakeCustodyToPosition
 /// @notice Command that stakes CUSTODY state positions into a non-balance target
 /// described by the request stream. Produces no output state.
-abstract contract StakeCustodyToPosition is CommandBase {
+abstract contract StakeCustodyToPosition is CommandBase, StakeCustodyToPositionHook {
     uint internal immutable stakeCustodyToPositionId = commandId(SCTP);
 
     constructor(string memory input) {
         emit Command(host, SCTP, input, stakeCustodyToPositionId, State.Custodies, State.Empty, false);
     }
-
-    /// @dev Override to stake a custody position into a non-balance setup
-    /// target described by `request`.
-    function stakeCustodyToPosition(bytes32 account, HostAmount memory custody, Cur memory request) internal virtual;
 
     function stakeCustodyToPosition(
         CommandContext calldata c

@@ -9,17 +9,7 @@ using Cursors for Cur;
 string constant NAME = "getBalances";
 string constant INPUT = "query(bytes32 account, bytes32 asset, bytes32 meta)";
 
-/// @title GetBalances
-/// @notice Rootzero query that resolves balances for one or more `(account, asset, meta)` tuples.
-/// The request is a run of `QUERY` blocks, each encoding `(bytes32 account, bytes32 asset, bytes32 meta)`.
-/// The response returns one `BALANCE` block per query entry, preserving request order.
-abstract contract GetBalances is QueryBase {
-    uint public immutable getBalancesId = queryId(NAME);
-
-    constructor() {
-        emit Query(host, NAME, INPUT, Schemas.Balance, getBalancesId);
-    }
-
+abstract contract GetBalancesHook {
     /// @notice Resolve one account's balance for one supported asset.
     /// Concrete implementations define how assets are resolved.
     /// @param account Account identifier carried by the query payload.
@@ -27,6 +17,18 @@ abstract contract GetBalances is QueryBase {
     /// @param meta Requested asset metadata slot.
     /// @return amount Current balance in the asset's native units.
     function getBalance(bytes32 account, bytes32 asset, bytes32 meta) internal view virtual returns (uint amount);
+}
+
+/// @title GetBalances
+/// @notice Rootzero query that resolves balances for one or more `(account, asset, meta)` tuples.
+/// The request is a run of `QUERY` blocks, each encoding `(bytes32 account, bytes32 asset, bytes32 meta)`.
+/// The response returns one `BALANCE` block per query entry, preserving request order.
+abstract contract GetBalances is QueryBase, GetBalancesHook {
+    uint public immutable getBalancesId = queryId(NAME);
+
+    constructor() {
+        emit Query(host, NAME, INPUT, Schemas.Balance, getBalancesId);
+    }
 
     /// @notice Resolve balances for a run of requested `(account, asset, meta)` tuples.
     /// @param request Block-stream request consisting of `query(account, asset, meta)*`.

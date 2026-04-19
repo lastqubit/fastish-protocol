@@ -8,20 +8,22 @@ string constant NAME = "create";
 
 using Cursors for Cur;
 
+abstract contract CreateHook {
+    /// @dev Override to create or initialize an object described by `input`.
+    /// Called once per top-level request item.
+    function create(bytes32 account, Cur memory input) internal virtual;
+}
+
 /// @title Create
 /// @notice Generic command that creates or initializes objects via a virtual hook.
 /// The request schema is constructor-defined; `create` is called once per top-level group.
 /// Produces no output state.
-abstract contract Create is CommandBase {
+abstract contract Create is CommandBase, CreateHook {
     uint internal immutable createId = commandId(NAME);
 
     constructor(string memory input) {
         emit Command(host, NAME, input, createId, State.Empty, State.Empty, false);
     }
-
-    /// @dev Override to create or initialize an object described by `input`.
-    /// Called once per top-level request item.
-    function create(bytes32 account, Cur memory input) internal virtual;
 
     function create(CommandContext calldata c) external onlyCommand(createId, c.target) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
