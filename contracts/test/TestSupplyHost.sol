@@ -3,7 +3,7 @@ pragma solidity ^0.8.33;
 
 import { Host } from "../core/Host.sol";
 import { Supply } from "../commands/Supply.sol";
-import { HostAmount } from "../blocks/Schema.sol";
+import { HostAmount } from "../core/Types.sol";
 import { Ids } from "../utils/Ids.sol";
 
 contract TestSupplyHost is Host, Supply {
@@ -13,7 +13,7 @@ contract TestSupplyHost is Host, Supply {
         Host(address(0), 1, "test")
         Supply()
     {
-        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
+        if (cmdr != address(0)) authorize(Ids.toHost(cmdr));
     }
 
     function supply(bytes32 account, HostAmount memory value) internal override {

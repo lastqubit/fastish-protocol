@@ -15,14 +15,14 @@ contract TestRemoveHost is Host, Remove {
         Host(address(0), 1, "test")
         Remove("")
     {
-        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
+        if (cmdr != address(0)) authorize(Ids.toHost(cmdr));
     }
 
     function remove(bytes32 account, Cur memory input) internal override {
         (bytes4 key, uint len) = input.peek(input.i);
         bytes calldata inputData;
         if (key == Keys.Route) {
-            inputData = input.unpackRoute();
+            inputData = input.unpackRaw(Keys.Route);
         } else {
             uint next = input.i + 8 + len;
             inputData = msg.data[input.offset + input.i:input.offset + next];

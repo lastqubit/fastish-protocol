@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Cur, Cursors, Schemas, Writer, Writers} from "../Cursors.sol";
+import {Cur, Cursors, Keys, Schemas, Writer, Writers} from "../Cursors.sol";
 import {QueryBase} from "./Base.sol";
 
 using Cursors for Cur;
@@ -38,7 +38,7 @@ abstract contract GetBalances is QueryBase, GetBalancesHook {
         Writer memory response = Writers.allocBalances(count);
 
         while (query.i < query.bound) {
-            (bytes32 account, bytes32 asset, bytes32 meta) = query.unpackQuery96();
+            (bytes32 account, bytes32 asset, bytes32 meta) = query.unpack96(Keys.Query);
             uint balance = getBalance(account, asset, meta);
             Writers.appendBalance(response, asset, meta, balance);
         }

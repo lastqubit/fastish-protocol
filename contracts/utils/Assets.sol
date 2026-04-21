@@ -64,16 +64,16 @@ library Assets {
         return bytes32(toLocalBase(Erc1155) | (uint(uint160(collection)) << 32));
     }
 
-    /// @notice Derive a storage key for an (asset, meta) pair.
-    /// For 32-byte EVM assets (no meta), the key is the asset ID itself.
-    /// For assets with metadata (e.g. ERC-721 or ERC-1155 token IDs), the key is
+    /// @notice Derive a storage slot for an (asset, meta) pair.
+    /// For 32-byte EVM assets (no meta), the slot is the asset ID itself.
+    /// For assets with metadata (e.g. ERC-721 or ERC-1155 token IDs), the slot is
     /// `keccak256(asset ++ meta)`.
     /// Reverts only if `asset` is zero.
-    /// For 32-byte assets, `meta` is ignored and does not affect the derived key.
+    /// For 32-byte assets, `meta` is ignored and does not affect the derived slot.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot (e.g. token ID context).
-    /// @return Storage key for the (asset, meta) combination.
-    function key(bytes32 asset, bytes32 meta) internal pure returns (bytes32) {
+    /// @return Storage slot for the (asset, meta) combination.
+    function slot(bytes32 asset, bytes32 meta) internal pure returns (bytes32) {
         if (asset == 0) revert InvalidAsset();
         return bytes1(asset) == 0x20 ? asset : keccak256(bytes.concat(asset, meta));
     }
@@ -191,14 +191,14 @@ library Amounts {
         return amount;
     }
 
-    /// @notice Assert non-zero amount and derive the storage key for the (asset, meta) pair.
+    /// @notice Assert non-zero amount and derive the storage slot for the (asset, meta) pair.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Amount to validate (must be non-zero).
-    /// @return key_ Storage key from `Assets.key(asset, meta)`.
-    function ensureKey(bytes32 asset, bytes32 meta, uint amount) internal pure returns (bytes32 key_) {
+    /// @return slot_ Storage slot from `Assets.slot(asset, meta)`.
+    function ensureSlot(bytes32 asset, bytes32 meta, uint amount) internal pure returns (bytes32 slot_) {
         ensure(amount);
-        return Assets.key(asset, meta);
+        return Assets.slot(asset, meta);
     }
 
     /// @notice Clamp `available` to `[min, max]`.

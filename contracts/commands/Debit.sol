@@ -48,7 +48,7 @@ abstract contract DebitAccount is CommandBase, DebitAccountHook {
 
     function debitAccount(
         CommandContext calldata c
-    ) external onlyCommand(debitAccountId, c.target) returns (bytes memory) {
+    ) external onlyTrusted returns (bytes memory) {
         return debitAccount(c.account, c.request);
     }
 }

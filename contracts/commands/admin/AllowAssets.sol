@@ -25,7 +25,7 @@ abstract contract AllowAssets is CommandBase, AllowAssetsHook {
 
     function allowAssets(
         CommandContext calldata c
-    ) external onlyAdmin(c.account) onlyCommand(allowAssetsId, c.target) returns (bytes memory) {
+    ) external onlyAdmin(c.account) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {

@@ -23,8 +23,8 @@ contract TestQuery is QueryBase {
         Writer memory writer = Writers.alloc32s(count);
 
         while (input.i < input.bound) {
-            uint foo = input.unpackQueryUint();
-            writer.append32(Keys.Response, bytes32(foo + 1));
+            uint foo = input.unpackUint(Keys.Query);
+            writer.append32(Keys.Response, bytes32(foo + 1), 0);
         }
 
         out = input.complete(writer);

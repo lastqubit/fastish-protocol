@@ -7,18 +7,18 @@ import { Accounts } from "../utils/Accounts.sol";
 using Cursors for Cur;
 
 string constant NAME = "transfer";
-string constant INPUT = string.concat(Schemas.Amount, "&", Schemas.Recipient);
+string constant INPUT = string.concat(Schemas.Amount, "&", Schemas.Account);
 
 abstract contract TransferHook {
     /// @notice Override to execute a single transfer record from the request pipeline.
-    /// Called once per bundled AMOUNT+RECIPIENT pair in the request.
+    /// Called once per bundled AMOUNT+ACCOUNT pair in the request.
     /// @param value Decoded transfer record (from, to, asset, meta, amount).
     function transfer(Tx memory value) internal virtual;
 }
 
 /// @title Transfer
 /// @notice Command that transfers assets from a caller to recipients specified in
-/// bundled AMOUNT+RECIPIENT request blocks. Produces no state output.
+/// bundled AMOUNT+ACCOUNT request blocks. Produces no state output.
 /// The virtual `transfer(value)` hook is called once per bundle.
 abstract contract Transfer is CommandBase, TransferHook {
     uint internal immutable transferId = commandId(NAME);
@@ -40,7 +40,7 @@ abstract contract Transfer is CommandBase, TransferHook {
         while (input.i < input.bound) {
             uint next = input.bundle();
             (value.asset, value.meta, value.amount) = input.unpackAmount();
-            value.to = Accounts.ensure(input.unpackRecipient());
+            value.to = Accounts.ensure(input.unpackAccount());
             transfer(value);
             input.ensure(next);
         }
@@ -51,7 +51,7 @@ abstract contract Transfer is CommandBase, TransferHook {
 
     function transfer(
         CommandContext calldata c
-    ) external onlyCommand(transferId, c.target) returns (bytes memory) {
+    ) external onlyTrusted returns (bytes memory) {
         return transfer(c.account, c.request);
     }
 }

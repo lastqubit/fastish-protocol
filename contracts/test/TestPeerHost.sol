@@ -22,7 +22,7 @@ contract TestPeerHost is Host, PeerAssetPull, PeerPull, PeerPush, PeerSettle {
         PeerPull("")
         PeerPush("")
     {
-        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
+        if (cmdr != address(0)) authorize(Ids.toHost(cmdr));
     }
 
     function peerAssetPull(uint peer, bytes32 asset, bytes32 meta, uint amount) internal override {
@@ -33,7 +33,7 @@ contract TestPeerHost is Host, PeerAssetPull, PeerPull, PeerPush, PeerSettle {
         (bytes4 key, uint len) = input.peek(input.i);
         uint next = input.i + 8 + len;
         bytes calldata inputData = key == Keys.Route
-            ? input.unpackRoute()
+            ? input.unpackRaw(Keys.Route)
             : msg.data[input.offset + input.i:input.offset + next];
         input.i = next;
         emit PeerPullCalled(peer, inputData);
@@ -43,7 +43,7 @@ contract TestPeerHost is Host, PeerAssetPull, PeerPull, PeerPush, PeerSettle {
         (bytes4 key, uint len) = input.peek(input.i);
         uint next = input.i + 8 + len;
         bytes calldata inputData = key == Keys.Route
-            ? input.unpackRoute()
+            ? input.unpackRaw(Keys.Route)
             : msg.data[input.offset + input.i:input.offset + next];
         input.i = next;
         emit PeerPushCalled(peer, inputData);

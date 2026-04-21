@@ -25,7 +25,7 @@ abstract contract Remove is CommandBase, RemoveHook {
         emit Command(host, NAME, input, removeId, State.Empty, State.Empty, false);
     }
 
-    function remove(CommandContext calldata c) external onlyCommand(removeId, c.target) returns (bytes memory) {
+    function remove(CommandContext calldata c) external onlyTrusted returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {

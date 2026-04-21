@@ -21,7 +21,7 @@ abstract contract RelocatePayable is CommandPayable {
 
     function relocatePayable(
         CommandContext calldata c
-    ) external payable onlyAdmin(c.account) onlyCommand(relocatePayableId, c.target) returns (bytes memory) {
+    ) external payable onlyAdmin(c.account) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
         Budget memory budget = Values.fromMsg();
 

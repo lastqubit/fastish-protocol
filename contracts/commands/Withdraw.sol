@@ -10,7 +10,7 @@ string constant NAME = "withdraw";
 abstract contract WithdrawHook {
     /// @notice Override to send funds to `account`.
     /// Called once per BALANCE block in state.
-    /// @param account Destination account identifier (resolved from RECIPIENT block or caller).
+    /// @param account Destination account identifier (resolved from ACCOUNT block or caller).
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Amount to deliver.
@@ -25,15 +25,15 @@ abstract contract Withdraw is CommandBase, WithdrawHook {
     uint internal immutable withdrawId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Recipient, withdrawId, State.Balances, State.Empty, false);
+        emit Command(host, NAME, Schemas.Account, withdrawId, State.Balances, State.Empty, false);
     }
 
     function withdraw(
         CommandContext calldata c
-    ) external onlyCommand(withdrawId, c.target) returns (bytes memory) {
+    ) external onlyTrusted returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
-        bytes32 to = request.recipientAfter(c.account);
+        bytes32 to = request.accountAfter(c.account);
 
         while (state.i < state.bound) {
             (bytes32 asset, bytes32 meta, uint amount) = state.unpackBalance();

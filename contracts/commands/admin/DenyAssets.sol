@@ -25,7 +25,7 @@ abstract contract DenyAssets is CommandBase, DenyAssetsHook {
 
     function denyAssets(
         CommandContext calldata c
-    ) external onlyAdmin(c.account) onlyCommand(denyAssetsId, c.target) returns (bytes memory) {
+    ) external onlyAdmin(c.account) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {

@@ -15,7 +15,7 @@ import { DenyAssets } from "../commands/admin/DenyAssets.sol";
 import { Destroy } from "../commands/admin/Destroy.sol";
 import { Init } from "../commands/admin/Init.sol";
 import { Allocate } from "../commands/admin/Allocate.sol";
-import { HostAmount, Tx } from "../blocks/Schema.sol";
+import { HostAmount, Tx } from "../core/Types.sol";
 import { Cursors, Cursors, Cur, Keys } from "../Cursors.sol";
 import { Budget, Values } from "../utils/Value.sol";
 
@@ -109,7 +109,7 @@ contract TestHost is
         (bytes4 key, uint len) = input.peek(input.i);
         bytes calldata inputData;
         if (key == Keys.Route) {
-            inputData = input.unpackRoute();
+            inputData = input.unpackRaw(Keys.Route);
         } else {
             uint next = input.i + 8 + len;
             inputData = msg.data[input.offset + input.i:input.offset + next];
@@ -122,7 +122,7 @@ contract TestHost is
         (bytes4 key, uint len) = input.peek(input.i);
         bytes calldata inputData;
         if (key == Keys.Route) {
-            inputData = input.unpackRoute();
+            inputData = input.unpackRaw(Keys.Route);
         } else {
             uint next = input.i + 8 + len;
             inputData = msg.data[input.offset + input.i:input.offset + next];
@@ -221,6 +221,10 @@ contract TestHost is
         return relocatePayableId;
     }
 
+    function getExecutePayableId() external view returns (uint) {
+        return executePayableId;
+    }
+
     function getAllowAssetsId() external view returns (uint) {
         return allowAssetsId;
     }
@@ -242,7 +246,7 @@ contract TestHost is
     }
 
     function isAuthorized(uint node) external view returns (bool) {
-        return authorized[node];
+        return trusted[node];
     }
 }
 

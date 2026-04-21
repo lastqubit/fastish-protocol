@@ -76,8 +76,8 @@ contract TestUtils {
         return Amounts.ensure(amount, min, max);
     }
 
-    function testAssetKey(bytes32 asset, bytes32 meta) external pure returns (bytes32) {
-        return Assets.key(asset, meta);
+    function testAssetSlot(bytes32 asset, bytes32 meta) external pure returns (bytes32) {
+        return Assets.slot(asset, meta);
     }
 
     function testIsSortedErc20Assets(bytes32 a, bytes32 b) external view returns (bool ordered) {

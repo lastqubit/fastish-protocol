@@ -10,8 +10,6 @@ import {Budget, Values} from "../utils/Value.sol";
 
 /// @notice Execution context passed to every command invocation.
 struct CommandContext {
-    /// @dev Destination command node ID; zero means "any command on this host".
-    uint target;
     /// @dev Caller's account identifier.
     bytes32 account;
     /// @dev Current state block stream (previous command output or initial state).
@@ -20,22 +18,22 @@ struct CommandContext {
     bytes request;
 }
 
-/// @notice ABI-encode a command call from a target command ID and execution context.
-/// @dev Derives the function selector from `target` via `Ids.commandSelector(target)`.
-/// Reverts if `target` is not a valid command ID.
-/// @param target Destination command node ID embedding the target selector.
+/// @notice ABI-encode a command call from a command ID and execution context.
+/// @dev Derives the function selector from `cid` via `Ids.commandSelector(cid)`.
+/// Reverts if `cid` is not a valid command ID.
+/// @param cid Command node ID embedding the target selector.
 /// @param account Caller account identifier for the command context.
 /// @param state Current state block stream passed to the command.
 /// @param request Input block stream for the command invocation.
 /// @return ABI-encoded calldata for the command entry point.
 function encodeCommandCall(
-    uint target,
+    uint cid,
     bytes32 account,
     bytes memory state,
     bytes calldata request
 ) pure returns (bytes memory) {
-    bytes4 selector = Ids.commandSelector(target);
-    CommandContext memory ctx = CommandContext(target, account, state, request);
+    bytes4 selector = Ids.commandSelector(cid);
+    CommandContext memory ctx = CommandContext(account, state, request);
     return abi.encodeWithSelector(selector, ctx);
 }
 
@@ -48,21 +46,16 @@ abstract contract CommandBase is OperationBase, CommandEvent {
     error Expired();
     /// @dev Thrown when `onlyAdmin` finds that `account` is not the admin account.
     error NotAdmin();
-    /// @dev Thrown when `onlyCommand` finds that `target` does not match this command's ID.
-    error UnexpectedEndpoint();
 
-    /// @dev Restrict execution to calls where `account` is the host's admin account.
+    /// @dev Restrict execution to trusted callers using the host's admin account.
     modifier onlyAdmin(bytes32 account) {
         if (account != adminAccount) revert NotAdmin();
+        enforceCaller(msg.sender);
         _;
     }
 
-    /// @dev Restrict execution to trusted callers targeting this specific command.
-    /// A zero `target` is treated as a wildcard and matches any command.
-    /// @param cid This command's node ID (from `commandId`).
-    /// @param target Requested destination from the `CommandContext`.
-    modifier onlyCommand(uint cid, uint target) {
-        if (target != 0 && target != cid) revert UnexpectedEndpoint();
+    /// @dev Restrict execution to callers whose host node is trusted.
+    modifier onlyTrusted() {
         enforceCaller(msg.sender);
         _;
     }
@@ -75,7 +68,7 @@ abstract contract CommandBase is OperationBase, CommandEvent {
     }
 
     /// @notice Derive the deterministic node ID for a named command on this contract.
-    /// The ID encodes the ABI selector of `name((uint256,bytes32,bytes,bytes))` and
+    /// The ID encodes the ABI selector of `name((bytes32,bytes,bytes))` and
     /// `address(this)`, making it unique per (function name, contract address) pair.
     /// @param name Command function name (without argument list).
     /// @return Command node ID.

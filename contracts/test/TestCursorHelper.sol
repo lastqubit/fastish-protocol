@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Tx, Sizes } from "../blocks/Schema.sol";
+import { Tx } from "../core/Types.sol";
+import { Sizes } from "../blocks/Schema.sol";
 import { Cur, Cursors, Writer } from "../Cursors.sol";
 import { Writers } from "../blocks/Writers.sol";
 
@@ -16,7 +17,7 @@ contract TestCursorHelper {
     function testWriteBalanceBlock(bytes32 asset, bytes32 meta, uint amount) external pure returns (bytes memory) {
         Writer memory w = Writers.alloc(Sizes.Balance);
         w.appendBalance(asset, meta, amount);
-        return w.dst;
+        return Writers.finish(w);
     }
 
     function testWriteCustodyBlock(
@@ -27,7 +28,7 @@ contract TestCursorHelper {
     ) external pure returns (bytes memory) {
         Writer memory w = Writers.alloc(Sizes.Custody);
         w.appendCustody(host_, asset, meta, amount);
-        return w.dst;
+        return Writers.finish(w);
     }
 
     function testWriteTxBlock(
@@ -39,7 +40,7 @@ contract TestCursorHelper {
     ) external pure returns (bytes memory) {
         Writer memory w = Writers.alloc(Sizes.Transaction);
         w.appendTx(Tx({ from: from_, to: to_, asset: asset, meta: meta, amount: amount }));
-        return w.dst;
+        return Writers.finish(w);
     }
 
     function testToBountyBlock(uint amount, bytes32 relayer) external pure returns (bytes memory) {
@@ -95,9 +96,9 @@ contract TestCursorHelper {
         return cur.unpackFee();
     }
 
-    function testUnpackPath(bytes calldata source) external pure returns (bytes calldata data) {
+    function testUnpackRaw(bytes calldata source, bytes4 key) external pure returns (bytes calldata data) {
         Cur memory cur = Cursors.open(source);
-        return cur.unpackPath();
+        return cur.unpackRaw(key);
     }
 
     function testToTxValue(bytes calldata source) external pure returns (bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount) {
@@ -123,6 +124,26 @@ contract TestCursorHelper {
     function testPeek(bytes calldata source, uint i) external pure returns (bytes4 key, uint len) {
         Cur memory cur = Cursors.open(source);
         return cur.peek(i);
+    }
+
+    function testPast(bytes calldata source, uint i) external pure returns (uint) {
+        Cur memory cur = Cursors.open(source);
+        return cur.past(i);
+    }
+
+    function testPastCurrent(bytes calldata source) external pure returns (uint) {
+        Cur memory cur = Cursors.open(source);
+        return cur.past();
+    }
+
+    function testHas(bytes calldata source, uint i, bytes4 key) external pure returns (bool) {
+        Cur memory cur = Cursors.open(source);
+        return cur.has(i, key);
+    }
+
+    function testHasCurrent(bytes calldata source, bytes4 key) external pure returns (bool) {
+        Cur memory cur = Cursors.open(source);
+        return cur.has(key);
     }
 
     function testCountRun(bytes calldata source, uint i, bytes4 key) external pure returns (uint total, uint next) {
@@ -185,6 +206,34 @@ contract TestCursorHelper {
         return (cur.i, next);
     }
 
+    function testRoute(bytes calldata source)
+        external
+        pure
+        returns (uint routeOffset, uint routeI, uint routeLen, uint routeBound, uint inputI)
+    {
+        uint sourceOffset;
+        assembly ("memory-safe") {
+            sourceOffset := source.offset
+        }
+        Cur memory cur = Cursors.open(source);
+        Cur memory out = cur.route();
+        return (out.offset - sourceOffset, out.i, out.len, out.bound, cur.i);
+    }
+
+    function testMaybeRoute(bytes calldata source)
+        external
+        pure
+        returns (uint routeOffset, uint routeI, uint routeLen, uint routeBound, uint inputI)
+    {
+        uint sourceOffset;
+        assembly ("memory-safe") {
+            sourceOffset := source.offset
+        }
+        Cur memory cur = Cursors.open(source);
+        Cur memory out = cur.maybeRoute();
+        return (out.offset - sourceOffset, out.i, out.len, out.bound, cur.i);
+    }
+
     function testListPrime(bytes calldata source, uint group)
         external
         pure
@@ -233,10 +282,10 @@ contract TestCursorHelper {
         return cur.nodeAfter(backup);
     }
 
-    function testRecipientAfter(bytes calldata source, uint group, bytes32 backup) external pure returns (bytes32) {
+    function testAccountAfter(bytes calldata source, uint group, bytes32 backup) external pure returns (bytes32) {
         Cur memory cur = Cursors.open(source);
         cur.primeRun(group);
-        return cur.recipientAfter(backup);
+        return cur.accountAfter(backup);
     }
 
     function testAuthLast(

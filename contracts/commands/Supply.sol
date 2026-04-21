@@ -27,7 +27,7 @@ abstract contract Supply is CommandBase, SupplyHook {
     }
 
     /// @notice Execute the supply command.
-    function supply(CommandContext calldata c) external onlyCommand(supplyId, c.target) returns (bytes memory) {
+    function supply(CommandContext calldata c) external onlyTrusted returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
         
         while (state.i < state.bound) {

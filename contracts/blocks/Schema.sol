@@ -8,50 +8,36 @@ import { Keys } from "./Keys.sol";
 /// These strings are the canonical source from which `Keys` constants are derived
 /// and are used when emitting schema descriptors in command events.
 library Schemas {
+    string constant Account = "account(bytes32 account)";
+    string constant Position = "position(bytes32 account, bytes32 asset, bytes32 meta)";
+    string constant Entry = "entry(bytes32 account, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Asset = "asset(bytes32 asset, bytes32 meta)";
     string constant Amount = "amount(bytes32 asset, bytes32 meta, uint amount)";
     string constant Balance = "balance(bytes32 asset, bytes32 meta, uint amount)";
-    string constant Custody = "custody(uint host, bytes32 asset, bytes32 meta, uint amount)";
     string constant Minimum = "minimum(bytes32 asset, bytes32 meta, uint amount)";
-    string constant Minimums = "minimums(uint a, uint b)";
     string constant Maximum = "maximum(bytes32 asset, bytes32 meta, uint amount)";
+    string constant Custody = "custody(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Transaction = "tx(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Allocation = "allocation(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Listing = "listing(uint host, bytes32 asset, bytes32 meta)";
+    string constant Minimums = "minimums(uint a, uint b)";
     string constant Maximums = "maximums(uint a, uint b)";
-    string constant Bounds = "bounds(int min, int max)";
+    string constant Funding = "funding(uint host, uint amount)";
+    string constant Call = "call(uint target, uint value, bytes data)";
+    string constant Bounty = "bounty(uint amount, bytes32 relayer)";
+    string constant Node = "node(uint id)";
+    string constant Step = "step(uint target, uint value, bytes request)";
+    string constant Quantity = "quantity(uint amount)";
     string constant Fee = "fee(uint amount)";
-    string constant Break = "break()";
+    string constant Rate = "rate(uint value)";
+    string constant Bounds = "bounds(int min, int max)";
+    string constant Auth = "auth(uint cid, uint deadline, bytes proof)";
     string constant Route = "route(bytes data)";
+    string constant Item = "item(bytes data)";
     string constant Query = "query(bytes data)";
     string constant Response = "response(bytes data)";
     string constant Path = "path(bytes data)";
-    string constant RouteEmpty = "route()";
-    string constant Quantity = "quantity(uint amount)";
-    string constant Rate = "rate(uint value)";
-    string constant Recipient = "recipient(bytes32 account)";
-    string constant Transaction = "tx(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
-    string constant Step = "step(uint target, uint value, bytes request)";
-    string constant Auth = "auth(uint cid, uint deadline, bytes proof)";
-    string constant Asset = "asset(bytes32 asset, bytes32 meta)";
-    string constant Node = "node(uint id)";
-    string constant Listing = "listing(uint host, bytes32 asset, bytes32 meta)";
-    string constant Funding = "funding(uint host, uint amount)";
-    string constant Allocation = "allocation(uint host, bytes32 asset, bytes32 meta, uint amount)";
-    string constant Bounty = "bounty(uint amount, bytes32 relayer)";
-
-    /// @notice Compose a route schema with one additional field.
-    /// @param maybeRoute Existing route schema string, or empty string to start a fresh `route()`.
-    /// @param a Schema string for the field to append.
-    /// @return Composed schema string: `"route(...) & a"`.
-    function route1(string memory maybeRoute, string memory a) internal pure returns (string memory) {
-        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, "&", a);
-    }
-
-    /// @notice Compose a route schema with two additional fields.
-    /// @param maybeRoute Existing route schema string, or empty string to start a fresh `route()`.
-    /// @param a Schema string for the first field to append.
-    /// @param b Schema string for the second field to append.
-    /// @return Composed schema string: `"route(...) & a & b"`.
-    function route2(string memory maybeRoute, string memory a, string memory b) internal pure returns (string memory) {
-        return string.concat(bytes(maybeRoute).length == 0 ? RouteEmpty : maybeRoute, "&", a, "&", b);
-    }
+    string constant Break = "break()";
 }
 
 // Block stream:
@@ -67,25 +53,34 @@ library Schemas {
 // Schema DSL:
 // - `;` separates top-level sibling blocks
 // - `&` bundles adjacent blocks into one bundle block
-// - a bundle may optionally be named in the form `name = a & b`
+// - `name = a & b` introduces a named bundle item
+// - `bundle = a & b` introduces an anonymous child bundle item
 // - postfix `[]` marks a repeated list in the simple suffix form, e.g. `asset(...)[]`
-// - a list of bundled items must use an inline named form `name[] = a & b`
+// - `name[] = a & b` introduces a named list whose repeated item is the bundled shape `a & b`
+// - `list = a & b` introduces an anonymous list whose repeated item is the bundled shape `a & b`
+// - empty entries are ignored, but structural markers are preserved after normalization
+// - if `&` appears, the result remains a bundle even when only one non-empty child remains
+// - after ignoring empty entries, repeated adjacent separators collapse while preserving bundle/list shape
 // - bundled blocks preserve member order, so `a & b` differs from `b & a`
 // - a bundle block's self payload is an embedded normal block stream of its bundled members
 // - bundled members keep their ordinary block encoding, so dynamic blocks are allowed inside bundles
 // - a list block's self payload is an embedded normal block stream representing the repeated items
 // - top-level blocks of the same type should be grouped together
 // - primary / driving blocks should appear before auxiliary blocks
-// - `route(<fields...>)`, `query(<fields...>)`, and `response(<fields...>)` are reserved
-//   extensible schema forms whose keys are always `Keys.Route`, `Keys.Query`, and
-//   `Keys.Response` respectively
+// - `route(<fields...>)`, `item(<fields...>)`, `query(<fields...>)`, and `response(<fields...>)`
+//   are reserved extensible schema forms whose keys are always `Keys.Route`, `Keys.Item`,
+//   `Keys.Query`, and `Keys.Response` respectively
 // - these extensible forms work like dynamic `bytes` blocks: they may carry arbitrary
 //   payload bytes while keeping one fixed key per semantic block type
 // - `&` compiles to a `Keys.Bundle` block whose self payload is the bundled member block stream
 // - `[]` compiles to a `Keys.List` block whose self payload is the repeated item block stream
 // - `asset(...)[]` means a list whose repeated item is the block `asset(...)`
-// - `steps[] = asset(...) & recipient(...)` means a named list whose repeated item is the bundle
-//   `asset(...) & recipient(...)`
+// - `steps[] = asset(...) & account(...)` means a named list whose repeated item is the bundle
+//   `asset(...) & account(...)`
+// - `bundle = account(...) & path(...)` means an anonymous child bundle with those bundled members
+// - `list = asset(...) & account(...)` means an anonymous child list whose repeated item is the
+//   bundle `asset(...) & account(...)`
+// - `"amount(...) &"` and `"& amount(...)"` both normalize to a bundle containing one `amount(...)` child
 // - canonical blocks are `amount(...)` for request amounts, `balance(...)` for state balances,
 //   `minimum(...)` for result floors, `maximum(...)` for spend ceilings, and `quantity(...)`
 //   for plain scalar amounts
@@ -138,62 +133,4 @@ library Sizes {
     uint constant Custody = B128;
     /// @dev TRANSACTION block: 8 header + 32 from + 32 to + 32 asset + 32 meta + 32 amount = 168 bytes
     uint constant Transaction = B160;
-}
-
-/// @notice Asset and amount pair; used for balance and amount blocks.
-struct AssetAmount {
-    /// @dev Asset identifier (encoding depends on asset type — see `Assets` library).
-    bytes32 asset;
-    /// @dev Asset metadata slot (e.g. token contract address or ERC-721 token ID context).
-    bytes32 meta;
-    /// @dev Token amount in the asset's native units.
-    uint amount;
-}
-
-/// @notice Cross-host custody value; used for custody and allocation blocks.
-struct HostAmount {
-    /// @dev Host node ID that holds the custody position.
-    uint host;
-    /// @dev Asset identifier.
-    bytes32 asset;
-    /// @dev Asset metadata slot.
-    bytes32 meta;
-    /// @dev Token amount in the asset's native units.
-    uint amount;
-}
-
-/// @notice User-scoped amount; associates an account with an asset amount.
-struct UserAmount {
-    /// @dev User account identifier.
-    bytes32 account;
-    /// @dev Asset identifier.
-    bytes32 asset;
-    /// @dev Asset metadata slot.
-    bytes32 meta;
-    /// @dev Token amount in the asset's native units.
-    uint amount;
-}
-
-/// @notice Cross-host asset descriptor without an amount.
-struct HostAsset {
-    /// @dev Host node ID.
-    uint host;
-    /// @dev Asset identifier.
-    bytes32 asset;
-    /// @dev Asset metadata slot.
-    bytes32 meta;
-}
-
-/// @notice Transfer payload used across the pipeline and later consumed by settlement.
-struct Tx {
-    /// @dev Sender account identifier.
-    bytes32 from;
-    /// @dev Recipient account identifier.
-    bytes32 to;
-    /// @dev Asset identifier.
-    bytes32 asset;
-    /// @dev Asset metadata slot.
-    bytes32 meta;
-    /// @dev Transfer amount in the asset's native units.
-    uint amount;
 }

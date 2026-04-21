@@ -25,7 +25,7 @@ abstract contract Create is CommandBase, CreateHook {
         emit Command(host, NAME, input, createId, State.Empty, State.Empty, false);
     }
 
-    function create(CommandContext calldata c) external onlyCommand(createId, c.target) returns (bytes memory) {
+    function create(CommandContext calldata c) external onlyTrusted returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {

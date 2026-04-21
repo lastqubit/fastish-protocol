@@ -26,7 +26,7 @@ abstract contract StakeCustodyToPosition is CommandBase, StakeCustodyToPositionH
 
     function stakeCustodyToPosition(
         CommandContext calldata c
-    ) external onlyCommand(stakeCustodyToPositionId, c.target) returns (bytes memory) {
+    ) external onlyTrusted returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
 

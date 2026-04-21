@@ -42,7 +42,7 @@ abstract contract Provision is CommandBase, ProvisionHook {
         emit Command(host, PROVISION, Schemas.Custody, provisionId, State.Empty, State.Custodies, false);
     }
 
-    function provision(CommandContext calldata c) external onlyCommand(provisionId, c.target) returns (bytes memory) {
+    function provision(CommandContext calldata c) external onlyTrusted returns (bytes memory) {
         (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocCustodies(count);
 
@@ -69,7 +69,7 @@ abstract contract ProvisionPayable is CommandPayable, ProvisionPayableHook {
 
     function provisionPayable(
         CommandContext calldata c
-    ) external payable onlyCommand(provisionPayableId, c.target) returns (bytes memory) {
+    ) external payable onlyTrusted returns (bytes memory) {
         (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocCustodies(count);
         Budget memory budget = Values.fromMsg();
@@ -97,7 +97,7 @@ abstract contract ProvisionFromBalance is CommandBase, ProvisionHook {
 
     function provisionFromBalance(
         CommandContext calldata c
-    ) external onlyCommand(provisionFromBalanceId, c.target) returns (bytes memory) {
+    ) external onlyTrusted returns (bytes memory) {
         (Cur memory state, uint stateCount, ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
         Writer memory writer = Writers.allocCustodies(stateCount);

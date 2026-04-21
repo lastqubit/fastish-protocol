@@ -163,8 +163,8 @@ library Ids {
 /// @title Selectors
 /// @notice ABI-selector derivation helpers for command, peer, and query dispatch.
 library Selectors {
-    /// @dev ABI argument encoding for command entry points: `((uint256,bytes32,bytes,bytes))`.
-    string constant CommandArgs = "((uint256,bytes32,bytes,bytes))";
+    /// @dev ABI argument encoding for command entry points: `((bytes32,bytes,bytes))`.
+    string constant CommandArgs = "((bytes32,bytes,bytes))";
     /// @dev ABI argument encoding for peer entry points: `(bytes)`.
     string constant PeerArgs = "(bytes)";
     /// @dev ABI argument encoding for query entry points: `(bytes)`.

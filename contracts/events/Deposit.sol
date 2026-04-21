@@ -7,7 +7,7 @@ string constant ABI = "event Deposit(bytes32 indexed account, bytes32 asset, byt
 
 /// @notice Emitted when assets are deposited into an account.
 abstract contract DepositEvent is EventEmitter {
-    /// @param account Recipient account identifier.
+    /// @param account Destination account identifier.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Amount deposited.

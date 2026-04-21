@@ -23,7 +23,7 @@ abstract contract Allocate is CommandBase, AllocateHook {
         emit Command(host, NAME, Schemas.Allocation, allocateId, State.Empty, State.Empty, false);
     }
 
-    function allocate(CommandContext calldata c) external onlyAdmin(c.account) onlyCommand(allocateId, c.target) returns (bytes memory) {
+    function allocate(CommandContext calldata c) external onlyAdmin(c.account) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {

@@ -15,7 +15,7 @@ abstract contract DepositHook {
     /// @notice Override to receive externally sourced funds for `account`.
     /// Called once per AMOUNT block. A matching BALANCE block is appended to the
     /// output after each call.
-    /// @param account Recipient account identifier.
+    /// @param account Destination account identifier.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Amount received.
@@ -26,7 +26,7 @@ abstract contract DepositPayableHook {
     /// @notice Override to receive externally sourced funds for `account`.
     /// Called once per AMOUNT block. A matching BALANCE block is appended to the
     /// output after each call.
-    /// @param account Recipient account identifier.
+    /// @param account Destination account identifier.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Amount received.
@@ -47,7 +47,7 @@ abstract contract Deposit is CommandBase, DepositHook {
 
     function deposit(
         CommandContext calldata c
-    ) external onlyCommand(depositId, c.target) returns (bytes memory) {
+    ) external onlyTrusted returns (bytes memory) {
         (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocBalances(count);
 
@@ -73,7 +73,7 @@ abstract contract DepositPayable is CommandPayable, DepositPayableHook {
 
     function depositPayable(
         CommandContext calldata c
-    ) external payable onlyCommand(depositPayableId, c.target) returns (bytes memory) {
+    ) external payable onlyTrusted returns (bytes memory) {
         (Cur memory request, uint count, ) = cursor(c.request, 1);
         Writer memory writer = Writers.allocBalances(count);
         Budget memory budget = Values.fromMsg();

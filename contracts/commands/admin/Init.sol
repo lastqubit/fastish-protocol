@@ -26,7 +26,7 @@ abstract contract Init is CommandBase, InitHook {
 
     function init(
         CommandContext calldata c
-    ) external onlyAdmin(c.account) onlyCommand(initId, c.target) returns (bytes memory) {
+    ) external onlyAdmin(c.account) returns (bytes memory) {
         Cur memory input = cursor(c.request);
         init(input);
         return "";

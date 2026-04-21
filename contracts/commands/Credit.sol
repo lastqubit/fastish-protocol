@@ -10,7 +10,7 @@ using Cursors for Cur;
 abstract contract CreditAccountHook {
     /// @notice Override to credit externally managed funds to `account`.
     /// Called once per BALANCE block in state.
-    /// @param account Recipient account identifier.
+    /// @param account Destination account identifier.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Amount to credit.
@@ -20,20 +20,20 @@ abstract contract CreditAccountHook {
 /// @title CreditAccount
 /// @notice Command that delivers BALANCE state blocks to an account via a virtual hook.
 /// Use for internally recording credits that have already been settled externally.
-/// An optional RECIPIENT block in the request overrides the default `c.account` destination.
+/// An optional ACCOUNT block in the request overrides the default `c.account` destination.
 abstract contract CreditAccount is CommandBase, CreditAccountHook {
     uint internal immutable creditAccountId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Recipient, creditAccountId, State.Balances, State.Empty, false);
+        emit Command(host, NAME, Schemas.Account, creditAccountId, State.Balances, State.Empty, false);
     }
 
     function creditAccount(
         CommandContext calldata c
-    ) external onlyCommand(creditAccountId, c.target) returns (bytes memory) {
+    ) external onlyTrusted returns (bytes memory) {
         (Cur memory state, , ) = cursor(c.state, 1);
         Cur memory request = cursor(c.request);
-        bytes32 to = request.recipientAfter(c.account);
+        bytes32 to = request.accountAfter(c.account);
 
         while (state.i < state.bound) {
             (bytes32 asset, bytes32 meta, uint amount) = state.unpackBalance();

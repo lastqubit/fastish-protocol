@@ -15,14 +15,14 @@ contract TestCreateHost is Host, Create {
         Host(address(0), 1, "test")
         Create("")
     {
-        if (cmdr != address(0)) access(Ids.toHost(cmdr), true);
+        if (cmdr != address(0)) authorize(Ids.toHost(cmdr));
     }
 
     function create(bytes32 account, Cur memory input) internal override {
         (bytes4 key, uint len) = input.peek(input.i);
         bytes calldata inputData;
         if (key == Keys.Route) {
-            inputData = input.unpackRoute();
+            inputData = input.unpackRaw(Keys.Route);
         } else {
             uint next = input.i + 8 + len;
             inputData = msg.data[input.offset + input.i:input.offset + next];
