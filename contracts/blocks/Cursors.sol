@@ -46,6 +46,8 @@ library Cursors {
     error UnexpectedValue();
     /// @dev Input and output block counts are not proportional to their declared group sizes.
     error BadRatio();
+    /// @dev A fixed-width low-level unpacker received a tail trim larger than 31 bytes.
+    error InvalidTrim();
 
     // -------------------------------------------------------------------------
     // Cursor construction and navigation
@@ -213,6 +215,19 @@ library Cursors {
         uint next;
         (abs, next) = expect(cur, cur.i, key, min, max);
         cur.i = next;
+    }
+
+    /// @notice Load a final payload word and zero-pad any trimmed tail bytes on the right.
+    /// @param abs Absolute calldata offset of the word start.
+    /// @param trim Number of trailing bytes omitted from the logical payload (0..31).
+    /// @return value Decoded word with trimmed tail bytes zeroed.
+    function trimWord(uint abs, uint trim) internal pure returns (bytes32 value) {
+        assembly ("memory-safe") {
+            value := calldataload(abs)
+        }
+        if (trim != 0) {
+            value &= bytes32(type(uint256).max << (trim * 8));
+        }
     }
 
     /// @notice Enter a Bundle block at the current position and return the next offset.
@@ -469,9 +484,11 @@ library Cursors {
     /// @param cur Cursor; advanced past the block.
     /// @param key Expected dynamic block key.
     /// @return value Decoded bytes32.
-    function unpack32(Cur memory cur, bytes4 key) internal pure returns (bytes32 value) {
-        uint abs = consume(cur, key, 32, 32);
-        value = bytes32(msg.data[abs:abs + 32]);
+    function unpack32(Cur memory cur, bytes4 key, uint trim) internal pure returns (bytes32 value) {
+        if (trim > 31) revert InvalidTrim();
+        uint len = 32 - trim;
+        uint abs = consume(cur, key, len, len);
+        value = trimWord(abs, trim);
     }
 
     /// @notice Consume a dynamic block with two bytes32 payload words.
@@ -479,10 +496,12 @@ library Cursors {
     /// @param key Expected dynamic block key.
     /// @return a First decoded bytes32.
     /// @return b Second decoded bytes32.
-    function unpack64(Cur memory cur, bytes4 key) internal pure returns (bytes32 a, bytes32 b) {
-        uint abs = consume(cur, key, 64, 64);
+    function unpack64(Cur memory cur, bytes4 key, uint trim) internal pure returns (bytes32 a, bytes32 b) {
+        if (trim > 31) revert InvalidTrim();
+        uint len = 64 - trim;
+        uint abs = consume(cur, key, len, len);
         a = bytes32(msg.data[abs:abs + 32]);
-        b = bytes32(msg.data[abs + 32:abs + 64]);
+        b = trimWord(abs + 32, trim);
     }
 
     /// @notice Consume a dynamic block with three bytes32 payload words.
@@ -491,11 +510,13 @@ library Cursors {
     /// @return a First decoded bytes32.
     /// @return b Second decoded bytes32.
     /// @return c Third decoded bytes32.
-    function unpack96(Cur memory cur, bytes4 key) internal pure returns (bytes32 a, bytes32 b, bytes32 c) {
-        uint abs = consume(cur, key, 96, 96);
+    function unpack96(Cur memory cur, bytes4 key, uint trim) internal pure returns (bytes32 a, bytes32 b, bytes32 c) {
+        if (trim > 31) revert InvalidTrim();
+        uint len = 96 - trim;
+        uint abs = consume(cur, key, len, len);
         a = bytes32(msg.data[abs:abs + 32]);
         b = bytes32(msg.data[abs + 32:abs + 64]);
-        c = bytes32(msg.data[abs + 64:abs + 96]);
+        c = trimWord(abs + 64, trim);
     }
 
     /// @notice Consume a dynamic block with a 128-byte payload (four 32-byte words).
@@ -505,12 +526,18 @@ library Cursors {
     /// @return b Second decoded bytes32.
     /// @return c Third decoded bytes32.
     /// @return d Fourth decoded bytes32.
-    function unpack128(Cur memory cur, bytes4 key) internal pure returns (bytes32 a, bytes32 b, bytes32 c, bytes32 d) {
-        uint abs = consume(cur, key, 128, 128);
+    function unpack128(
+        Cur memory cur,
+        bytes4 key,
+        uint trim
+    ) internal pure returns (bytes32 a, bytes32 b, bytes32 c, bytes32 d) {
+        if (trim > 31) revert InvalidTrim();
+        uint len = 128 - trim;
+        uint abs = consume(cur, key, len, len);
         a = bytes32(msg.data[abs:abs + 32]);
         b = bytes32(msg.data[abs + 32:abs + 64]);
         c = bytes32(msg.data[abs + 64:abs + 96]);
-        d = bytes32(msg.data[abs + 96:abs + 128]);
+        d = trimWord(abs + 96, trim);
     }
 
     /// @notice Consume a dynamic block with a 160-byte payload (five 32-byte words).
@@ -523,14 +550,17 @@ library Cursors {
     /// @return e Fifth decoded bytes32.
     function unpack160(
         Cur memory cur,
-        bytes4 key
+        bytes4 key,
+        uint trim
     ) internal pure returns (bytes32 a, bytes32 b, bytes32 c, bytes32 d, bytes32 e) {
-        uint abs = consume(cur, key, 160, 160);
+        if (trim > 31) revert InvalidTrim();
+        uint len = 160 - trim;
+        uint abs = consume(cur, key, len, len);
         a = bytes32(msg.data[abs:abs + 32]);
         b = bytes32(msg.data[abs + 32:abs + 64]);
         c = bytes32(msg.data[abs + 64:abs + 96]);
         d = bytes32(msg.data[abs + 96:abs + 128]);
-        e = bytes32(msg.data[abs + 128:abs + 160]);
+        e = trimWord(abs + 128, trim);
     }
 
     /// @notice Consume a dynamic block with a single uint payload.
@@ -538,7 +568,7 @@ library Cursors {
     /// @param key Expected dynamic block key.
     /// @return value Decoded uint value.
     function unpackUint(Cur memory cur, bytes4 key) internal pure returns (uint value) {
-        value = uint(unpack32(cur, key));
+        value = uint(unpack32(cur, key, 0));
     }
 
     /// @notice Consume a dynamic block with two uint payload words.
@@ -547,7 +577,7 @@ library Cursors {
     /// @return a First decoded uint.
     /// @return b Second decoded uint.
     function unpack2Uint(Cur memory cur, bytes4 key) internal pure returns (uint a, uint b) {
-        (bytes32 x, bytes32 y) = unpack64(cur, key);
+        (bytes32 x, bytes32 y) = unpack64(cur, key, 0);
         return (uint(x), uint(y));
     }
 
@@ -558,7 +588,7 @@ library Cursors {
     /// @return b Second decoded uint.
     /// @return c Third decoded uint.
     function unpack3Uint(Cur memory cur, bytes4 key) internal pure returns (uint a, uint b, uint c) {
-        (bytes32 x, bytes32 y, bytes32 z) = unpack96(cur, key);
+        (bytes32 x, bytes32 y, bytes32 z) = unpack96(cur, key, 0);
         return (uint(x), uint(y), uint(z));
     }
 
@@ -763,35 +793,35 @@ library Cursors {
     /// @param cur Cursor; advanced past the block.
     /// @return account Account identifier.
     function unpackAccount(Cur memory cur) internal pure returns (bytes32 account) {
-        account = unpack32(cur, Keys.Account);
+        account = unpack32(cur, Keys.Account, 0);
     }
 
     /// @notice Consume a NODE block and return the node ID.
     /// @param cur Cursor; advanced past the block.
     /// @return node Node identifier.
     function unpackNode(Cur memory cur) internal pure returns (uint node) {
-        node = uint(unpack32(cur, Keys.Node));
+        node = uint(unpack32(cur, Keys.Node, 0));
     }
 
     /// @notice Consume a RATE block and return the value.
     /// @param cur Cursor; advanced past the block.
     /// @return value Encoded ratio or rate.
     function unpackRate(Cur memory cur) internal pure returns (uint value) {
-        value = uint(unpack32(cur, Keys.Rate));
+        value = uint(unpack32(cur, Keys.Rate, 0));
     }
 
     /// @notice Consume a QUANTITY block and return the amount.
     /// @param cur Cursor; advanced past the block.
     /// @return amount Scalar quantity value.
     function unpackQuantity(Cur memory cur) internal pure returns (uint amount) {
-        amount = uint(unpack32(cur, Keys.Quantity));
+        amount = uint(unpack32(cur, Keys.Quantity, 0));
     }
 
     /// @notice Consume a FEE block and return the amount.
     /// @param cur Cursor; advanced past the block.
     /// @return amount Fee amount.
     function unpackFee(Cur memory cur) internal pure returns (uint amount) {
-        amount = uint(unpack32(cur, Keys.Fee));
+        amount = uint(unpack32(cur, Keys.Fee, 0));
     }
 
     /// @notice Consume an ASSET block and return the asset descriptor fields.
@@ -799,7 +829,7 @@ library Cursors {
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
     function unpackAsset(Cur memory cur) internal pure returns (bytes32 asset, bytes32 meta) {
-        (asset, meta) = unpack64(cur, Keys.Asset);
+        (asset, meta) = unpack64(cur, Keys.Asset, 0);
     }
 
     /// @notice Consume a HOST_FUNDING block and return the host and amount.
@@ -815,7 +845,7 @@ library Cursors {
     /// @return amount Relayer reward amount.
     /// @return relayer Relayer account identifier.
     function unpackBounty(Cur memory cur) internal pure returns (uint amount, bytes32 relayer) {
-        (bytes32 x, bytes32 y) = unpack64(cur, Keys.Bounty);
+        (bytes32 x, bytes32 y) = unpack64(cur, Keys.Bounty, 0);
         amount = uint(x);
         relayer = y;
     }
@@ -902,14 +932,14 @@ library Cursors {
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
     function unpackUserPosition(Cur memory cur) internal pure returns (bytes32 account, bytes32 asset, bytes32 meta) {
-        (account, asset, meta) = unpack96(cur, Keys.UserPosition);
+        (account, asset, meta) = unpack96(cur, Keys.UserPosition, 0);
     }
 
     /// @notice Consume a USER_POSITION block and return its fields as a struct.
     /// @param cur Cursor; advanced past the block.
     /// @return value Decoded account, asset, and meta.
     function unpackUserPositionValue(Cur memory cur) internal pure returns (UserPosition memory value) {
-        (value.account, value.asset, value.meta) = unpack96(cur, Keys.UserPosition);
+        (value.account, value.asset, value.meta) = unpack96(cur, Keys.UserPosition, 0);
     }
 
     /// @notice Consume a HOST_USER_POSITION block and return its fields as separate values.
