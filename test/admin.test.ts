@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "ethers";
 import { deploy, getSigner, getProvider } from "./helpers/setup.js";
 import {
-  encodeNodeBlock, encodeAssetBlock, encodeHostAssetAmountBlock,
+  encodeNodeBlock, encodeAssetBlock, encodeHostedBalanceBlock,
   encodeHostFundingBlock, encodeRouteBlock, encodeCallBlock, concat
 } from "./helpers/blocks.js";
 
@@ -179,12 +179,12 @@ describe("Admin Commands", () => {
   // ── Allocate ─────────────────────────────────────────────────────────────
 
   describe("allocate", () => {
-    it("emits AllocateCalled for each HOST_ASSET_AMOUNT block", async () => {
+    it("emits AllocateCalled for each HOSTED_BALANCE block", async () => {
       const hostId = 9999n;
       const asset  = ethers.zeroPadValue("0x05", 32);
       const meta   = ethers.ZeroHash;
       const amount = 1000n;
-      const request = encodeHostAssetAmountBlock(hostId, asset, meta, amount);
+      const request = encodeHostedBalanceBlock(hostId, asset, meta, amount);
       await expect(callAs(0, "allocate", adminCtx(request)))
         .to.emit(host, "AllocateCalled")
         .withArgs(hostId, asset, meta, amount);
@@ -192,7 +192,7 @@ describe("Admin Commands", () => {
 
     it("reverts NotAdmin for non-admin", async () => {
       const fakeAdmin = ethers.zeroPadValue("0x05", 32);
-      const request = encodeHostAssetAmountBlock(1n, ethers.zeroPadValue("0x01", 32), ethers.ZeroHash, 1n);
+      const request = encodeHostedBalanceBlock(1n, ethers.zeroPadValue("0x01", 32), ethers.ZeroHash, 1n);
       await expect(callAs(0, "allocate", userCtx(fakeAdmin, request)))
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });

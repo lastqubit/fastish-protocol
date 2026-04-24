@@ -10,10 +10,6 @@ using Cursors for Cur;
 using Writers for Writer;
 
 contract TestCursorHelper {
-    function testBlockHeader(bytes4 key, uint len) external pure returns (uint) {
-        return Writers.toBlockHeader(key, len);
-    }
-
     function testWriteBalanceBlock(bytes32 asset, bytes32 meta, uint amount) external pure returns (bytes memory) {
         Writer memory w = Writers.alloc(Sizes.Balance);
         w.appendBalance(asset, meta, amount);
@@ -26,14 +22,14 @@ contract TestCursorHelper {
         return w.finish();
     }
 
-    function testWriteHostAssetAmountBlock(
+    function testWriteHostedBalanceBlock(
         uint host_,
         bytes32 asset,
         bytes32 meta,
         uint amount
     ) external pure returns (bytes memory) {
-        Writer memory w = Writers.alloc(Sizes.HostAssetAmount);
-        w.appendHostAssetAmount(host_, asset, meta, amount);
+        Writer memory w = Writers.alloc(Sizes.HostedBalance);
+        w.appendHostedBalance(host_, asset, meta, amount);
         return w.finish();
     }
 
@@ -45,7 +41,7 @@ contract TestCursorHelper {
         uint amount
     ) external pure returns (bytes memory) {
         Writer memory w = Writers.alloc(Sizes.Transaction);
-        w.appendTx(Tx({ from: from_, to: to_, asset: asset, meta: meta, amount: amount }));
+        w.appendTransaction(Tx({ from: from_, to: to_, asset: asset, meta: meta, amount: amount }));
         return w.finish();
     }
 
@@ -57,13 +53,13 @@ contract TestCursorHelper {
         return Cursors.toBalanceBlock(asset, meta, amount);
     }
 
-    function testToHostAssetAmountBlock(
+    function testToHostedBalanceBlock(
         uint host_,
         bytes32 asset,
         bytes32 meta,
         uint amount
     ) external pure returns (bytes memory) {
-        return Cursors.toHostAssetAmountBlock(host_, asset, meta, amount);
+        return Cursors.toHostedBalanceBlock(host_, asset, meta, amount);
     }
 
     function testWriterFinishIncomplete() external pure returns (bytes memory) {
@@ -111,6 +107,18 @@ contract TestCursorHelper {
         Cur memory cur = Cursors.open(source);
         Tx memory value = cur.unpackTxValue();
         return (value.from, value.to, value.asset, value.meta, value.amount);
+    }
+
+    function testLoad160(bytes calldata source, uint offset)
+        external
+        pure
+        returns (bytes32 a, bytes32 b, bytes32 c, bytes32 d, bytes32 e)
+    {
+        uint sourceOffset;
+        assembly ("memory-safe") {
+            sourceOffset := source.offset
+        }
+        return Cursors.load160(sourceOffset + offset);
     }
 
     function testPrimeRun(bytes calldata source, uint group)

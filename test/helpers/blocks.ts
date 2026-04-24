@@ -9,14 +9,14 @@ export function blockKey(schema: string): string {
 export const Keys = {
   Amount: blockKey("amount(bytes32 asset, bytes32 meta, uint amount)"),
   Balance: blockKey("balance(bytes32 asset, bytes32 meta, uint amount)"),
-  HostAssetAmount: blockKey("hostAssetAmount(uint host, bytes32 asset, bytes32 meta, uint amount)"),
+  HostedBalance: blockKey("hostedBalance(uint host, bytes32 asset, bytes32 meta, uint amount)"),
   Bounds: blockKey("bounds(int min, int max)"),
   Fee: blockKey("fee(uint amount)"),
   Account: blockKey("account(bytes32 account)"),
   UserPosition: blockKey("userPosition(bytes32 account, bytes32 asset, bytes32 meta)"),
-  HostUserPosition: blockKey("hostUserPosition(uint host, bytes32 account, bytes32 asset, bytes32 meta)"),
+  HostedUserPosition: blockKey("hostedUserPosition(uint host, bytes32 account, bytes32 asset, bytes32 meta)"),
   UserAmount: blockKey("userAmount(bytes32 account, bytes32 asset, bytes32 meta, uint amount)"),
-  HostUserAmount: blockKey("hostUserAmount(uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)"),
+  HostedUserAmount: blockKey("hostedUserAmount(uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)"),
   Node: blockKey("node(uint id)"),
   HostFunding: blockKey("hostFunding(uint host, uint amount)"),
   Asset: blockKey("asset(bytes32 asset, bytes32 meta)"),
@@ -31,6 +31,7 @@ export const Keys = {
   Bounty: blockKey("bounty(uint amount, bytes32 relayer)"),
   Bundle: blockKey("bundle(bytes data)"),
   List: blockKey("list(bytes data)"),
+  Frame: blockKey("frame(bytes data)"),
   Route: blockKey("route(bytes data)"),
   Item: blockKey("item(bytes data)"),
   Evm: blockKey("evm(bytes data)"),
@@ -98,8 +99,8 @@ export function encodeUserAmountBlock(account: string, asset: string, meta: stri
   return block(Keys.UserAmount, ethers.concat([pad32(account), pad32(asset), pad32(meta), pad32(amount)]));
 }
 
-export function encodeHostAssetAmountBlock(host: bigint, asset: string, meta: string, amount: bigint): string {
-  return block(Keys.HostAssetAmount, ethers.concat([pad32(host), pad32(asset), pad32(meta), pad32(amount)]));
+export function encodeHostedBalanceBlock(host: bigint, asset: string, meta: string, amount: bigint): string {
+  return block(Keys.HostedBalance, ethers.concat([pad32(host), pad32(asset), pad32(meta), pad32(amount)]));
 }
 
 export function encodeAccountBlock(account: string): string {
@@ -168,6 +169,10 @@ export function encodeBundleBlock(...members: string[]): string {
 
 export function encodeListBlock(...members: string[]): string {
   return block(Keys.List, concat(...members));
+}
+
+export function encodeFrameBlock(...payloads: string[]): string {
+  return block(Keys.Frame, concat(...payloads));
 }
 
 export function encodeRouteBlockWithAmount(data: string, asset: string, meta: string, amount: bigint): string {

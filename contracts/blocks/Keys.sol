@@ -10,8 +10,8 @@ library Keys {
     bytes4 constant Amount = bytes4(keccak256("amount(bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Ledger balance - (bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant Balance = bytes4(keccak256("balance(bytes32 asset, bytes32 meta, uint amount)"));
-    /// @dev Host-qualified asset amount - (uint host, bytes32 asset, bytes32 meta, uint amount)
-    bytes4 constant HostAssetAmount = bytes4(keccak256("hostAssetAmount(uint host, bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev Balance hosted at a remote host - (uint host, bytes32 asset, bytes32 meta, uint amount)
+    bytes4 constant HostedBalance = bytes4(keccak256("hostedBalance(uint host, bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Minimum acceptable output - (bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant Minimum = bytes4(keccak256("minimum(bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Maximum allowable spend - (bytes32 asset, bytes32 meta, uint amount)
@@ -26,6 +26,8 @@ library Keys {
     bytes4 constant Bundle = bytes4(keccak256("bundle(bytes data)"));
     /// @dev List wrapper - (bytes data); payload is an embedded repeated block stream
     bytes4 constant List = bytes4(keccak256("list(bytes data)"));
+    /// @dev Frame wrapper - (bytes data); payload is schema-defined concatenated member payloads
+    bytes4 constant Frame = bytes4(keccak256("frame(bytes data)"));
     /// @dev Extensible routing field - (bytes data); layout is command-defined
     bytes4 constant Route = bytes4(keccak256("route(bytes data)"));
     /// @dev Extensible list item field - (bytes data); layout is implementation-defined
@@ -44,12 +46,12 @@ library Keys {
     bytes4 constant Account = bytes4(keccak256("account(bytes32 account)"));
     /// @dev Account asset position key - (bytes32 account, bytes32 asset, bytes32 meta)
     bytes4 constant UserPosition = bytes4(keccak256("userPosition(bytes32 account, bytes32 asset, bytes32 meta)"));
-    /// @dev Host-qualified account asset position key - (uint host, bytes32 account, bytes32 asset, bytes32 meta)
-    bytes4 constant HostUserPosition = bytes4(keccak256("hostUserPosition(uint host, bytes32 account, bytes32 asset, bytes32 meta)"));
+    /// @dev User position hosted at a remote host - (uint host, bytes32 account, bytes32 asset, bytes32 meta)
+    bytes4 constant HostedUserPosition = bytes4(keccak256("hostedUserPosition(uint host, bytes32 account, bytes32 asset, bytes32 meta)"));
     /// @dev Account asset entry - (bytes32 account, bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant UserAmount = bytes4(keccak256("userAmount(bytes32 account, bytes32 asset, bytes32 meta, uint amount)"));
-    /// @dev Host-qualified account asset entry - (uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)
-    bytes4 constant HostUserAmount = bytes4(keccak256("hostUserAmount(uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev User amount hosted at a remote host - (uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)
+    bytes4 constant HostedUserAmount = bytes4(keccak256("hostedUserAmount(uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Transfer record passed through the pipeline - (bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant Transaction = bytes4(
         keccak256("transaction(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)")

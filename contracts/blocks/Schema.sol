@@ -10,15 +10,15 @@ import { Keys } from "./Keys.sol";
 library Schemas {
     string constant Account = "account(bytes32 account)";
     string constant UserPosition = "userPosition(bytes32 account, bytes32 asset, bytes32 meta)";
-    string constant HostUserPosition = "hostUserPosition(uint host, bytes32 account, bytes32 asset, bytes32 meta)";
+    string constant HostedUserPosition = "hostedUserPosition(uint host, bytes32 account, bytes32 asset, bytes32 meta)";
     string constant UserAmount = "userAmount(bytes32 account, bytes32 asset, bytes32 meta, uint amount)";
-    string constant HostUserAmount = "hostUserAmount(uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)";
+    string constant HostedUserAmount = "hostedUserAmount(uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)";
     string constant Asset = "asset(bytes32 asset, bytes32 meta)";
     string constant Amount = "amount(bytes32 asset, bytes32 meta, uint amount)";
     string constant Balance = "balance(bytes32 asset, bytes32 meta, uint amount)";
     string constant Minimum = "minimum(bytes32 asset, bytes32 meta, uint amount)";
     string constant Maximum = "maximum(bytes32 asset, bytes32 meta, uint amount)";
-    string constant HostAssetAmount = "hostAssetAmount(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant HostedBalance = "hostedBalance(uint host, bytes32 asset, bytes32 meta, uint amount)";
     string constant Transaction = "transaction(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
     string constant HostFunding = "hostFunding(uint host, uint amount)";
     string constant Call = "call(uint target, uint value, bytes data)";
@@ -35,6 +35,7 @@ library Schemas {
     string constant Evm = "evm(bytes data)";
     string constant Query = "query(bytes data)";
     string constant Response = "response(bytes data)";
+    string constant Frame = "frame(bytes data)";
     string constant Break = "break()";
 }
 
@@ -57,18 +58,27 @@ library Schemas {
 // Schema DSL:
 // - `;` separates top-level sibling blocks
 // - `&` bundles adjacent blocks into one bundle block
+// - `+` frames adjacent fixed-layout block payloads into one frame block
 // - `name = a & b` introduces a named bundle item
+// - `name = a + b` introduces a named frame item
 // - `bundle = a & b` introduces an anonymous child bundle item
+// - `frame = a + b` introduces an anonymous child frame item, like `bundle = ...` and `list = ...`
 // - postfix `[]` marks a repeated list in the simple suffix form, e.g. `asset(...)[]`
 // - `name[] = a & b` introduces a named list whose repeated item is the bundled shape `a & b`
 // - `list = a & b` introduces an anonymous list whose repeated item is the bundled shape `a & b`
 // - empty entries are ignored, but structural markers are preserved after normalization
+// - grouping parentheses are not part of the DSL; parentheses are only used in block field lists
+// - `+` binds tighter than `&`, so `a & b + c` normalizes as `a & (b + c)`
 // - if `&` appears, the result remains a bundle even when only one non-empty child remains
 // - after ignoring empty entries, repeated adjacent separators collapse while preserving bundle/list shape
 // - bundled blocks preserve member order, so `a & b` differs from `b & a`
 // - a bundle block's self payload is an embedded normal block stream of its bundled members
 // - bundled members keep their ordinary block encoding, so dynamic blocks are allowed inside bundles
 // - a list block's self payload is an embedded normal block stream representing the repeated items
+// - a frame block's self payload is the concatenated payload fields of its framed members
+// - framed members do not keep their ordinary block headers; the emitted schema defines the frame layout
+// - framed members must be fixed-layout block forms because frame payloads contain no child lengths or block keys
+// - frames may be bundled like ordinary block items, but bundles/lists cannot be framed
 // - top-level blocks of the same type should be grouped together
 // - primary / driving blocks should appear before auxiliary blocks
 // - `route(<fields...>)`, `item(<fields...>)`, `evm(<fields...>)`, `query(<fields...>)`,
@@ -82,10 +92,16 @@ library Schemas {
 // - on EVM, `evm(bool flag)` occupies one full 32-byte ABI word, exactly like `abi.encode(flag)`
 // - `&` compiles to a `Keys.Bundle` block whose self payload is the bundled member block stream
 // - `[]` compiles to a `Keys.List` block whose self payload is the repeated item block stream
+// - `+` compiles to a `Keys.Frame` block whose self payload is the framed member payload fields
 // - `asset(...)[]` means a list whose repeated item is the block `asset(...)`
 // - `steps[] = asset(...) & account(...)` means a named list whose repeated item is the bundle
 //   `asset(...) & account(...)`
+// - `payment = amount(...) + fee(...)` means a named frame whose payload is
+//   `asset | meta | amount | fee` and whose on-chain key is still `Keys.Frame`
+// - `amount(...) & fee(...) + account(...)` means `amount(...) & (fee(...) + account(...))`;
+//   it compiles to a bundle containing one amount block followed by one frame block
 // - `bundle = account(...) & evm(bytes routeData)` means an anonymous child bundle with those bundled members
+// - `frame = amount(...) + fee(...)` means an anonymous child frame with those framed payload fields
 // - `list = asset(...) & account(...)` means an anonymous child list whose repeated item is the
 //   bundle `asset(...) & account(...)`
 // - `"amount(...) &"` and `"& amount(...)"` both normalize to a bundle containing one `amount(...)` child
@@ -133,8 +149,8 @@ library Sizes {
     uint constant Fee = B32;
     /// @dev BOUNTY block: 8 header + 32 amount + 32 relayer = 72 bytes
     uint constant Bounty = B64;
-    /// @dev HOST_ASSET_AMOUNT block: 8 header + 32 host + 32 asset + 32 meta + 32 amount = 136 bytes
-    uint constant HostAssetAmount = B128;
+    /// @dev HOSTED_BALANCE block: 8 header + 32 host + 32 asset + 32 meta + 32 amount = 136 bytes
+    uint constant HostedBalance = B128;
     /// @dev TRANSACTION block: 8 header + 32 from + 32 to + 32 asset + 32 meta + 32 amount = 168 bytes
     uint constant Transaction = B160;
 }

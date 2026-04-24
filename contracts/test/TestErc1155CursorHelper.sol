@@ -18,7 +18,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Amount, 0);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Amount, 32);
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
@@ -41,7 +41,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance, 0);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance, 32);
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
@@ -64,7 +64,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Minimum, 0);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Minimum, 32);
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
@@ -87,7 +87,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Maximum, 0);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Maximum, 32);
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
@@ -101,7 +101,7 @@ contract TestErc1155CursorHelper {
         return (meta, amount, cur.i);
     }
 
-    function testExpectErc1155HostAssetAmount(
+    function testExpectErc1155HostedBalance(
         bytes calldata source,
         uint i,
         uint host,
@@ -112,19 +112,19 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.HostAssetAmount, 0);
+        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.HostedBalance, 32);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
 
-    function testRequireErc1155HostAssetAmount(
+    function testRequireErc1155HostedBalance(
         bytes calldata source,
         uint host,
         bytes32 asset
     ) external view returns (bytes32 meta, uint amount, uint i) {
         Cur memory cur = Cursors.open(source);
-        (meta, amount) = Cursors.requireHostAssetAmount(cur, Keys.HostAssetAmount, host, asset.erc1155());
+        (meta, amount) = Cursors.requireHostedBalance(cur, Keys.HostedBalance, host, asset.erc1155());
         return (meta, amount, cur.i);
     }
 }

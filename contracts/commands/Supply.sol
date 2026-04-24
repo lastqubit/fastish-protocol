@@ -32,7 +32,7 @@ abstract contract Supply is CommandBase, SupplyHook {
         (Cur memory state, , ) = cursor(c.state, 1);
         
         while (state.i < state.bound) {
-            (uint host, AssetAmount memory value) = state.unpackHostAssetAmountValue();
+            (uint host, AssetAmount memory value) = state.unpackHostedBalanceValue();
             supply(host, c.account, value);
         }
 

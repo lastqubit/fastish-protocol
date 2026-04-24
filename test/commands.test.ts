@@ -4,7 +4,7 @@ import { deploy, getSigner } from "./helpers/setup.js";
 import "./helpers/matchers.js";
 import {
   encodeAmountBlock,
-  encodeBalanceBlock, encodeHostAssetAmountBlock,
+  encodeBalanceBlock, encodeHostedBalanceBlock,
   encodeAccountBlock, encodeUserAmountBlock, encodeNodeBlock, encodeTxBlock, encodeStepBlock, encodeUserAccount,
   encodeBundleBlock, concat
 } from "./helpers/blocks.js";
@@ -372,14 +372,14 @@ describe("Commands", () => {
         .withArgs(hostId, userAccount, asset, meta, 600n);
     });
 
-    it("returns HOST_ASSET_AMOUNT blocks matching input BALANCE blocks", async () => {
+    it("returns HOSTED_BALANCE blocks matching input BALANCE blocks", async () => {
       const asset = ethers.zeroPadValue("0x60", 32);
       const meta  = ethers.ZeroHash;
       const hostId = 123456n;
       const state = encodeBalanceBlock(asset, meta, 600n);
       const request = encodeNodeBlock(hostId);
       const result: string = await host.provisionFromBalance.staticCall(ctx({ state, request }));
-      expect(result).to.equal(encodeHostAssetAmountBlock(hostId, asset, meta, 600n));
+      expect(result).to.equal(encodeHostedBalanceBlock(hostId, asset, meta, 600n));
     });
 
     it("reverts ZeroCursor when state has no BALANCE blocks", async () => {
@@ -414,7 +414,7 @@ describe("Commands", () => {
       await expect(tx).to.emit(host, "ProvisionCalled").withArgs(hostId, userAccount, asset3, meta, 30n);
     });
 
-    it("returns one HOST_ASSET_AMOUNT block per BALANCE block in a batch state", async () => {
+    it("returns one HOSTED_BALANCE block per BALANCE block in a batch state", async () => {
       const asset1 = ethers.zeroPadValue("0x64", 32);
       const asset2 = ethers.zeroPadValue("0x65", 32);
       const meta   = ethers.ZeroHash;
@@ -425,8 +425,8 @@ describe("Commands", () => {
       );
       const result: string = await host.provisionFromBalance.staticCall(ctx({ state, request: encodeNodeBlock(hostId) }));
       expect(result).to.equal(concat(
-        encodeHostAssetAmountBlock(hostId, asset1, meta, 10n),
-        encodeHostAssetAmountBlock(hostId, asset2, meta, 20n),
+        encodeHostedBalanceBlock(hostId, asset1, meta, 10n),
+        encodeHostedBalanceBlock(hostId, asset2, meta, 20n),
       ));
     });
 
@@ -445,73 +445,73 @@ describe("Commands", () => {
   // ── Provision ─────────────────────────────────────────────────────────────
 
   describe("provision", () => {
-    it("emits ProvisionCalled and returns HOST_ASSET_AMOUNT blocks", async () => {
+    it("emits ProvisionCalled and returns HOSTED_BALANCE blocks", async () => {
       const asset = ethers.zeroPadValue("0x70", 32);
       const meta  = ethers.ZeroHash;
       const hostId = 654321n;
-      const request = encodeHostAssetAmountBlock(hostId, asset, meta, 700n);
+      const request = encodeHostedBalanceBlock(hostId, asset, meta, 700n);
       const tx = await callAs(0, "provision", ctx({ request }));
       await expect(tx).to.emit(host, "ProvisionCalled")
         .withArgs(hostId, userAccount, asset, meta, 700n);
     });
 
-    it("returns HOST_ASSET_AMOUNT blocks", async () => {
+    it("returns HOSTED_BALANCE blocks", async () => {
       const asset = ethers.zeroPadValue("0x70", 32);
       const hostId = 654321n;
-      const request = encodeHostAssetAmountBlock(hostId, asset, ethers.ZeroHash, 700n);
+      const request = encodeHostedBalanceBlock(hostId, asset, ethers.ZeroHash, 700n);
       const result: string = await host.provision.staticCall(ctx({ request }));
-      expect(result).to.equal(encodeHostAssetAmountBlock(hostId, asset, ethers.ZeroHash, 700n));
+      expect(result).to.equal(encodeHostedBalanceBlock(hostId, asset, ethers.ZeroHash, 700n));
     });
 
-    it("reverts InvalidBlock when request is not a HOST_ASSET_AMOUNT block", async () => {
+    it("reverts InvalidBlock when request is not a HOSTED_BALANCE block", async () => {
       const hostId = 654321n;
       const request = encodeNodeBlock(hostId);
       await expect(callAs(0, "provision", ctx({ request })))
         .to.be.revertedWithCustomError(host, "InvalidBlock");
     });
 
-    it("emits ProvisionCalled for each HOST_ASSET_AMOUNT block in a batch", async () => {
+    it("emits ProvisionCalled for each HOSTED_BALANCE block in a batch", async () => {
       const asset1 = ethers.zeroPadValue("0x71", 32);
       const asset2 = ethers.zeroPadValue("0x72", 32);
       const meta   = ethers.ZeroHash;
       const host1  = 111n;
       const host2  = 222n;
       const request = concat(
-        encodeHostAssetAmountBlock(host1, asset1, meta, 100n),
-        encodeHostAssetAmountBlock(host2, asset2, meta, 200n),
+        encodeHostedBalanceBlock(host1, asset1, meta, 100n),
+        encodeHostedBalanceBlock(host2, asset2, meta, 200n),
       );
       const tx = await callAs(0, "provision", ctx({ request }));
       await expect(tx).to.emit(host, "ProvisionCalled").withArgs(host1, userAccount, asset1, meta, 100n);
       await expect(tx).to.emit(host, "ProvisionCalled").withArgs(host2, userAccount, asset2, meta, 200n);
     });
 
-    it("returns one HOST_ASSET_AMOUNT block per request HOST_ASSET_AMOUNT block in a batch", async () => {
+    it("returns one HOSTED_BALANCE block per request HOSTED_BALANCE block in a batch", async () => {
       const asset1 = ethers.zeroPadValue("0x73", 32);
       const asset2 = ethers.zeroPadValue("0x74", 32);
       const meta   = ethers.ZeroHash;
       const host1  = 333n;
       const host2  = 444n;
       const request = concat(
-        encodeHostAssetAmountBlock(host1, asset1, meta, 100n),
-        encodeHostAssetAmountBlock(host2, asset2, meta, 200n),
+        encodeHostedBalanceBlock(host1, asset1, meta, 100n),
+        encodeHostedBalanceBlock(host2, asset2, meta, 200n),
       );
       const result: string = await host.provision.staticCall(ctx({ request }));
       expect(result).to.equal(concat(
-        encodeHostAssetAmountBlock(host1, asset1, meta, 100n),
-        encodeHostAssetAmountBlock(host2, asset2, meta, 200n),
+        encodeHostedBalanceBlock(host1, asset1, meta, 100n),
+        encodeHostedBalanceBlock(host2, asset2, meta, 200n),
       ));
     });
   });
   describe("provisionPayable", () => {
-    it("passes a shared value budget through to the host-asset-amount hook", async () => {
+    it("passes a shared value budget through to the hosted-balance hook", async () => {
       const asset1 = ethers.zeroPadValue("0x75", 32);
       const asset2 = ethers.zeroPadValue("0x76", 32);
       const meta = ethers.ZeroHash;
       const host1 = 555n;
       const host2 = 666n;
       const request = concat(
-        encodeHostAssetAmountBlock(host1, asset1, meta, 3n),
-        encodeHostAssetAmountBlock(host2, asset2, meta, 7n),
+        encodeHostedBalanceBlock(host1, asset1, meta, 3n),
+        encodeHostedBalanceBlock(host2, asset2, meta, 7n),
       );
 
       const tx = await callAs(0, "provisionPayable", ctx({ request }), { value: 10n });
@@ -521,14 +521,14 @@ describe("Commands", () => {
         .withArgs(host2, userAccount, asset2, meta, 7n, 0n);
     });
 
-    it("returns one HOST_ASSET_AMOUNT block per request HOST_ASSET_AMOUNT block", async () => {
+    it("returns one HOSTED_BALANCE block per request HOSTED_BALANCE block", async () => {
       const asset = ethers.zeroPadValue("0x77", 32);
       const meta = ethers.ZeroHash;
       const hostId = 777n;
-      const request = encodeHostAssetAmountBlock(hostId, asset, meta, 8n);
+      const request = encodeHostedBalanceBlock(hostId, asset, meta, 8n);
 
       const result: string = await host.provisionPayable.staticCall(ctx({ request }), { value: 8n });
-      expect(result).to.equal(encodeHostAssetAmountBlock(hostId, asset, meta, 8n));
+      expect(result).to.equal(encodeHostedBalanceBlock(hostId, asset, meta, 8n));
     });
 
   });

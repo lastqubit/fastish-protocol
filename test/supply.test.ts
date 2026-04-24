@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "ethers";
 import { deploy, getSigner } from "./helpers/setup.js";
-import { concat, encodeHostAssetAmountBlock } from "./helpers/blocks.js";
+import { concat, encodeHostedBalanceBlock } from "./helpers/blocks.js";
 import "./helpers/matchers.js";
 
 describe("Supply", () => {
@@ -34,35 +34,35 @@ describe("Supply", () => {
     return (host.connect(signer) as any)[supplyMethod](...args);
   }
 
-  it("emits SupplyCalled for a single HOST_ASSET_AMOUNT block in state", async () => {
+  it("emits SupplyCalled for a single HOSTED_BALANCE block in state", async () => {
     const asset = ethers.zeroPadValue("0xa1", 32);
     const meta = ethers.ZeroHash;
-    const state = encodeHostAssetAmountBlock(7n, asset, meta, 100n);
+    const state = encodeHostedBalanceBlock(7n, asset, meta, 100n);
     const tx = await callAs(0, ctx({ state }));
     await expect(tx).to.emit(host, "SupplyCalled").withArgs(userAccount, 7n, asset, meta, 100n);
   });
 
-  it("emits SupplyCalled for each HOST_ASSET_AMOUNT block when multiple are present", async () => {
+  it("emits SupplyCalled for each HOSTED_BALANCE block when multiple are present", async () => {
     const asset1 = ethers.zeroPadValue("0xb1", 32);
     const asset2 = ethers.zeroPadValue("0xb2", 32);
     const meta = ethers.ZeroHash;
     const state = concat(
-      encodeHostAssetAmountBlock(1n, asset1, meta, 10n),
-      encodeHostAssetAmountBlock(2n, asset2, meta, 20n)
+      encodeHostedBalanceBlock(1n, asset1, meta, 10n),
+      encodeHostedBalanceBlock(2n, asset2, meta, 20n)
     );
     const tx = await callAs(0, ctx({ state }));
     await expect(tx).to.emit(host, "SupplyCalled").withArgs(userAccount, 1n, asset1, meta, 10n);
     await expect(tx).to.emit(host, "SupplyCalled").withArgs(userAccount, 2n, asset2, meta, 20n);
   });
 
-  it("returns empty bytes after processing HOST_ASSET_AMOUNT blocks", async () => {
-    const state = encodeHostAssetAmountBlock(3n, ethers.zeroPadValue("0xc1", 32), ethers.ZeroHash, 50n);
+  it("returns empty bytes after processing HOSTED_BALANCE blocks", async () => {
+    const state = encodeHostedBalanceBlock(3n, ethers.zeroPadValue("0xc1", 32), ethers.ZeroHash, 50n);
     const result: string = await (host as any)[supplyMethod].staticCall(ctx({ state }));
     expect(result).to.equal("0x");
   });
 
   it("reverts UnauthorizedCaller for an untrusted caller", async () => {
-    const state = encodeHostAssetAmountBlock(6n, ethers.zeroPadValue("0xf1", 32), ethers.ZeroHash, 1n);
+    const state = encodeHostedBalanceBlock(6n, ethers.zeroPadValue("0xf1", 32), ethers.ZeroHash, 1n);
     await expect(callAs(1, ctx({ state })))
       .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
   });

@@ -55,6 +55,6 @@ abstract contract MyCommand is CommandBase {
         sendToHost(host, asset, meta, amount);
 
         // Return a CUSTODY block recording that this asset is now held by `host`.
-        return Cursors.toHostAssetAmountBlock(host, asset, meta, amount);
+        return Cursors.toHostedBalanceBlock(host, asset, meta, amount);
     }
 }
