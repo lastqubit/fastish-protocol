@@ -8,7 +8,6 @@ import {ExecutePayable} from "../commands/admin/Execute.sol";
 import {RelocatePayable} from "../commands/admin/Relocate.sol";
 import {HostAnnouncedEvent} from "../events/Host.sol";
 import {IHostDiscovery} from "../interfaces/IHostDiscovery.sol";
-import {ILedger} from "../interfaces/ILedger.sol";
 import {Ids} from "../utils/Ids.sol";
 
 /// @notice Mixin that allows a contract to act as a host discovery registry.
@@ -31,9 +30,6 @@ abstract contract HostDiscovery is HostAnnouncedEvent, IHostDiscovery {
 /// optionally announces itself to a discovery contract at deployment.
 /// Accepts native ETH payments via the `receive` function.
 abstract contract Host is Authorize, Unauthorize, ExecutePayable, RelocatePayable {
-    /// @notice Ledger interface exposed through the trusted commander address.
-    ILedger public immutable ledger;
-
     /// @param cmdr Commander address; passed to `AccessControl`.
     ///        If `cmdr` is a deployed contract, the host calls `announceHost`
     ///        on it during construction to register with the discovery registry.
@@ -41,7 +37,6 @@ abstract contract Host is Authorize, Unauthorize, ExecutePayable, RelocatePayabl
     /// @param namespace Human-readable namespace string for the host.
     constructor(address cmdr, uint16 version, string memory namespace) AccessControl(cmdr) {
         if (cmdr == address(0) || cmdr == address(this) || cmdr.code.length == 0) return;
-        ledger = ILedger(cmdr);
         IHostDiscovery(cmdr).announceHost(host, block.number, version, namespace);
     }
 
