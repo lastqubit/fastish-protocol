@@ -23,7 +23,7 @@ contract TestErc721CursorHelper {
         if (uint(rawAmount) != 1) revert Cursors.UnexpectedValue();
     }
 
-    function expectErc721HostedBalance(
+    function expectErc721Custody(
         Cur memory cur,
         uint i,
         uint host,
@@ -34,7 +34,7 @@ contract TestErc721CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.HostedBalance, 32);
+        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody, 32);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         if (foundAsset.erc721() != asset) revert Cursors.UnexpectedValue();
         if (uint(rawAmount) != 1) revert Cursors.UnexpectedValue();
@@ -63,17 +63,17 @@ contract TestErc721CursorHelper {
         return (meta, cur.i);
     }
 
-    function testExpectErc721HostedBalance(
+    function testExpectErc721Custody(
         bytes calldata source,
         uint i,
         uint host,
         address collection
     ) external view returns (bytes32 meta) {
         Cur memory cur = Cursors.open(source);
-        return expectErc721HostedBalance(cur, i, host, collection);
+        return expectErc721Custody(cur, i, host, collection);
     }
 
-    function testRequireErc721HostedBalance(
+    function testRequireErc721Custody(
         bytes calldata source,
         uint host,
         address collection
@@ -83,7 +83,7 @@ contract TestErc721CursorHelper {
         bytes32 rawHost;
         bytes32 foundAsset;
         bytes32 rawAmount;
-        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.HostedBalance, 32);
+        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody, 32);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         if (foundAsset.erc721() != asset) revert Cursors.UnexpectedValue();
         if (uint(rawAmount) != 1) revert Cursors.UnexpectedValue();

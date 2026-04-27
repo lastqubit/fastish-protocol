@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "ethers";
 import { deploy, getSigner, getProvider } from "./helpers/setup.js";
 import {
-  encodeNodeBlock, encodeAssetBlock, encodeHostedBalanceBlock,
+  encodeNodeBlock, encodeAssetBlock, encodeAllowanceBlock,
   encodeHostFundingBlock, encodeRouteBlock, encodeCallBlock, concat
 } from "./helpers/blocks.js";
 
@@ -176,29 +176,29 @@ describe("Admin Commands", () => {
     });
   });
 
-  // ── Allocate ─────────────────────────────────────────────────────────────
+  // ── Allowance ────────────────────────────────────────────────────────────
 
-  describe("allocate", () => {
-    it("emits AllocateCalled for each HOSTED_BALANCE block", async () => {
+  describe("allowance", () => {
+    it("emits AllowanceCalled for each ALLOWANCE block", async () => {
       const hostId = 9999n;
       const asset  = ethers.zeroPadValue("0x05", 32);
       const meta   = ethers.ZeroHash;
       const amount = 1000n;
-      const request = encodeHostedBalanceBlock(hostId, asset, meta, amount);
-      await expect(callAs(0, "allocate", adminCtx(request)))
-        .to.emit(host, "AllocateCalled")
+      const request = encodeAllowanceBlock(hostId, asset, meta, amount);
+      await expect(callAs(0, "allowance", adminCtx(request)))
+        .to.emit(host, "AllowanceCalled")
         .withArgs(hostId, asset, meta, amount);
     });
 
     it("reverts NotAdmin for non-admin", async () => {
       const fakeAdmin = ethers.zeroPadValue("0x05", 32);
-      const request = encodeHostedBalanceBlock(1n, ethers.zeroPadValue("0x01", 32), ethers.ZeroHash, 1n);
-      await expect(callAs(0, "allocate", userCtx(fakeAdmin, request)))
+      const request = encodeAllowanceBlock(1n, ethers.zeroPadValue("0x01", 32), ethers.ZeroHash, 1n);
+      await expect(callAs(0, "allowance", userCtx(fakeAdmin, request)))
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
 
     it("reverts ZeroCursor for empty request", async () => {
-      await expect(callAs(0, "allocate", adminCtx("0x")))
+      await expect(callAs(0, "allowance", adminCtx("0x")))
         .to.be.revertedWithCustomError(host, "ZeroCursor");
     });
   });

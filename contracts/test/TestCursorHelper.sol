@@ -22,14 +22,14 @@ contract TestCursorHelper {
         return w.finish();
     }
 
-    function testWriteHostedBalanceBlock(
+    function testWriteCustodyBlock(
         uint host_,
         bytes32 asset,
         bytes32 meta,
         uint amount
     ) external pure returns (bytes memory) {
-        Writer memory w = Writers.alloc(Sizes.HostedBalance);
-        w.appendHostedBalance(host_, asset, meta, amount);
+        Writer memory w = Writers.alloc(Sizes.HostedAmount);
+        w.appendCustody(host_, asset, meta, amount);
         return w.finish();
     }
 
@@ -53,13 +53,13 @@ contract TestCursorHelper {
         return Cursors.toBalanceBlock(asset, meta, amount);
     }
 
-    function testToHostedBalanceBlock(
+    function testToCustodyBlock(
         uint host_,
         bytes32 asset,
         bytes32 meta,
         uint amount
     ) external pure returns (bytes memory) {
-        return Cursors.toHostedBalanceBlock(host_, asset, meta, amount);
+        return Cursors.toCustodyBlock(host_, asset, meta, amount);
     }
 
     function testWriterFinishIncomplete() external pure returns (bytes memory) {

@@ -15,9 +15,9 @@ import { AllowAssets } from "../commands/admin/AllowAssets.sol";
 import { DenyAssets } from "../commands/admin/DenyAssets.sol";
 import { Destroy } from "../commands/admin/Destroy.sol";
 import { Init } from "../commands/admin/Init.sol";
-import { Allocate } from "../commands/admin/Allocate.sol";
-import { AssetAmount, Tx } from "../core/Types.sol";
-import { Cursors, Cursors, Cur, Keys } from "../Cursors.sol";
+import { Allowance } from "../commands/admin/Allowance.sol";
+import { HostedAmount, Tx } from "../core/Types.sol";
+import { Cursors, Cur, Keys } from "../Cursors.sol";
 import { Budget, Values } from "../utils/Value.sol";
 
 using Cursors for Cur;
@@ -39,7 +39,7 @@ contract TestHost is
     Destroy,
     AllowAssets,
     DenyAssets,
-    Allocate
+    Allowance
 {
     event DepositCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount);
     event DepositPayableCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint remaining);
@@ -54,7 +54,7 @@ contract TestHost is
     event DestroyCalled(bytes inputData);
     event AllowAssetCalled(bytes32 asset, bytes32 meta);
     event DenyAssetCalled(bytes32 asset, bytes32 meta);
-    event AllocateCalled(uint host_, bytes32 asset, bytes32 meta, uint amount);
+    event AllowanceCalled(uint host_, bytes32 asset, bytes32 meta, uint amount);
     event StepDispatched(uint target, uint stepIndex, uint value);
 
     uint public stepCount;
@@ -92,18 +92,17 @@ contract TestHost is
         emit DebitFromCalled(account, asset, meta, amount, amount);
     }
 
-    function provision(uint host_, bytes32 account, AssetAmount memory custody) internal override {
-        emit ProvisionCalled(host_, account, custody.asset, custody.meta, custody.amount);
+    function provision(bytes32 account, HostedAmount memory custody) internal override {
+        emit ProvisionCalled(custody.host, account, custody.asset, custody.meta, custody.amount);
     }
 
     function provision(
-        uint host_,
         bytes32 account,
-        AssetAmount memory custody,
+        HostedAmount memory custody,
         Budget memory budget
     ) internal override {
         emit ProvisionPayableCalled(
-            host_, account, custody.asset, custody.meta, Values.use(budget, custody.amount), budget.remaining
+            custody.host, account, custody.asset, custody.meta, Values.use(budget, custody.amount), budget.remaining
         );
     }
 
@@ -143,8 +142,8 @@ contract TestHost is
         return true;
     }
 
-    function allocate(uint host_, bytes32 asset, bytes32 meta, uint amount) internal override {
-        emit AllocateCalled(host_, asset, meta, amount);
+    function allowance(HostedAmount memory allowed) internal override {
+        emit AllowanceCalled(allowed.host, allowed.asset, allowed.meta, allowed.amount);
     }
 
     function dispatchStep(
@@ -235,8 +234,8 @@ contract TestHost is
         return denyAssetsId;
     }
 
-    function getAllocateId() external view returns (uint) {
-        return allocateId;
+    function getAllowanceId() external view returns (uint) {
+        return allowanceId;
     }
 
     function getAdminAccount() external view returns (bytes32) {

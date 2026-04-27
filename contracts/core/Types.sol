@@ -11,6 +11,18 @@ struct AssetAmount {
     uint amount;
 }
 
+/// @notice Host-scoped asset and amount tuple used by allocation/custody block shapes.
+struct HostedAmount {
+    /// @dev Host node identifier.
+    uint host;
+    /// @dev Asset identifier.
+    bytes32 asset;
+    /// @dev Asset metadata slot.
+    bytes32 meta;
+    /// @dev Token amount in the asset's native units.
+    uint amount;
+}
+
 /// @notice User-scoped amount that matches the USER_AMOUNT block shape.
 struct UserAmount {
     /// @dev User account identifier.

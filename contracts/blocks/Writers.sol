@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {AssetAmount, Tx, UserAmount, UserPosition} from "../core/Types.sol";
+import {AssetAmount, HostedAmount, Tx, UserAmount, UserPosition} from "../core/Types.sol";
 import {max32} from "../utils/Utils.sol";
 import {Keys, Sizes} from "./Schema.sol";
 
@@ -207,10 +207,10 @@ library Writers {
         return alloc128s(count);
     }
 
-    /// @notice Allocate a writer sized for exactly `count` HOSTED_BALANCE blocks (1:1 ratio).
-    /// @param count Number of hosted-balance blocks to allocate space for.
+    /// @notice Allocate a writer sized for exactly `count` CUSTODY blocks (1:1 ratio).
+    /// @param count Number of custody blocks to allocate space for.
     /// @return writer Allocated writer.
-    function allocHostedBalances(uint count) internal pure returns (Writer memory writer) {
+    function allocCustodies(uint count) internal pure returns (Writer memory writer) {
         return alloc128s(count);
     }
 
@@ -256,11 +256,11 @@ library Writers {
         return allocScaled96s(count, scaledRatio);
     }
 
-    /// @notice Allocate a writer for HOSTED_BALANCE blocks with a custom output-to-input ratio.
+    /// @notice Allocate a writer for CUSTODY blocks with a custom output-to-input ratio.
     /// @param count Number of input blocks.
     /// @param scaledRatio Output count multiplier in `ALLOC_SCALE` units.
     /// @return writer Allocated writer.
-    function allocScaledHostedBalances(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
+    function allocScaledCustodies(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
         return allocScaled128s(count, scaledRatio);
     }
 
@@ -852,13 +852,13 @@ library Writers {
         commit(writer, writeBlock64(writer.dst, writer.i, Keys.Bounty, bytes32(amount), relayer, 32));
     }
 
-    /// @notice Append a HOSTED_BALANCE block using separate field values.
-    /// @param writer Destination writer; `i` is advanced by `Sizes.HostedBalance`.
+    /// @notice Append a CUSTODY block using separate field values.
+    /// @param writer Destination writer; `i` is advanced by `Sizes.HostedAmount`.
     /// @param host Host node ID.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Token amount.
-    function appendHostedBalance(
+    function appendCustody(
         Writer memory writer,
         uint host,
         bytes32 asset,
@@ -868,7 +868,7 @@ library Writers {
         commit(writer, writeBlock128(
             writer.dst,
             writer.i,
-            Keys.HostedBalance,
+            Keys.Custody,
             bytes32(host),
             asset,
             meta,
@@ -877,16 +877,32 @@ library Writers {
         ));
     }
 
-    /// @notice Append a HOSTED_BALANCE block from a host and balance amount.
-    /// @param writer Destination writer; `i` is advanced by `Sizes.HostedBalance`.
+    /// @notice Append a CUSTODY block from a host and asset amount.
+    /// @param writer Destination writer; `i` is advanced by `Sizes.HostedAmount`.
     /// @param host Host node ID.
-    /// @param value Hosted balance fields to encode.
-    function appendHostedBalance(Writer memory writer, uint host, AssetAmount memory value) internal pure {
+    /// @param value Custody fields to encode.
+    function appendCustody(Writer memory writer, uint host, AssetAmount memory value) internal pure {
         commit(writer, writeBlock128(
             writer.dst,
             writer.i,
-            Keys.HostedBalance,
+            Keys.Custody,
             bytes32(host),
+            value.asset,
+            value.meta,
+            bytes32(value.amount),
+            32
+        ));
+    }
+
+    /// @notice Append a CUSTODY block from a hosted amount struct.
+    /// @param writer Destination writer; `i` is advanced by `Sizes.HostedAmount`.
+    /// @param value Custody fields to encode.
+    function appendCustody(Writer memory writer, HostedAmount memory value) internal pure {
+        commit(writer, writeBlock128(
+            writer.dst,
+            writer.i,
+            Keys.Custody,
+            bytes32(value.host),
             value.asset,
             value.meta,
             bytes32(value.amount),

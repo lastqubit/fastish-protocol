@@ -6,6 +6,9 @@ pragma solidity ^0.8.33;
 /// Each constant tags the shape of the encoded state block stream stored
 /// in a command's metadata slot, allowing commands to select the correct
 /// decode path without inspecting the raw bytes.
+/// Pipeline state is live, linear value owned by the active account while
+/// execution is in-flight; it is not simultaneously persisted elsewhere by
+/// this protocol.
 library State {
     /// @dev No state; the command produces or expects an empty state stream.
     uint8 constant Empty = 0x0001;
@@ -15,7 +18,7 @@ library State {
     uint8 constant Balances = 0x0003;
     /// @dev State stream contains TRANSACTION blocks.
     uint8 constant Transactions = 0x0004;
-    /// @dev State stream contains HOSTED_BALANCE custody blocks.
+    /// @dev State stream contains CUSTODY blocks.
     uint8 constant Custodies = 0x0005;
     /// @dev State stream contains claim records.
     uint8 constant Claims = 0x0006;

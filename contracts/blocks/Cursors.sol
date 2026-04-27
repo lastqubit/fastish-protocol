@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {AssetAmount, UserAmount, UserPosition, Tx} from "../core/Types.sol";
+import {AssetAmount, HostedAmount, UserAmount, UserPosition, Tx} from "../core/Types.sol";
 import {Keys, Sizes} from "./Schema.sol";
 import {ALLOC_SCALE, Writer, Writers} from "./Writers.sol";
 
@@ -450,19 +450,19 @@ library Cursors {
         return createBlock96(Keys.Balance, asset, meta, bytes32(amount));
     }
 
-    /// @notice Encode a HOSTED_BALANCE block.
+    /// @notice Encode a CUSTODY block.
     /// @param host Host node ID holding the custody.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Token amount.
-    /// @return Encoded HOSTED_BALANCE block bytes.
-    function toHostedBalanceBlock(
+    /// @return Encoded CUSTODY block bytes.
+    function toCustodyBlock(
         uint host,
         bytes32 asset,
         bytes32 meta,
         uint amount
     ) internal pure returns (bytes memory) {
-        return createBlock128(Keys.HostedBalance, bytes32(host), asset, meta, bytes32(amount));
+        return createBlock128(Keys.Custody, bytes32(host), asset, meta, bytes32(amount));
     }
 
     // -------------------------------------------------------------------------
@@ -792,14 +792,14 @@ library Cursors {
         meta = bytes32(msg.data[abs + 64:abs + 96]);
     }
 
-    /// @notice Consume a fixed-size hosted balance block and return host, asset, meta, and amount.
+    /// @notice Consume a fixed-size hosted amount block and return host, asset, meta, and amount.
     /// @param cur Cursor; advanced past the block.
     /// @param key Expected block key.
     /// @return host Host node ID.
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
     /// @return amount Scalar amount value.
-    function unpackHostedBalance(
+    function unpackHostedAmount(
         Cur memory cur,
         bytes4 key
     ) internal pure returns (uint host, bytes32 asset, bytes32 meta, uint amount) {
@@ -1088,24 +1088,61 @@ library Cursors {
         );
     }
 
-    /// @notice Consume a HOSTED_BALANCE block and return its fields as separate values.
+    /// @notice Consume an ALLOCATION block and return its fields as separate values.
     /// @param cur Cursor; advanced past the block.
     /// @return host Host node ID.
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
     /// @return amount Token amount.
-    function unpackHostedBalance(
+    function unpackAllocation(
         Cur memory cur
     ) internal pure returns (uint host, bytes32 asset, bytes32 meta, uint amount) {
-        return unpackHostedBalance(cur, Keys.HostedBalance);
+        return unpackHostedAmount(cur, Keys.Allocation);
     }
 
-    /// @notice Consume a HOSTED_BALANCE block and return its host plus balance amount as a struct.
+    /// @notice Consume an ALLOCATION block and return its fields as a struct.
     /// @param cur Cursor; advanced past the block.
-    /// @return host Decoded host node ID.
-    /// @return value Decoded asset, meta, and amount.
-    function unpackHostedBalanceValue(Cur memory cur) internal pure returns (uint host, AssetAmount memory value) {
-        (host, value.asset, value.meta, value.amount) = unpackHostedBalance(cur, Keys.HostedBalance);
+    /// @return value Decoded host, asset, meta, and amount.
+    function unpackAllocationValue(Cur memory cur) internal pure returns (HostedAmount memory value) {
+        (value.host, value.asset, value.meta, value.amount) = unpackHostedAmount(cur, Keys.Allocation);
+    }
+
+    /// @notice Consume an ALLOWANCE block and return its fields as separate values.
+    /// @param cur Cursor; advanced past the block.
+    /// @return host Host node ID.
+    /// @return asset Asset identifier.
+    /// @return meta Asset metadata slot.
+    /// @return amount Token amount.
+    function unpackAllowance(
+        Cur memory cur
+    ) internal pure returns (uint host, bytes32 asset, bytes32 meta, uint amount) {
+        return unpackHostedAmount(cur, Keys.Allowance);
+    }
+
+    /// @notice Consume an ALLOWANCE block and return its fields as a struct.
+    /// @param cur Cursor; advanced past the block.
+    /// @return value Decoded host, asset, meta, and amount.
+    function unpackAllowanceValue(Cur memory cur) internal pure returns (HostedAmount memory value) {
+        (value.host, value.asset, value.meta, value.amount) = unpackHostedAmount(cur, Keys.Allowance);
+    }
+
+    /// @notice Consume a CUSTODY block and return its fields as separate values.
+    /// @param cur Cursor; advanced past the block.
+    /// @return host Host node ID.
+    /// @return asset Asset identifier.
+    /// @return meta Asset metadata slot.
+    /// @return amount Token amount.
+    function unpackCustody(
+        Cur memory cur
+    ) internal pure returns (uint host, bytes32 asset, bytes32 meta, uint amount) {
+        return unpackHostedAmount(cur, Keys.Custody);
+    }
+
+    /// @notice Consume a CUSTODY block and return its fields as a struct.
+    /// @param cur Cursor; advanced past the block.
+    /// @return value Decoded host, asset, meta, and amount.
+    function unpackCustodyValue(Cur memory cur) internal pure returns (HostedAmount memory value) {
+        (value.host, value.asset, value.meta, value.amount) = unpackHostedAmount(cur, Keys.Custody);
     }
 
     /// @notice Consume a TRANSACTION block and return its fields as separate values.
@@ -1228,14 +1265,14 @@ library Cursors {
         return requireAssetAmount(cur, Keys.Minimum, asset, meta);
     }
 
-    /// @notice Consume a hosted balance block and assert it matches the expected host.
+    /// @notice Consume a hosted amount block and assert it matches the expected host.
     /// @param cur Cursor; advanced past the block.
     /// @param key Expected block type key.
     /// @param host Expected host node ID.
     /// @return asset Asset identifier from the block.
     /// @return meta Metadata slot from the block.
     /// @return amount Amount from the block.
-    function requireHostedBalance(
+    function requireHostedAmount(
         Cur memory cur,
         bytes4 key,
         uint host
@@ -1247,14 +1284,14 @@ library Cursors {
         amount = uint(bytes32(msg.data[abs + 96:abs + 128]));
     }
 
-    /// @notice Consume a hosted balance block and assert it matches the expected host and asset.
+    /// @notice Consume a hosted amount block and assert it matches the expected host and asset.
     /// @param cur Cursor; advanced past the block.
     /// @param key Expected block type key.
     /// @param host Expected host node ID.
     /// @param asset Expected asset identifier.
     /// @return meta Metadata slot from the block.
     /// @return amount Amount from the block.
-    function requireHostedBalance(
+    function requireHostedAmount(
         Cur memory cur,
         bytes4 key,
         uint host,
@@ -1267,13 +1304,13 @@ library Cursors {
         amount = uint(bytes32(msg.data[abs + 96:abs + 128]));
     }
 
-    /// @notice Consume a hosted balance block, assert it matches the expected host and asset, and require the amount to be 1.
+    /// @notice Consume a hosted amount block, assert it matches the expected host and asset, and require the amount to be 1.
     /// @param cur Cursor; advanced past the block.
     /// @param key Expected block type key.
     /// @param host Expected host node ID.
     /// @param asset Expected asset identifier.
     /// @return meta Metadata slot from the block.
-    function requireUnitHostedBalance(
+    function requireUnitHostedAmount(
         Cur memory cur,
         bytes4 key,
         uint host,

@@ -101,7 +101,7 @@ contract TestErc1155CursorHelper {
         return (meta, amount, cur.i);
     }
 
-    function testExpectErc1155HostedBalance(
+    function testExpectErc1155Custody(
         bytes calldata source,
         uint i,
         uint host,
@@ -112,19 +112,19 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.HostedBalance, 32);
+        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody, 32);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
 
-    function testRequireErc1155HostedBalance(
+    function testRequireErc1155Custody(
         bytes calldata source,
         uint host,
         bytes32 asset
     ) external view returns (bytes32 meta, uint amount, uint i) {
         Cur memory cur = Cursors.open(source);
-        (meta, amount) = Cursors.requireHostedBalance(cur, Keys.HostedBalance, host, asset.erc1155());
+        (meta, amount) = Cursors.requireHostedAmount(cur, Keys.Custody, host, asset.erc1155());
         return (meta, amount, cur.i);
     }
 }

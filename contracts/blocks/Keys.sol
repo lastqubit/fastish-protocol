@@ -10,8 +10,12 @@ library Keys {
     bytes4 constant Amount = bytes4(keccak256("amount(bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Ledger balance - (bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant Balance = bytes4(keccak256("balance(bytes32 asset, bytes32 meta, uint amount)"));
-    /// @dev Balance hosted at a remote host - (uint host, bytes32 asset, bytes32 meta, uint amount)
-    bytes4 constant HostedBalance = bytes4(keccak256("hostedBalance(uint host, bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev Host-scoped request amount - (uint host, bytes32 asset, bytes32 meta, uint amount)
+    bytes4 constant Allocation = bytes4(keccak256("allocation(uint host, bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev Host-scoped allowance cap - (uint host, bytes32 asset, bytes32 meta, uint amount)
+    bytes4 constant Allowance = bytes4(keccak256("allowance(uint host, bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev Cross-host custody state - (uint host, bytes32 asset, bytes32 meta, uint amount)
+    bytes4 constant Custody = bytes4(keccak256("custody(uint host, bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Minimum acceptable output - (bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant Minimum = bytes4(keccak256("minimum(bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Maximum allowable spend - (bytes32 asset, bytes32 meta, uint amount)

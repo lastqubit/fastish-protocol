@@ -25,7 +25,7 @@ describe("Peer Commands", () => {
 
   async function callAs(
     signerIndex: number,
-    method: "peerAssetPull(bytes)" | "peerPull(bytes)" | "peerPush(bytes)" | "peerSettle(bytes)",
+    method: "peerAllowance(bytes)" | "peerAssetPull(bytes)" | "peerPull(bytes)" | "peerPush(bytes)" | "peerSettle(bytes)",
     request = "0x"
   ) {
     const signer = await getSigner(signerIndex);
@@ -40,6 +40,54 @@ describe("Peer Commands", () => {
     const HOST_PREFIX = 0x20010201n;
     return (HOST_PREFIX << 224n) | (network.chainId << 192n) | BigInt(addr);
   }
+
+  describe("peerAllowance", () => {
+    const method = "peerAllowance(bytes)";
+    const asset = ethers.zeroPadValue("0xa0", 32);
+    const meta = ethers.zeroPadValue("0xb0", 32);
+
+    it("emits PeerAllowanceCalled for a single AMOUNT block scoped to the caller host", async () => {
+      const peer = await callerHost(1);
+      const tx = await callAs(1, method, encodeAmountBlock(asset, meta, 123n));
+      await expect(tx).to.emit(host, "PeerAllowanceCalled").withArgs(peer, asset, meta, 123n);
+    });
+
+    it("emits PeerAllowanceCalled for each AMOUNT block when multiple are present", async () => {
+      const peer = await callerHost(1);
+      const asset2 = ethers.zeroPadValue("0xc0", 32);
+      const tx = await callAs(
+        1,
+        method,
+        concat(
+          encodeAmountBlock(asset, meta, 123n),
+          encodeAmountBlock(asset2, meta, 456n),
+        )
+      );
+      await expect(tx).to.emit(host, "PeerAllowanceCalled").withArgs(peer, asset, meta, 123n);
+      await expect(tx).to.emit(host, "PeerAllowanceCalled").withArgs(peer, asset2, meta, 456n);
+    });
+
+    it("returns empty bytes after processing amount blocks", async () => {
+      const signer = await getSigner(1);
+      const result: string = await (host.connect(signer) as any)[method].staticCall(encodeAmountBlock(asset, meta, 123n));
+      expect(result).to.equal("0x");
+    });
+
+    it("reverts CommanderNotAllowed for the commander", async () => {
+      await expect(callAs(0, method, encodeAmountBlock(asset, meta, 123n)))
+        .to.be.revertedWithCustomError(host, "CommanderNotAllowed");
+    });
+
+    it("reverts UnauthorizedCaller for an untrusted caller", async () => {
+      await expect(callAs(2, method, encodeAmountBlock(asset, meta, 123n)))
+        .to.be.revertedWithCustomError(host, "UnauthorizedCaller");
+    });
+
+    it("reverts ZeroCursor when request is empty", async () => {
+      await expect(callAs(1, method))
+        .to.be.revertedWithCustomError(host, "ZeroCursor");
+    });
+  });
 
   describe("peerAssetPull", () => {
     const method = "peerAssetPull(bytes)";

@@ -23,18 +23,20 @@ import { Keys } from "./Keys.sol";
 // - `;` separates top-level sibling blocks
 // - `&` bundles adjacent blocks into one bundle block
 // - `+` frames adjacent fixed-layout block payloads into one frame block
-// - `name = a & b` introduces a named bundle item
-// - `name = a + b` introduces a named frame item
+// - `&` and `+` follow the same grouping and normalization rules, except they emit different wrapper blocks
+// - `name = a & b` introduces a named bundle item with a local key derived from the raw input string
+// - `name = a + b` introduces a named frame item with a local key derived from the raw input string
 // - `bundle = a & b` introduces an anonymous child bundle item
 // - `frame = a + b` introduces an anonymous child frame item, like `bundle = ...` and `list = ...`
 // - postfix `[]` marks a repeated list in the simple suffix form, e.g. `asset(...)[]`
-// - `name[] = a & b` introduces a named list whose repeated item is the bundled shape `a & b`
+// - `name[] = a & b` introduces a named list with a local key derived from the raw input string
 // - `list = a & b` introduces an anonymous list whose repeated item is the bundled shape `a & b`
 // - empty entries are ignored, but structural markers are preserved after normalization
 // - grouping parentheses are not part of the DSL; parentheses are only used in block field lists
 // - `+` binds tighter than `&`, so `a & b + c` normalizes as `a & (b + c)`
 // - if `&` appears, the result remains a bundle even when only one non-empty child remains
-// - after ignoring empty entries, repeated adjacent separators collapse while preserving bundle/list shape
+// - if `+` appears, the result remains a frame even when only one non-empty child remains
+// - after ignoring empty entries, repeated adjacent separators collapse while preserving bundle/frame/list shape
 // - bundled blocks preserve member order, so `a & b` differs from `b & a`
 // - a bundle block's self payload is an embedded normal block stream of its bundled members
 // - bundled members keep their ordinary block encoding, so dynamic blocks are allowed inside bundles
@@ -54,14 +56,16 @@ import { Keys } from "./Keys.sol";
 // - `evm(uint foo, uint bar)` is a schema declaration only; on-chain the block key is still `Keys.Evm`
 //   and the payload can be decoded from `bytes data` using the local runtime's native decoder
 // - on EVM, `evm(bool flag)` occupies one full 32-byte ABI word, exactly like `abi.encode(flag)`
-// - `&` compiles to a `Keys.Bundle` block whose self payload is the bundled member block stream
-// - `[]` compiles to a `Keys.List` block whose self payload is the repeated item block stream
-// - `+` compiles to a `Keys.Frame` block whose self payload is the framed member payload fields
+// - anonymous `&` compiles to a `Keys.Bundle` block whose self payload is the bundled member block stream
+// - anonymous `[]` compiles to a `Keys.List` block whose self payload is the repeated item block stream
+// - anonymous `+` compiles to a `Keys.Frame` block whose self payload is the framed member payload fields
+// - named lists, bundles, and frames use bytes4(keccak256(bytes(rawSchemaInput))) as their block key
+// - named structural keys are custom/local identifiers, not global protocol keys; formatting is part of identity
 // - `asset(...)[]` means a list whose repeated item is the block `asset(...)`
 // - `steps[] = asset(...) & account(...)` means a named list whose repeated item is the bundle
 //   `asset(...) & account(...)`
 // - `payment = amount(...) + fee(...)` means a named frame whose payload is
-//   `asset | meta | amount | fee` and whose on-chain key is still `Keys.Frame`
+//   `asset | meta | amount | fee` and whose on-chain key is derived from that raw schema string
 // - `amount(...) & fee(...) + account(...)` means `amount(...) & (fee(...) + account(...))`;
 //   it compiles to a bundle containing one amount block followed by one frame block
 // - `bundle = account(...) & evm(bytes routeData)` means an anonymous child bundle with those bundled members
@@ -69,10 +73,22 @@ import { Keys } from "./Keys.sol";
 // - `list = asset(...) & account(...)` means an anonymous child list whose repeated item is the
 //   bundle `asset(...) & account(...)`
 // - `"amount(...) &"` and `"& amount(...)"` both normalize to a bundle containing one `amount(...)` child
+// - `"amount(...) +"` and `"+ amount(...)"` both normalize to a frame containing one `amount(...)` payload
 // - canonical blocks are `amount(...)` for request amounts, `balance(...)` for state balances,
+//   `allocation(...)` for host-scoped provision requests, `allowance(...)` for host-scoped caps,
+//   `custody(...)` for host-scoped state,
 //   `minimum(...)` for result floors, `maximum(...)` for spend ceilings, and `quantity(...)`
 //   for plain scalar amounts
 // - `auth(uint cid, uint deadline, bytes proof)` is a proof-separator block and must be emitted last
+//
+// Pipeline state:
+// - `balance(...)` and `custody(...)` are live, linear state in the active command pipeline
+// - pipeline state belongs to the active account while the pipeline is executing
+// - while a balance or custody is in-flight as pipeline state, it is not simultaneously persisted
+//   in another ledger/store by this protocol
+// - commands must preserve, transform, settle, or intentionally consume pipeline state
+// - request blocks such as `amount(...)`, `allocation(...)`, `allowance(...)`, `minimum(...)`, and `maximum(...)`
+//   express intent or constraints; they are not live state
 //
 // Signed blocks:
 // - an authenticated input segment ends with one trailing AUTH block
@@ -97,7 +113,9 @@ library Schemas {
     string constant Balance = "balance(bytes32 asset, bytes32 meta, uint amount)";
     string constant Minimum = "minimum(bytes32 asset, bytes32 meta, uint amount)";
     string constant Maximum = "maximum(bytes32 asset, bytes32 meta, uint amount)";
-    string constant HostedBalance = "hostedBalance(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Allocation = "allocation(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Allowance = "allowance(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Custody = "custody(uint host, bytes32 asset, bytes32 meta, uint amount)";
     string constant Transaction = "transaction(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
     string constant HostFunding = "hostFunding(uint host, uint amount)";
     string constant Call = "call(uint target, uint value, bytes data)";
@@ -149,8 +167,8 @@ library Sizes {
     uint constant Fee = B32;
     /// @dev BOUNTY block: 8 header + 32 amount + 32 relayer = 72 bytes
     uint constant Bounty = B64;
-    /// @dev HOSTED_BALANCE block: 8 header + 32 host + 32 asset + 32 meta + 32 amount = 136 bytes
-    uint constant HostedBalance = B128;
+    /// @dev ALLOCATION/CUSTODY block: 8 header + 32 host + 32 asset + 32 meta + 32 amount = 136 bytes
+    uint constant HostedAmount = B128;
     /// @dev TRANSACTION block: 8 header + 32 from + 32 to + 32 asset + 32 meta + 32 amount = 168 bytes
     uint constant Transaction = B160;
 }
