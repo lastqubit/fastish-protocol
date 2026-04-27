@@ -48,14 +48,12 @@ library Keys {
     bytes4 constant Rate = bytes4(keccak256("rate(uint value)"));
     /// @dev Account identifier - (bytes32 account)
     bytes4 constant Account = bytes4(keccak256("account(bytes32 account)"));
-    /// @dev Account asset position key - (bytes32 account, bytes32 asset, bytes32 meta)
-    bytes4 constant UserPosition = bytes4(keccak256("userPosition(bytes32 account, bytes32 asset, bytes32 meta)"));
-    /// @dev User position hosted at a remote host - (uint host, bytes32 account, bytes32 asset, bytes32 meta)
-    bytes4 constant HostedUserPosition = bytes4(keccak256("hostedUserPosition(uint host, bytes32 account, bytes32 asset, bytes32 meta)"));
-    /// @dev Account asset entry - (bytes32 account, bytes32 asset, bytes32 meta, uint amount)
-    bytes4 constant UserAmount = bytes4(keccak256("userAmount(bytes32 account, bytes32 asset, bytes32 meta, uint amount)"));
-    /// @dev User amount hosted at a remote host - (uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)
-    bytes4 constant HostedUserAmount = bytes4(keccak256("hostedUserAmount(uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev Host-qualified position lookup - (uint host, bytes32 account, bytes32 asset, bytes32 meta)
+    bytes4 constant Lookup = bytes4(keccak256("lookup(uint host, bytes32 account, bytes32 asset, bytes32 meta)"));
+    /// @dev Transfer payout request - (bytes32 account, bytes32 asset, bytes32 meta, uint amount)
+    bytes4 constant Payout = bytes4(keccak256("payout(bytes32 account, bytes32 asset, bytes32 meta, uint amount)"));
+    /// @dev Observed receiver-local account holding - (bytes32 account, bytes32 asset, bytes32 meta, uint amount)
+    bytes4 constant Holding = bytes4(keccak256("holding(bytes32 account, bytes32 asset, bytes32 meta, uint amount)"));
     /// @dev Transfer record passed through the pipeline - (bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant Transaction = bytes4(
         keccak256("transaction(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)")
@@ -70,8 +68,8 @@ library Keys {
     bytes4 constant Asset = bytes4(keccak256("asset(bytes32 asset, bytes32 meta)"));
     /// @dev Node identifier - (uint id)
     bytes4 constant Node = bytes4(keccak256("node(uint id)"));
-    /// @dev Host-qualified liquidity funding entry - (uint host, uint amount)
-    bytes4 constant HostFunding = bytes4(keccak256("hostFunding(uint host, uint amount)"));
+    /// @dev Native value relocation entry - (uint host, uint amount)
+    bytes4 constant Relocation = bytes4(keccak256("relocation(uint host, uint amount)"));
     /// @dev Relayer bounty - (uint amount, bytes32 relayer)
     bytes4 constant Bounty = bytes4(keccak256("bounty(uint amount, bytes32 relayer)"));
 }

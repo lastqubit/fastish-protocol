@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { UserPosition, Tx } from "../core/Types.sol";
+import { Tx } from "../core/Types.sol";
 import { Keys, Sizes } from "../blocks/Schema.sol";
 import { Cur, Cursors, Writer } from "../Cursors.sol";
 import { Writers } from "../blocks/Writers.sol";
@@ -13,12 +13,6 @@ contract TestCursorHelper {
     function testWriteBalanceBlock(bytes32 asset, bytes32 meta, uint amount) external pure returns (bytes memory) {
         Writer memory w = Writers.alloc(Sizes.Balance);
         w.appendBalance(asset, meta, amount);
-        return w.finish();
-    }
-
-    function testWriteUserPositionBlock(bytes32 account, bytes32 asset, bytes32 meta) external pure returns (bytes memory) {
-        Writer memory w = Writers.alloc(Sizes.B96);
-        w.appendUserPosition(account, asset, meta);
         return w.finish();
     }
 
@@ -91,9 +85,11 @@ contract TestCursorHelper {
         return cur.unpackBalance();
     }
 
-    function testUnpackUserPosition(bytes calldata source) external pure returns (bytes32 account, bytes32 asset, bytes32 meta) {
+    function testUnpackLookup(
+        bytes calldata source
+    ) external pure returns (uint host_, bytes32 account, bytes32 asset, bytes32 meta) {
         Cur memory cur = Cursors.open(source);
-        return cur.unpackUserPosition();
+        return cur.unpackLookup();
     }
 
     function testUnpackBounds(bytes calldata source) external pure returns (int min, int max) {

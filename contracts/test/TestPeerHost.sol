@@ -7,7 +7,7 @@ import { PeerAssetPull } from "../peer/AssetPull.sol";
 import { PeerPull } from "../peer/Pull.sol";
 import { PeerPush } from "../peer/Push.sol";
 import { PeerSettle } from "../peer/Settle.sol";
-import { HostedAmount, Cursors, Cur, Keys, Tx } from "../Cursors.sol";
+import { Cursors, Cur, Keys, Tx } from "../Cursors.sol";
 
 using Cursors for Cur;
 
@@ -24,8 +24,8 @@ contract TestPeerHost is Host, PeerAllowance, PeerAssetPull, PeerPull, PeerPush,
         PeerPush("")
     {}
 
-    function allowance(HostedAmount memory allowed) internal override {
-        emit PeerAllowanceCalled(allowed.host, allowed.asset, allowed.meta, allowed.amount);
+    function allowance(uint peer, bytes32 asset, bytes32 meta, uint amount) internal override {
+        emit PeerAllowanceCalled(peer, asset, meta, amount);
     }
 
     function peerAssetPull(uint peer, bytes32 asset, bytes32 meta, uint amount) internal override {

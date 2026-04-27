@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import { deploy, getSigner, getProvider } from "./helpers/setup.js";
 import {
   encodeNodeBlock, encodeAssetBlock, encodeAllowanceBlock,
-  encodeHostFundingBlock, encodeRouteBlock, encodeCallBlock, concat
+  encodeRelocationBlock, encodeRouteBlock, encodeCallBlock, concat
 } from "./helpers/blocks.js";
 
 describe("Admin Commands", () => {
@@ -208,7 +208,7 @@ describe("Admin Commands", () => {
   describe("relocatePayable", () => {
     it("reverts NotAdmin for non-admin account", async () => {
       const fakeAdmin = ethers.zeroPadValue("0x06", 32);
-      const request = encodeHostFundingBlock(1n, 0n);
+      const request = encodeRelocationBlock(1n, 0n);
       await expect(callAs(0, "relocatePayable", userCtx(fakeAdmin, request)))
         .to.be.revertedWithCustomError(host, "NotAdmin");
     });
@@ -227,7 +227,7 @@ describe("Admin Commands", () => {
       await callAs(0, "authorize", adminCtx(encodeNodeBlock(targetHostId)));
 
       const amount = ethers.parseEther("0.001");
-      const request = encodeHostFundingBlock(targetHostId, amount);
+      const request = encodeRelocationBlock(targetHostId, amount);
 
       const provider = await getProvider();
       const tx = await callAs(0, "relocatePayable", adminCtx(request), { value: amount });
@@ -241,7 +241,7 @@ describe("Admin Commands", () => {
 
     it("reverts UnauthorizedNode when target node not authorized", async () => {
       const unauthorizedNode = 0xdeaddeadn;
-      const request = encodeHostFundingBlock(unauthorizedNode, 0n);
+      const request = encodeRelocationBlock(unauthorizedNode, 0n);
       await expect(callAs(0, "relocatePayable", adminCtx(request)))
         .to.be.revertedWithCustomError(host, "UnauthorizedNode");
     });
@@ -258,7 +258,7 @@ describe("Admin Commands", () => {
 
       const amount = 1n;
       await expect(
-        callAs(0, "relocatePayable", adminCtx(encodeHostFundingBlock(rejectorHostId, amount)), { value: amount })
+        callAs(0, "relocatePayable", adminCtx(encodeRelocationBlock(rejectorHostId, amount)), { value: amount })
       ).to.be.revertedWithCustomError(host, "FailedCall");
     });
   });

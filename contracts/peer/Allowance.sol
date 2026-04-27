@@ -3,7 +3,7 @@ pragma solidity ^0.8.33;
 
 import {PeerBase} from "./Base.sol";
 import {AllowanceHook} from "../commands/admin/Allowance.sol";
-import {HostedAmount, Cursors, Cur, Schemas} from "../Cursors.sol";
+import {Cursors, Cur, Schemas} from "../Cursors.sol";
 
 using Cursors for Cur;
 
@@ -27,7 +27,7 @@ abstract contract PeerAllowance is PeerBase, AllowanceHook {
 
         while (amounts.i < amounts.bound) {
             (bytes32 asset, bytes32 meta, uint amount) = amounts.unpackAmount();
-            allowance(HostedAmount({host: peer, asset: asset, meta: meta, amount: amount}));
+            allowance(peer, asset, meta, amount);
         }
 
         amounts.complete();

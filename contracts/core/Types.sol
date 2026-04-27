@@ -23,7 +23,7 @@ struct HostedAmount {
     uint amount;
 }
 
-/// @notice User-scoped amount that matches the USER_AMOUNT block shape.
+/// @notice User-scoped amount shape used by payout and holding blocks.
 struct UserAmount {
     /// @dev User account identifier.
     bytes32 account;
@@ -35,8 +35,10 @@ struct UserAmount {
     uint amount;
 }
 
-/// @notice User-scoped asset position that matches the USER_POSITION block shape.
-struct UserPosition {
+/// @notice Host-qualified user position shape used by the lookup block.
+struct Position {
+    /// @dev Host node identifier.
+    uint host;
     /// @dev User account identifier.
     bytes32 account;
     /// @dev Asset identifier.

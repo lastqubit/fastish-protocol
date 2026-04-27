@@ -10,13 +10,13 @@ string constant NAME = "relocatePayable";
 
 /// @title RelocatePayable
 /// @notice Admin command that forwards native value (ETH) to one or more destination hosts.
-/// Each HOST_FUNDING block in the request specifies a target host node ID and an amount to forward.
+/// Each RELOCATION block in the request specifies a target host node ID and an amount to forward.
 /// Only callable by the admin account.
 abstract contract RelocatePayable is CommandPayable {
     uint internal immutable relocatePayableId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.HostFunding, relocatePayableId, State.Empty, State.Empty, true);
+        emit Command(host, NAME, Schemas.Relocation, relocatePayableId, State.Empty, State.Empty, true);
     }
 
     function relocatePayable(
@@ -26,7 +26,7 @@ abstract contract RelocatePayable is CommandPayable {
         Budget memory budget = Values.fromMsg();
 
         while (request.i < request.bound) {
-            (uint peer, uint amount) = request.unpackHostFunding();
+            (uint peer, uint amount) = request.unpackRelocation();
             callTo(peer, Values.use(budget, amount), "");
         }
 

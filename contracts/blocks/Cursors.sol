@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {AssetAmount, HostedAmount, UserAmount, UserPosition, Tx} from "../core/Types.sol";
+import {AssetAmount, HostedAmount, UserAmount, Position, Tx} from "../core/Types.sol";
 import {Keys, Sizes} from "./Schema.sol";
 import {ALLOC_SCALE, Writer, Writers} from "./Writers.sol";
 
@@ -776,22 +776,6 @@ library Cursors {
         amount = uint(bytes32(msg.data[abs + 96:abs + 128]));
     }
 
-    /// @notice Consume a fixed-size user position block and return account, asset, and meta.
-    /// @param cur Cursor; advanced past the block.
-    /// @param key Expected block key.
-    /// @return account Account identifier.
-    /// @return asset Asset identifier.
-    /// @return meta Asset metadata slot.
-    function unpackUserPosition(
-        Cur memory cur,
-        bytes4 key
-    ) internal pure returns (bytes32 account, bytes32 asset, bytes32 meta) {
-        uint abs = consume(cur, key, 96, 96);
-        account = bytes32(msg.data[abs:abs + 32]);
-        asset = bytes32(msg.data[abs + 32:abs + 64]);
-        meta = bytes32(msg.data[abs + 64:abs + 96]);
-    }
-
     /// @notice Consume a fixed-size hosted amount block and return host, asset, meta, and amount.
     /// @param cur Cursor; advanced past the block.
     /// @param key Expected block key.
@@ -810,34 +794,14 @@ library Cursors {
         amount = uint(bytes32(msg.data[abs + 96:abs + 128]));
     }
 
-    /// @notice Consume a fixed-size hosted user amount block and return host, account, asset, meta, and amount.
+    /// @notice Consume a fixed-size lookup block and return host, account, asset, and meta.
     /// @param cur Cursor; advanced past the block.
     /// @param key Expected block key.
     /// @return host Host node ID.
     /// @return account Account identifier.
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
-    /// @return amount Scalar amount value.
-    function unpackHostedUserAmount(
-        Cur memory cur,
-        bytes4 key
-    ) internal pure returns (uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount) {
-        uint abs = consume(cur, key, 160, 160);
-        host = uint(bytes32(msg.data[abs:abs + 32]));
-        account = bytes32(msg.data[abs + 32:abs + 64]);
-        asset = bytes32(msg.data[abs + 64:abs + 96]);
-        meta = bytes32(msg.data[abs + 96:abs + 128]);
-        amount = uint(bytes32(msg.data[abs + 128:abs + 160]));
-    }
-
-    /// @notice Consume a fixed-size hosted user position block and return host, account, asset, and meta.
-    /// @param cur Cursor; advanced past the block.
-    /// @param key Expected block key.
-    /// @return host Host node ID.
-    /// @return account Account identifier.
-    /// @return asset Asset identifier.
-    /// @return meta Asset metadata slot.
-    function unpackHostedUserPosition(
+    function unpackLookup(
         Cur memory cur,
         bytes4 key
     ) internal pure returns (uint host, bytes32 account, bytes32 asset, bytes32 meta) {
@@ -913,12 +877,12 @@ library Cursors {
         (asset, meta) = unpack64(cur, Keys.Asset, 32);
     }
 
-    /// @notice Consume a HOST_FUNDING block and return the host and amount.
+    /// @notice Consume a RELOCATION block and return the host and amount.
     /// @param cur Cursor; advanced past the block.
     /// @return host Host node ID receiving the funding.
     /// @return amount Funding amount.
-    function unpackHostFunding(Cur memory cur) internal pure returns (uint host, uint amount) {
-        (host, amount) = unpack2Uint(cur, Keys.HostFunding);
+    function unpackRelocation(Cur memory cur) internal pure returns (uint host, uint amount) {
+        (host, amount) = unpack2Uint(cur, Keys.Relocation);
     }
 
     /// @notice Consume a BOUNTY block and return the reward amount and relayer.
@@ -1007,85 +971,61 @@ library Cursors {
         (value.asset, value.meta, value.amount) = unpackAssetAmount(cur, Keys.Maximum);
     }
 
-    /// @notice Consume a USER_POSITION block and return its fields as separate values.
-    /// @param cur Cursor; advanced past the block.
-    /// @return account Account identifier.
-    /// @return asset Asset identifier.
-    /// @return meta Asset metadata slot.
-    function unpackUserPosition(Cur memory cur) internal pure returns (bytes32 account, bytes32 asset, bytes32 meta) {
-        (account, asset, meta) = unpack96(cur, Keys.UserPosition, 32);
-    }
-
-    /// @notice Consume a USER_POSITION block and return its fields as a struct.
-    /// @param cur Cursor; advanced past the block.
-    /// @return value Decoded account, asset, and meta.
-    function unpackUserPositionValue(Cur memory cur) internal pure returns (UserPosition memory value) {
-        (value.account, value.asset, value.meta) = unpack96(cur, Keys.UserPosition, 32);
-    }
-
-    /// @notice Consume a HOSTED_USER_POSITION block and return its fields as separate values.
+    /// @notice Consume a LOOKUP block and return its fields as separate values.
     /// @param cur Cursor; advanced past the block.
     /// @return host Host node ID.
     /// @return account Account identifier.
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
-    function unpackHostedUserPosition(
+    function unpackLookup(
         Cur memory cur
     ) internal pure returns (uint host, bytes32 account, bytes32 asset, bytes32 meta) {
-        return unpackHostedUserPosition(cur, Keys.HostedUserPosition);
+        return unpackLookup(cur, Keys.Lookup);
     }
 
-    /// @notice Consume a HOSTED_USER_POSITION block and return its fields as a host plus struct.
+    /// @notice Consume a LOOKUP block and return its fields as a position struct.
     /// @param cur Cursor; advanced past the block.
-    /// @return host Host node ID.
-    /// @return value Decoded account, asset, and meta.
-    function unpackHostedUserPositionValue(
-        Cur memory cur
-    ) internal pure returns (uint host, UserPosition memory value) {
-        (host, value.account, value.asset, value.meta) = unpackHostedUserPosition(cur, Keys.HostedUserPosition);
+    /// @return value Decoded host, account, asset, and meta.
+    function unpackLookupValue(Cur memory cur) internal pure returns (Position memory value) {
+        (value.host, value.account, value.asset, value.meta) = unpackLookup(cur, Keys.Lookup);
     }
 
-    /// @notice Consume a USER_AMOUNT block and return its fields as separate values.
+    /// @notice Consume a PAYOUT block and return its fields as separate values.
     /// @param cur Cursor; advanced past the block.
     /// @return account Account identifier.
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
     /// @return amount Token amount.
-    function unpackUserAmount(
+    function unpackPayout(
         Cur memory cur
     ) internal pure returns (bytes32 account, bytes32 asset, bytes32 meta, uint amount) {
-        return unpackUserAmount(cur, Keys.UserAmount);
+        return unpackUserAmount(cur, Keys.Payout);
     }
 
-    /// @notice Consume a USER_AMOUNT block and return its fields as a struct.
+    /// @notice Consume a PAYOUT block and return its fields as a struct.
     /// @param cur Cursor; advanced past the block.
     /// @return value Decoded account, asset, meta, and amount.
-    function unpackUserAmountValue(Cur memory cur) internal pure returns (UserAmount memory value) {
-        (value.account, value.asset, value.meta, value.amount) = unpackUserAmount(cur, Keys.UserAmount);
+    function unpackPayoutValue(Cur memory cur) internal pure returns (UserAmount memory value) {
+        (value.account, value.asset, value.meta, value.amount) = unpackUserAmount(cur, Keys.Payout);
     }
 
-    /// @notice Consume a HOSTED_USER_AMOUNT block and return its fields as separate values.
+    /// @notice Consume a HOLDING block and return its fields as separate values.
     /// @param cur Cursor; advanced past the block.
-    /// @return host Host node ID.
     /// @return account Account identifier.
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
     /// @return amount Token amount.
-    function unpackHostedUserAmount(
+    function unpackHolding(
         Cur memory cur
-    ) internal pure returns (uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount) {
-        return unpackHostedUserAmount(cur, Keys.HostedUserAmount);
+    ) internal pure returns (bytes32 account, bytes32 asset, bytes32 meta, uint amount) {
+        return unpackUserAmount(cur, Keys.Holding);
     }
 
-    /// @notice Consume a HOSTED_USER_AMOUNT block and return its fields as a host plus struct.
+    /// @notice Consume a HOLDING block and return its fields as a struct.
     /// @param cur Cursor; advanced past the block.
-    /// @return host Host node ID.
     /// @return value Decoded account, asset, meta, and amount.
-    function unpackHostedUserAmountValue(Cur memory cur) internal pure returns (uint host, UserAmount memory value) {
-        (host, value.account, value.asset, value.meta, value.amount) = unpackHostedUserAmount(
-            cur,
-            Keys.HostedUserAmount
-        );
+    function unpackHoldingValue(Cur memory cur) internal pure returns (UserAmount memory value) {
+        (value.account, value.asset, value.meta, value.amount) = unpackUserAmount(cur, Keys.Holding);
     }
 
     /// @notice Consume an ALLOCATION block and return its fields as separate values.
@@ -1323,22 +1263,56 @@ library Cursors {
         if (uint(bytes32(msg.data[abs + 96:abs + 128])) != 1) revert UnexpectedValue();
     }
 
-    /// @notice Consume a HOSTED_USER_POSITION block and assert it matches the expected host and account.
+    /// @notice Consume a position-shaped block and assert it matches the expected host and account.
     /// @param cur Cursor; advanced past the block.
+    /// @param key Expected block key.
     /// @param host Expected host node ID.
     /// @param account Expected account identifier.
     /// @return asset Asset identifier from the block.
     /// @return meta Metadata slot from the block.
-    function requireHostedUserPosition(
+    function requirePosition(
         Cur memory cur,
+        bytes4 key,
         uint host,
         bytes32 account
     ) internal pure returns (bytes32 asset, bytes32 meta) {
-        uint abs = consume(cur, Keys.HostedUserPosition, 128, 128);
+        uint abs = consume(cur, key, 128, 128);
         if (uint(bytes32(msg.data[abs:abs + 32])) != host) revert UnexpectedValue();
         if (bytes32(msg.data[abs + 32:abs + 64]) != account) revert UnexpectedValue();
         asset = bytes32(msg.data[abs + 64:abs + 96]);
         meta = bytes32(msg.data[abs + 96:abs + 128]);
+    }
+
+    /// @notice Consume a position-shaped block, assert it targets the expected host, and return account, asset, and meta.
+    /// @param cur Cursor; advanced past the block.
+    /// @param key Expected block key.
+    /// @param host Expected host node ID.
+    /// @return account Account identifier from the block.
+    /// @return asset Asset identifier from the block.
+    /// @return meta Metadata slot from the block.
+    function requirePosition(
+        Cur memory cur,
+        bytes4 key,
+        uint host
+    ) internal pure returns (bytes32 account, bytes32 asset, bytes32 meta) {
+        uint abs = consume(cur, key, 128, 128);
+        if (uint(bytes32(msg.data[abs:abs + 32])) != host) revert UnexpectedValue();
+        account = bytes32(msg.data[abs + 32:abs + 64]);
+        asset = bytes32(msg.data[abs + 64:abs + 96]);
+        meta = bytes32(msg.data[abs + 96:abs + 128]);
+    }
+
+    /// @notice Consume a LOOKUP block, assert it targets the expected host, and return account, asset, and meta.
+    /// @param cur Cursor; advanced past the block.
+    /// @param host Expected host node ID.
+    /// @return account Account identifier from the block.
+    /// @return asset Asset identifier from the block.
+    /// @return meta Metadata slot from the block.
+    function requireLookup(
+        Cur memory cur,
+        uint host
+    ) internal pure returns (bytes32 account, bytes32 asset, bytes32 meta) {
+        return requirePosition(cur, Keys.Lookup, host);
     }
 
     /// @notice Consume an AUTH block at the current position and verify the command ID.

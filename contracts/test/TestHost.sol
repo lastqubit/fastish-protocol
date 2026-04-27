@@ -9,7 +9,7 @@ import { CommandContext } from "../commands/Base.sol";
 import { CreditAccount } from "../commands/Credit.sol";
 import { DebitAccount } from "../commands/Debit.sol";
 import { Settle } from "../commands/Settle.sol";
-import { Provision, ProvisionPayable, ProvisionFromBalance } from "../commands/Provision.sol";
+import { Provision, ProvisionPayable } from "../commands/Provision.sol";
 import { PipePayable } from "../commands/Pipe.sol";
 import { AllowAssets } from "../commands/admin/AllowAssets.sol";
 import { DenyAssets } from "../commands/admin/DenyAssets.sol";
@@ -33,7 +33,6 @@ contract TestHost is
     Settle,
     Provision,
     ProvisionPayable,
-    ProvisionFromBalance,
     PipePayable,
     Init,
     Destroy,
@@ -142,8 +141,8 @@ contract TestHost is
         return true;
     }
 
-    function allowance(HostedAmount memory allowed) internal override {
-        emit AllowanceCalled(allowed.host, allowed.asset, allowed.meta, allowed.amount);
+    function allowance(uint peer, bytes32 asset, bytes32 meta, uint amount) internal override {
+        emit AllowanceCalled(peer, asset, meta, amount);
     }
 
     function dispatchStep(
@@ -184,10 +183,6 @@ contract TestHost is
 
     function getSettleId() external view returns (uint) {
         return settleId;
-    }
-
-    function getProvisionFromBalanceId() external view returns (uint) {
-        return provisionFromBalanceId;
     }
 
     function getProvisionId() external view returns (uint) {

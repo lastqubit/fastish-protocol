@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, State } from "../Base.sol";
-import { HostedAmount, Cursors, Cur, Schemas } from "../../Cursors.sol";
+import { Cursors, Cur, Schemas } from "../../Cursors.sol";
 using Cursors for Cur;
 
 string constant NAME = "allowance";
@@ -12,8 +12,11 @@ abstract contract AllowanceHook {
     /// Called once per ALLOWANCE block in the request. Implementations decide
     /// how the allowance is represented, e.g. ERC-20 approval, an internal cap,
     /// or another host-specific authorization record.
-    /// @param allowance Host, asset, meta, and amount describing the allowed cap.
-    function allowance(HostedAmount memory allowance) internal virtual;
+    /// @param peer Host node receiving the allowed cap.
+    /// @param asset Asset identifier.
+    /// @param meta Asset metadata slot.
+    /// @param amount Allowed cap amount.
+    function allowance(uint peer, bytes32 asset, bytes32 meta, uint amount) internal virtual;
 }
 
 /// @title Allowance
@@ -30,8 +33,8 @@ abstract contract Allowance is CommandBase, AllowanceHook {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {
-            HostedAmount memory allowed = request.unpackAllowanceValue();
-            allowance(allowed);
+            (uint peer, bytes32 asset, bytes32 meta, uint amount) = request.unpackAllowance();
+            allowance(peer, asset, meta, amount);
         }
 
         request.complete();

@@ -10,20 +10,20 @@ string constant NAME = "transfer";
 
 abstract contract TransferHook {
     /// @notice Override to execute a single transfer record from the request pipeline.
-    /// Called once per USER_AMOUNT block in the request.
+    /// Called once per PAYOUT block in the request.
     /// @param value Decoded transfer record (from, to, asset, meta, amount).
     function transfer(Tx memory value) internal virtual;
 }
 
 /// @title Transfer
 /// @notice Command that transfers assets from a caller to recipients specified in
-/// USER_AMOUNT request blocks. Produces no state output.
+/// PAYOUT request blocks. Produces no state output.
 /// The virtual `transfer(value)` hook is called once per entry.
 abstract contract Transfer is CommandBase, TransferHook {
     uint internal immutable transferId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.UserAmount, transferId, State.Empty, State.Empty, false);
+        emit Command(host, NAME, Schemas.Payout, transferId, State.Empty, State.Empty, false);
     }
 
     /// @notice Override to customize request parsing or batching for transfers.
@@ -37,7 +37,7 @@ abstract contract Transfer is CommandBase, TransferHook {
         value.from = from;
 
         while (input.i < input.bound) {
-            (value.to, value.asset, value.meta, value.amount) = input.unpackUserAmount();
+            (value.to, value.asset, value.meta, value.amount) = input.unpackPayout();
             Accounts.ensure(value.to);
             transfer(value);
         }
@@ -52,5 +52,4 @@ abstract contract Transfer is CommandBase, TransferHook {
         return transfer(c.account, c.request);
     }
 }
-
 

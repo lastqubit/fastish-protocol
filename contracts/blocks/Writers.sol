@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {AssetAmount, HostedAmount, Tx, UserAmount, UserPosition} from "../core/Types.sol";
+import {AssetAmount, HostedAmount, Tx, UserAmount} from "../core/Types.sol";
 import {max32} from "../utils/Utils.sol";
 import {Keys, Sizes} from "./Schema.sol";
 
@@ -193,17 +193,10 @@ library Writers {
         return alloc96s(count);
     }
 
-    /// @notice Allocate a writer sized for exactly `count` USER_POSITION blocks (1:1 ratio).
-    /// @param count Number of user-position blocks to allocate space for.
+    /// @notice Allocate a writer sized for exactly `count` HOLDING blocks (1:1 ratio).
+    /// @param count Number of holding blocks to allocate space for.
     /// @return writer Allocated writer.
-    function allocUserPositions(uint count) internal pure returns (Writer memory writer) {
-        return alloc96s(count);
-    }
-
-    /// @notice Allocate a writer sized for exactly `count` USER_AMOUNT blocks (1:1 ratio).
-    /// @param count Number of user-amount blocks to allocate space for.
-    /// @return writer Allocated writer.
-    function allocUserAmounts(uint count) internal pure returns (Writer memory writer) {
+    function allocHoldings(uint count) internal pure returns (Writer memory writer) {
         return alloc128s(count);
     }
 
@@ -245,14 +238,6 @@ library Writers {
     ///        (e.g. `ALLOC_SCALE` = 1:1, `2 * ALLOC_SCALE` = 2:1).
     /// @return writer Allocated writer.
     function allocScaledBalances(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
-        return allocScaled96s(count, scaledRatio);
-    }
-
-    /// @notice Allocate a writer for POSITION blocks with a custom output-to-input ratio.
-    /// @param count Number of input blocks.
-    /// @param scaledRatio Output count multiplier expressed in `ALLOC_SCALE` units.
-    /// @return writer Allocated writer.
-    function allocScaledPositions(uint count, uint scaledRatio) internal pure returns (Writer memory writer) {
         return allocScaled96s(count, scaledRatio);
     }
 
@@ -772,22 +757,6 @@ library Writers {
         commit(writer, writeBlock96(writer.dst, writer.i, Keys.Balance, value.asset, value.meta, bytes32(value.amount), 32));
     }
 
-    /// @notice Append a USER_POSITION block using separate field values.
-    /// @param writer Destination writer; `i` is advanced by `Sizes.B96`.
-    /// @param account Account identifier.
-    /// @param asset Asset identifier.
-    /// @param meta Asset metadata slot.
-    function appendUserPosition(Writer memory writer, bytes32 account, bytes32 asset, bytes32 meta) internal pure {
-        commit(writer, writeBlock96(writer.dst, writer.i, Keys.UserPosition, account, asset, meta, 32));
-    }
-
-    /// @notice Append a USER_POSITION block from a struct.
-    /// @param writer Destination writer; `i` is advanced by `Sizes.B96`.
-    /// @param value User-position fields to encode.
-    function appendUserPosition(Writer memory writer, UserPosition memory value) internal pure {
-        commit(writer, writeBlock96(writer.dst, writer.i, Keys.UserPosition, value.account, value.asset, value.meta, 32));
-    }
-
     /// @notice Append an AMOUNT block using separate field values.
     /// @param writer Destination writer; `i` is advanced by `Sizes.Amount`.
     /// @param asset Asset identifier.
@@ -804,30 +773,30 @@ library Writers {
         commit(writer, writeBlock96(writer.dst, writer.i, Keys.Amount, value.asset, value.meta, bytes32(value.amount), 32));
     }
 
-    /// @notice Append a USER_AMOUNT block using separate field values.
+    /// @notice Append a HOLDING block using separate field values.
     /// @param writer Destination writer; `i` is advanced by `Sizes.B128`.
     /// @param account Account identifier.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Token amount.
-    function appendUserAmount(
+    function appendHolding(
         Writer memory writer,
         bytes32 account,
         bytes32 asset,
         bytes32 meta,
         uint amount
     ) internal pure {
-        commit(writer, writeBlock128(writer.dst, writer.i, Keys.UserAmount, account, asset, meta, bytes32(amount), 32));
+        commit(writer, writeBlock128(writer.dst, writer.i, Keys.Holding, account, asset, meta, bytes32(amount), 32));
     }
 
-    /// @notice Append a USER_AMOUNT block from a struct.
+    /// @notice Append a HOLDING block from a struct.
     /// @param writer Destination writer; `i` is advanced by `Sizes.B128`.
-    /// @param value User-amount fields to encode.
-    function appendUserAmount(Writer memory writer, UserAmount memory value) internal pure {
+    /// @param value User amount fields to encode as a holding.
+    function appendHolding(Writer memory writer, UserAmount memory value) internal pure {
         commit(writer, writeBlock128(
             writer.dst,
             writer.i,
-            Keys.UserAmount,
+            Keys.Holding,
             value.account,
             value.asset,
             value.meta,

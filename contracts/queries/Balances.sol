@@ -21,26 +21,26 @@ abstract contract GetBalancesHook {
 
 /// @title GetBalances
 /// @notice Rootzero query that resolves balances for one or more `(account, asset, meta)` tuples.
-/// The request is a run of `USER_POSITION` blocks.
-/// The response returns one `USER_AMOUNT` block per requested position, preserving request order.
+/// The request is a run of `LOOKUP` blocks whose host must match this query host.
+/// The response returns one `HOLDING` block per requested position, preserving request order.
 abstract contract GetBalances is QueryBase, GetBalancesHook {
     uint public immutable getBalancesId = queryId(NAME);
 
     constructor() {
-        emit Query(host, NAME, Schemas.UserPosition, Schemas.UserAmount, getBalancesId);
+        emit Query(host, NAME, Schemas.Lookup, Schemas.Holding, getBalancesId);
     }
 
     /// @notice Resolve balances for a run of requested `(account, asset, meta)` tuples.
-    /// @param request Block-stream request consisting of `userPosition(account, asset, meta)*`.
-    /// @return Block-stream response containing one `userAmount(account, asset, meta, amount)` block per request block.
+    /// @param request Block-stream request consisting of `lookup(host, account, asset, meta)*`.
+    /// @return Block-stream response containing one `holding(account, asset, meta, amount)` block per request block.
     function getBalances(bytes calldata request) external view returns (bytes memory) {
         (Cur memory query, uint count, ) = cursor(request, 1);
-        Writer memory response = Writers.allocUserAmounts(count);
+        Writer memory response = Writers.allocHoldings(count);
 
         while (query.i < query.bound) {
-            (bytes32 account, bytes32 asset, bytes32 meta) = query.unpackUserPosition();
+            (bytes32 account, bytes32 asset, bytes32 meta) = query.requireLookup(host);
             uint balance = getBalance(account, asset, meta);
-            response.appendUserAmount(account, asset, meta, balance);
+            response.appendHolding(account, asset, meta, balance);
         }
 
         return query.complete(response);

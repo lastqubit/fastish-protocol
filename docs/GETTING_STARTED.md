@@ -103,9 +103,9 @@ The built-in commands are easiest to use when you know which blocks they expect.
 ### Commands That Read `request`
 
 - `deposit`: reads `AMOUNT` blocks, returns `BALANCE`
-- `transfer`: reads `USER_AMOUNT` blocks
+- `transfer`: reads `PAYOUT` blocks
 - `debitAccount`: reads `AMOUNT`, returns `BALANCE`
-- `provision`: reads `HOSTED_BALANCE`, returns `HOSTED_BALANCE` custody state
+- `provision`: reads `ALLOCATION`, returns `CUSTODY` state
 - `pipePayable`: reads `STEP` blocks and runs them in order
 
 ### Commands That Read `state`
@@ -113,7 +113,6 @@ The built-in commands are easiest to use when you know which blocks they expect.
 - `withdraw`: reads `BALANCE`, optionally reads `ACCOUNT` from `request`
 - `creditAccount`: reads `BALANCE`, optionally reads `ACCOUNT` from `request`
 - `settle`: reads `TRANSACTION`
-- `provisionFromBalance`: reads `BALANCE` from `state` and `NODE` from `request`
 
 This is the main pattern to keep in mind:
 

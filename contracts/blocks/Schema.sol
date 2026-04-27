@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { Keys } from "./Keys.sol";
+import {Keys} from "./Keys.sol";
 
 // Block stream:
 // - encoding is [bytes4 key][bytes4 payloadLen][payload]
@@ -77,6 +77,7 @@ import { Keys } from "./Keys.sol";
 // - canonical blocks are `amount(...)` for request amounts, `balance(...)` for state balances,
 //   `allocation(...)` for host-scoped provision requests, `allowance(...)` for host-scoped caps,
 //   `custody(...)` for host-scoped state,
+//   `lookup(...)` for host-qualified position lookups,
 //   `minimum(...)` for result floors, `maximum(...)` for spend ceilings, and `quantity(...)`
 //   for plain scalar amounts
 // - `auth(uint cid, uint deadline, bytes proof)` is a proof-separator block and must be emitted last
@@ -87,8 +88,10 @@ import { Keys } from "./Keys.sol";
 // - while a balance or custody is in-flight as pipeline state, it is not simultaneously persisted
 //   in another ledger/store by this protocol
 // - commands must preserve, transform, settle, or intentionally consume pipeline state
-// - request blocks such as `amount(...)`, `allocation(...)`, `allowance(...)`, `minimum(...)`, and `maximum(...)`
-//   express intent or constraints; they are not live state
+// - request blocks such as `amount(...)`, `allocation(...)`, `allowance(...)`, `payout(...)`,
+//   `lookup(...)`, `minimum(...)`, and `maximum(...)` express intent, constraints, or references
+// - value/response blocks such as `holding(...)` report observed values
+// - request and value/response blocks are not live state
 //
 // Signed blocks:
 // - an authenticated input segment ends with one trailing AUTH block
@@ -103,25 +106,24 @@ import { Keys } from "./Keys.sol";
 /// These strings are the canonical source from which `Keys` constants are derived
 /// and are used when emitting schema descriptors in command events.
 library Schemas {
+    string constant Node = "node(uint id)";
     string constant Account = "account(bytes32 account)";
-    string constant UserPosition = "userPosition(bytes32 account, bytes32 asset, bytes32 meta)";
-    string constant HostedUserPosition = "hostedUserPosition(uint host, bytes32 account, bytes32 asset, bytes32 meta)";
-    string constant UserAmount = "userAmount(bytes32 account, bytes32 asset, bytes32 meta, uint amount)";
-    string constant HostedUserAmount = "hostedUserAmount(uint host, bytes32 account, bytes32 asset, bytes32 meta, uint amount)";
     string constant Asset = "asset(bytes32 asset, bytes32 meta)";
-    string constant Amount = "amount(bytes32 asset, bytes32 meta, uint amount)";
     string constant Balance = "balance(bytes32 asset, bytes32 meta, uint amount)";
+    string constant Amount = "amount(bytes32 asset, bytes32 meta, uint amount)";
     string constant Minimum = "minimum(bytes32 asset, bytes32 meta, uint amount)";
     string constant Maximum = "maximum(bytes32 asset, bytes32 meta, uint amount)";
+    string constant Custody = "custody(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Payout = "payout(bytes32 account, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Holding = "holding(bytes32 account, bytes32 asset, bytes32 meta, uint amount)";
     string constant Allocation = "allocation(uint host, bytes32 asset, bytes32 meta, uint amount)";
     string constant Allowance = "allowance(uint host, bytes32 asset, bytes32 meta, uint amount)";
-    string constant Custody = "custody(uint host, bytes32 asset, bytes32 meta, uint amount)";
+    string constant Lookup = "lookup(uint host, bytes32 account, bytes32 asset, bytes32 meta)";
     string constant Transaction = "transaction(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
-    string constant HostFunding = "hostFunding(uint host, uint amount)";
+    string constant Relocation = "relocation(uint host, uint amount)";
     string constant Call = "call(uint target, uint value, bytes data)";
-    string constant Bounty = "bounty(uint amount, bytes32 relayer)";
-    string constant Node = "node(uint id)";
     string constant Step = "step(uint target, uint value, bytes request)";
+    string constant Bounty = "bounty(uint amount, bytes32 relayer)";
     string constant Quantity = "quantity(uint amount)";
     string constant Fee = "fee(uint amount)";
     string constant Rate = "rate(uint value)";
@@ -132,7 +134,6 @@ library Schemas {
     string constant Evm = "evm(bytes data)";
     string constant Query = "query(bytes data)";
     string constant Response = "response(bytes data)";
-    string constant Frame = "frame(bytes data)";
     string constant Break = "break()";
 }
 

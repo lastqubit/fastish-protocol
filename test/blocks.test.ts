@@ -19,6 +19,7 @@ import {
   encodeMinimumBlock,
   encodeNodeBlock,
   encodeAccountBlock,
+  encodeLookupBlock,
   encodeRouteBlock,
   encodeStepBlock,
   encodeTxBlock,
@@ -56,12 +57,13 @@ describe("Cursors", () => {
       expect(await helper.testUnpackBalance(data)).to.deep.equal([asset, meta, amount]);
     });
 
-    it("writeUserPositionBlock round-trips", async () => {
+    it("lookupBlock round-trips", async () => {
+      const host = 1234n;
       const account = encodeUserAccount("0x03");
-      const data: string = await helper.testWriteUserPositionBlock(account, asset, meta);
-      expect(ethers.getBytes(data).length).to.equal(104);
-      expect(data.slice(0, 10)).to.equal(Keys.UserPosition);
-      expect(await helper.testUnpackUserPosition(data)).to.deep.equal([account, asset, meta]);
+      const data = encodeLookupBlock(host, account, asset, meta);
+      expect(ethers.getBytes(data).length).to.equal(136);
+      expect(data.slice(0, 10)).to.equal(Keys.Lookup);
+      expect(await helper.testUnpackLookup(data)).to.deep.equal([host, account, asset, meta]);
     });
 
     it("writeCustodyBlock produces 136 bytes", async () => {
