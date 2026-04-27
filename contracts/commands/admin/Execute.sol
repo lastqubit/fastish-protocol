@@ -27,7 +27,8 @@ abstract contract ExecutePayable is CommandPayable {
 
         while (request.i < request.bound) {
             (uint target, uint value, bytes calldata data) = request.unpackCall();
-            callAddr(Ids.nodeAddr(target), Values.use(budget, value), data);
+            address addr = Ids.nodeAddr(target);
+            callAddr(addr, Values.use(budget, value), data);
         }
 
         request.complete();

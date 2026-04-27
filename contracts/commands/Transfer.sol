@@ -7,7 +7,6 @@ import { Accounts } from "../utils/Accounts.sol";
 using Cursors for Cur;
 
 string constant NAME = "transfer";
-string constant INPUT = Schemas.UserAmount;
 
 abstract contract TransferHook {
     /// @notice Override to execute a single transfer record from the request pipeline.
@@ -24,7 +23,7 @@ abstract contract Transfer is CommandBase, TransferHook {
     uint internal immutable transferId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, INPUT, transferId, State.Empty, State.Empty, false);
+        emit Command(host, NAME, Schemas.UserAmount, transferId, State.Empty, State.Empty, false);
     }
 
     /// @notice Override to customize request parsing or batching for transfers.
