@@ -14,7 +14,7 @@ pragma solidity ^0.8.33;
 // and an AMOUNT block. The command reads both, forwards the asset to that host,
 // and returns a CUSTODY block confirming the held asset.
 
-import {CommandBase, CommandContext, State} from "../contracts/Commands.sol";
+import {CommandBase, CommandContext, Keys} from "../contracts/Commands.sol";
 import {Cursors, Cur, Schemas, Keys} from "../contracts/Cursors.sol";
 
 using Cursors for Cur;
@@ -33,7 +33,7 @@ abstract contract MyCommand is CommandBase {
 
     constructor() {
         // CUSTODIES = this command returns CUSTODY blocks.
-        emit Command(host, NAME, INPUT, myCommandId, State.Empty, State.Custodies, false);
+        emit Command(host, NAME, INPUT, myCommandId, Keys.Empty, Keys.Custody, false);
     }
 
     // sendToHost is the virtual hook implementers override to move the asset.

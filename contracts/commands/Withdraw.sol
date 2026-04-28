@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, State } from "./Base.sol";
+import { CommandContext, CommandBase, Keys } from "./Base.sol";
 import { Cursors, Cur, Schemas } from "../Cursors.sol";
 using Cursors for Cur;
 
@@ -25,7 +25,7 @@ abstract contract Withdraw is CommandBase, WithdrawHook {
     uint internal immutable withdrawId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Account, withdrawId, State.Balances, State.Empty, false);
+        emit Command(host, NAME, Schemas.Account, withdrawId, Keys.Balance, Keys.Empty, false);
     }
 
     function withdraw(

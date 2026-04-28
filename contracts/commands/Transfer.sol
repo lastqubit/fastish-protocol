@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, State } from "./Base.sol";
+import { CommandContext, CommandBase, Keys } from "./Base.sol";
 import { Cursors, Cur, Schemas, Tx } from "../Cursors.sol";
 import { Accounts } from "../utils/Accounts.sol";
 using Cursors for Cur;
@@ -23,7 +23,7 @@ abstract contract Transfer is CommandBase, TransferHook {
     uint internal immutable transferId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Payout, transferId, State.Empty, State.Empty, false);
+        emit Command(host, NAME, Schemas.Payout, transferId, Keys.Empty, Keys.Empty, false);
     }
 
     /// @notice Override to customize request parsing or batching for transfers.
@@ -52,4 +52,3 @@ abstract contract Transfer is CommandBase, TransferHook {
         return transfer(c.account, c.request);
     }
 }
-

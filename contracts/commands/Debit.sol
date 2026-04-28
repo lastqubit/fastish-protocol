@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, State } from "./Base.sol";
+import { CommandContext, CommandBase, Keys } from "./Base.sol";
 import { Cursors, Cur, Schemas, Writer, Writers } from "../Cursors.sol";
 
 string constant NAME = "debitAccount";
@@ -27,7 +27,7 @@ abstract contract DebitAccount is CommandBase, DebitAccountHook {
     uint internal immutable debitAccountId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Amount, debitAccountId, State.Empty, State.Balances, false);
+        emit Command(host, NAME, Schemas.Amount, debitAccountId, Keys.Empty, Keys.Balance, false);
     }
 
     /// @notice Override to customize request parsing or batching for debits.

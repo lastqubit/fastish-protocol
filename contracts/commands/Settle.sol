@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandBase, State} from "./Base.sol";
+import {CommandContext, CommandBase, Keys} from "./Base.sol";
 import {Cursors, Cur} from "../Cursors.sol";
 import {TransferHook} from "./Transfer.sol";
 using Cursors for Cur;
@@ -15,7 +15,7 @@ abstract contract Settle is CommandBase, TransferHook {
     uint internal immutable settleId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, "", settleId, State.Transactions, State.Empty, false);
+        emit Command(host, NAME, "", settleId, Keys.Transaction, Keys.Empty, false);
     }
 
     function settle(CommandContext calldata c) external onlyCommand(c.account) returns (bytes memory) {

@@ -11,7 +11,7 @@ pragma solidity ^0.8.33;
 //   2. A Command event emitted in the constructor to announce the command to the protocol.
 //   3. The onlyTrusted modifier on the entrypoint to enforce the trusted caller.
 
-import {CommandBase, CommandContext, State} from "../contracts/Commands.sol";
+import {CommandBase, CommandContext, Keys} from "../contracts/Commands.sol";
 import {Cursors, Cur, Schemas} from "../contracts/Cursors.sol";
 
 using Cursors for Cur;
@@ -29,7 +29,7 @@ abstract contract MyCommand is CommandBase {
         // Announce this command to the rootzero protocol.
         // Args: host id, command name, request schema, command id, input channel, output channel.
         // SETUP = no structured input channel; BALANCES = this command returns BALANCE blocks.
-        emit Command(host, NAME, Schemas.Amount, myCommandId, State.Empty, State.Balances, false);
+        emit Command(host, NAME, Schemas.Amount, myCommandId, Keys.Empty, Keys.Balance, false);
     }
 
     function myCommand(

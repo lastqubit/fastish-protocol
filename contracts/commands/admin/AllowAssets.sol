@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, State } from "../Base.sol";
+import { CommandBase, CommandContext, Keys } from "../Base.sol";
 import { Cursors, Cur, Schemas } from "../../Cursors.sol";
 using Cursors for Cur;
 
@@ -20,7 +20,7 @@ abstract contract AllowAssets is CommandBase, AllowAssetsHook {
     uint internal immutable allowAssetsId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Asset, allowAssetsId, State.Empty, State.Empty, false);
+        emit Command(host, NAME, Schemas.Asset, allowAssetsId, Keys.Empty, Keys.Empty, false);
     }
 
     function allowAssets(

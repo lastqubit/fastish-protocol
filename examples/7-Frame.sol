@@ -19,7 +19,7 @@ pragma solidity ^0.8.33;
 // same `Keys.Frame` runtime key.
 
 import {Host} from "../contracts/Core.sol";
-import {CommandBase, CommandContext, State} from "../contracts/Commands.sol";
+import {CommandBase, CommandContext, Keys} from "../contracts/Commands.sol";
 import {Cursors, Cur, Keys, Schemas} from "../contracts/Cursors.sol";
 
 using Cursors for Cur;
@@ -40,7 +40,7 @@ abstract contract MyCommand is CommandBase {
     event PaymentSeen(bytes32 asset, bytes32 meta, uint amount, uint fee);
 
     constructor() {
-        emit Command(host, NAME, INPUT, myCommandId, State.Empty, State.Empty, false);
+        emit Command(host, NAME, INPUT, myCommandId, Keys.Empty, Keys.Empty, false);
     }
 
     function myCommand(CommandContext calldata c) external onlyTrusted returns (bytes memory) {

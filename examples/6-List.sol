@@ -19,7 +19,7 @@ pragma solidity ^0.8.33;
 // - the command emits one event per ASSET item, so the behavior is easy to test
 
 import {Host} from "../contracts/Core.sol";
-import {CommandBase, CommandContext, State} from "../contracts/Commands.sol";
+import {CommandBase, CommandContext, Keys} from "../contracts/Commands.sol";
 import {Cursors, Cur, Schemas} from "../contracts/Cursors.sol";
 
 using Cursors for Cur;
@@ -40,7 +40,7 @@ abstract contract MyCommand is CommandBase {
     event AssetSeen(uint indexed listIndex, bytes32 asset, bytes32 meta);
 
     constructor() {
-        emit Command(host, NAME, INPUT, myCommandId, State.Empty, State.Empty, false);
+        emit Command(host, NAME, INPUT, myCommandId, Keys.Empty, Keys.Empty, false);
     }
 
     // consumeAssetList parses one top-level LIST block in place.

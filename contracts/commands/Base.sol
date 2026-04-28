@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 import {OperationBase} from "../core/Operation.sol";
 import {Cur} from "../Cursors.sol";
 import {CommandEvent} from "../events/Command.sol";
-import {State} from "../utils/State.sol";
+import {Keys} from "../blocks/Keys.sol";
 import {Ids, Selectors} from "../utils/Ids.sol";
 import {Budget, Values} from "../utils/Value.sol";
 

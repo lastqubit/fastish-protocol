@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, State } from "./Base.sol";
+import { CommandBase, CommandContext, Keys } from "./Base.sol";
 import { Cursors, Cur, Schemas } from "../Cursors.sol";
 string constant NAME = "creditAccount";
 
@@ -25,7 +25,7 @@ abstract contract CreditAccount is CommandBase, CreditAccountHook {
     uint internal immutable creditAccountId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Account, creditAccountId, State.Balances, State.Empty, false);
+        emit Command(host, NAME, Schemas.Account, creditAccountId, Keys.Balance, Keys.Empty, false);
     }
 
     function creditAccount(

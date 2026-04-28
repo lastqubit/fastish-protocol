@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandBase, CommandPayable, State } from "./Base.sol";
+import { CommandContext, CommandBase, CommandPayable, Keys } from "./Base.sol";
 import { Cursors, Cur, Schemas, Writer, Writers } from "../Cursors.sol";
 import { Budget, Values } from "../utils/Value.sol";
 
@@ -42,7 +42,7 @@ abstract contract Deposit is CommandBase, DepositHook {
     uint internal immutable depositId = commandId(DEPOSIT);
 
     constructor() {
-        emit Command(host, DEPOSIT, Schemas.Amount, depositId, State.Empty, State.Balances, false);
+        emit Command(host, DEPOSIT, Schemas.Amount, depositId, Keys.Empty, Keys.Balance, false);
     }
 
     function deposit(
@@ -68,7 +68,7 @@ abstract contract DepositPayable is CommandPayable, DepositPayableHook {
     uint internal immutable depositPayableId = commandId(DEPOSIT_PAYABLE);
 
     constructor() {
-        emit Command(host, DEPOSIT_PAYABLE, Schemas.Amount, depositPayableId, State.Empty, State.Balances, true);
+        emit Command(host, DEPOSIT_PAYABLE, Schemas.Amount, depositPayableId, Keys.Empty, Keys.Balance, true);
     }
 
     function depositPayable(

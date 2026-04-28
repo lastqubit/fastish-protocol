@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandContext, CommandPayable, State } from "../Base.sol";
+import { CommandContext, CommandPayable, Keys } from "../Base.sol";
 import { Cursors, Cur, Schemas } from "../../Cursors.sol";
 import { Budget, Values } from "../../utils/Value.sol";
 using Cursors for Cur;
@@ -16,7 +16,7 @@ abstract contract RelocatePayable is CommandPayable {
     uint internal immutable relocatePayableId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Relocation, relocatePayableId, State.Empty, State.Empty, true);
+        emit Command(host, NAME, Schemas.Relocation, relocatePayableId, Keys.Empty, Keys.Empty, true);
     }
 
     function relocatePayable(

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { CommandBase, CommandContext, State } from "../Base.sol";
+import { CommandBase, CommandContext, Keys } from "../Base.sol";
 import { Cursors, Cur } from "../../Cursors.sol";
 
 string constant NAME = "destroy";
@@ -21,7 +21,7 @@ abstract contract Destroy is CommandBase, DestroyHook {
     uint internal immutable destroyId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, NAME, input, destroyId, State.Empty, State.Empty, false);
+        emit Command(host, NAME, input, destroyId, Keys.Empty, Keys.Empty, false);
     }
 
     function destroy(

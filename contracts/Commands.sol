@@ -5,7 +5,7 @@ pragma solidity ^0.8.33;
 // Import this file to inherit from the full rootzero command surface without managing individual paths.
 
 import { CommandBase, CommandContext, CommandPayable, encodeCommandCall } from "./commands/Base.sol";
-import { State } from "./utils/State.sol";
+import { Keys } from "./blocks/Keys.sol";
 import { Burn, BurnHook } from "./commands/Burn.sol";
 import { CreditAccount, CreditAccountHook } from "./commands/Credit.sol";
 import { DebitAccount, DebitAccountHook } from "./commands/Debit.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {CommandContext, CommandPayable, State} from "../Base.sol";
+import {CommandContext, CommandPayable, Keys} from "../Base.sol";
 import {Cursors, Cur, Schemas} from "../../Cursors.sol";
 import {Budget, Values} from "../../utils/Value.sol";
 import {Ids} from "../../utils/Ids.sol";
@@ -18,7 +18,7 @@ abstract contract ExecutePayable is CommandPayable {
     uint internal immutable executePayableId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, Schemas.Call, executePayableId, State.Empty, State.Empty, true);
+        emit Command(host, NAME, Schemas.Call, executePayableId, Keys.Empty, Keys.Empty, true);
     }
 
     function executePayable(CommandContext calldata c) external payable onlyAdmin(c.account) returns (bytes memory) {
