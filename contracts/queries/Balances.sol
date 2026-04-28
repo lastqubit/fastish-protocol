@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {Cur, Cursors, Schemas, Writer, Writers} from "../Cursors.sol";
+import {Cur, Cursors, Forms, Writer, Writers} from "../Cursors.sol";
 import {QueryBase} from "./Base.sol";
 
 using Cursors for Cur;
@@ -21,26 +21,26 @@ abstract contract GetBalancesHook {
 
 /// @title GetBalances
 /// @notice Rootzero query that resolves balances for one or more `(account, asset, meta)` tuples.
-/// The request is a run of `LOOKUP` blocks whose host must match this query host.
-/// The response returns one `HOLDING` block per requested position, preserving request order.
+/// The request is a run of `ACCOUNT_ASSET` form blocks.
+/// The response returns one `ACCOUNT_AMOUNT` form block per requested position, preserving request order.
 abstract contract GetBalances is QueryBase, GetBalancesHook {
     uint public immutable getBalancesId = queryId(NAME);
 
     constructor() {
-        emit Query(host, NAME, Schemas.Lookup, Schemas.Holding, getBalancesId);
+        emit Query(host, NAME, Forms.AccountAsset, Forms.AccountAmount, getBalancesId);
     }
 
     /// @notice Resolve balances for a run of requested `(account, asset, meta)` tuples.
-    /// @param request Block-stream request consisting of `lookup(host, account, asset, meta)*`.
-    /// @return Block-stream response containing one `holding(account, asset, meta, amount)` block per request block.
+    /// @param request Block-stream request consisting of `accountAsset(account, asset, meta)*`.
+    /// @return Block-stream response containing one `accountAmount(account, asset, meta, amount)` block per request block.
     function getBalances(bytes calldata request) external view returns (bytes memory) {
         (Cur memory query, uint count, ) = cursor(request, 1);
-        Writer memory response = Writers.allocHoldings(count);
+        Writer memory response = Writers.allocAccountAmounts(count);
 
         while (query.i < query.bound) {
-            (bytes32 account, bytes32 asset, bytes32 meta) = query.requireLookup(host);
-            uint balance = getBalance(account, asset, meta);
-            response.appendHolding(account, asset, meta, balance);
+            (bytes32 account, bytes32 asset, bytes32 meta) = query.unpackAccountAsset();
+            uint amount = getBalance(account, asset, meta);
+            response.appendAccountAmount(account, asset, meta, amount);
         }
 
         return query.complete(response);
