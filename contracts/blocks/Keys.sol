@@ -73,6 +73,8 @@ library Keys {
     /// @dev Relayer bounty - (uint amount, bytes32 relayer)
     bytes4 constant Bounty = bytes4(keccak256("bounty(uint amount, bytes32 relayer)"));
 
+    /// @dev Structural status form - (bool ok)
+    bytes4 constant Status = bytes4(keccak256(bytes(Forms.Status)));
     /// @dev Structural asset amount form - (bytes32 asset, bytes32 meta, uint amount)
     bytes4 constant AssetAmount = bytes4(keccak256(bytes(Forms.AssetAmount)));
     /// @dev Structural account asset form - (bytes32 account, bytes32 asset, bytes32 meta)

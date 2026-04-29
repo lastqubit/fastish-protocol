@@ -15,7 +15,7 @@ contract TestQuery is QueryBase {
     uint public immutable incrementQueryId = queryId(NAME);
 
     constructor() {
-        emit Query(host, NAME, INPUT, OUTPUT, incrementQueryId);
+        emit Query(host, incrementQueryId, NAME, INPUT, OUTPUT);
     }
 
     function incrementQuery(bytes calldata request) external pure returns (bytes memory out) {

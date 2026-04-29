@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import {AccessEvent} from "../events/Access.sol";
-import {HostBound} from "./HostBound.sol";
+import {RootZeroContext} from "./Context.sol";
 import {Accounts} from "../utils/Accounts.sol";
 import {Ids} from "../utils/Ids.sol";
 import {addrOr} from "../utils/Utils.sol";
@@ -13,7 +13,7 @@ import {addrOr} from "../utils/Utils.sol";
 /// mapping of externally trusted node IDs. Inbound trust is host-based:
 /// trusted hosts, the commander, and this contract itself may interact
 /// with the host through the guarded command and peer entrypoints.
-abstract contract AccessControl is HostBound, AccessEvent {
+abstract contract AccessControl is RootZeroContext, AccessEvent {
     /// @dev Trusted commander address. All calls from this address are implicitly trusted.
     /// Defaults to `address(this)` when no external commander is provided.
     address internal immutable commander;

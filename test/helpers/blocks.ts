@@ -36,6 +36,7 @@ export const Keys = {
   Evm: blockKey("evm(bytes data)"),
   Query: blockKey("query(bytes data)"),
   Response: blockKey("response(bytes data)"),
+  Status: blockKey("status(bool ok)"),
   AssetAmount: blockKey("assetAmount(bytes32 asset, bytes32 meta, uint amount)"),
   AccountAsset: blockKey("accountAsset(bytes32 account, bytes32 asset, bytes32 meta)"),
   AccountAmount: blockKey("accountAmount(bytes32 account, bytes32 asset, bytes32 meta, uint amount)"),
@@ -178,6 +179,10 @@ export function encodeQueryBlock(data: string): string {
 
 export function encodeResponseBlock(data: string): string {
   return block(Keys.Response, data);
+}
+
+export function encodeStatusBlock(ok: boolean): string {
+  return block(Keys.Status, pad32(ok ? 1n : 0n));
 }
 
 export function encodeBreakBlock(): string {

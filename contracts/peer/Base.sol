@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import { OperationBase } from "../core/Operation.sol";
+import { NodeCalls } from "../core/Calls.sol";
 import { PeerEvent } from "../events/Peer.sol";
 import { Ids, Selectors } from "../utils/Ids.sol";
 
@@ -20,7 +20,7 @@ function encodePeerCall(uint target, bytes calldata request) pure returns (bytes
 /// @notice Abstract base for all rootzero peer contracts.
 /// Peers handle inter-host operations and asset allow/deny management
 /// between cooperating hosts. Access is restricted to trusted callers via `onlyPeer`.
-abstract contract PeerBase is OperationBase, PeerEvent {
+abstract contract PeerBase is NodeCalls, PeerEvent {
     /// @dev Thrown when the commander attempts to call a peer entrypoint directly.
     error CommanderNotAllowed();
 

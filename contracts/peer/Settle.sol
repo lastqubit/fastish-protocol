@@ -16,7 +16,7 @@ abstract contract PeerSettle is PeerBase, TransferHook {
     uint internal immutable peerSettleId = peerId(NAME);
 
     constructor() {
-        emit Peer(host, NAME, Schemas.Transaction, peerSettleId, false);
+        emit Peer(host, peerSettleId, NAME, Schemas.Transaction, false);
     }
 
     /// @notice Execute the peer-settle call.

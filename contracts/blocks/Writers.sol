@@ -173,6 +173,13 @@ library Writers {
         return allocFromScaledCount(count, scaledRatio, Sizes.B160);
     }
 
+    /// @notice Allocate a writer sized for exactly `count` STATUS form blocks.
+    /// @param count Number of blocks to allocate space for.
+    /// @return writer Allocated writer.
+    function allocStatuses(uint count) internal pure returns (Writer memory writer) {
+        return alloc32s(count);
+    }
+
     /// @notice Allocate a writer sized for exactly `count` ASSET blocks (1:1 ratio).
     /// @param count Number of asset blocks to allocate space for.
     /// @return writer Allocated writer.
@@ -579,17 +586,6 @@ library Writers {
         }
     }
 
-    /// @notice Write an ABI-style boolean as a 32-byte scalar payload block.
-    /// Encodes `false` as `bytes32(0)` and `true` as `bytes32(uint(1))`.
-    /// @param dst Destination buffer; must have at least `i + Sizes.B32` bytes.
-    /// @param i Write offset within `dst`.
-    /// @param key Block type key.
-    /// @param value Boolean value to encode.
-    /// @return next Byte offset immediately after the written block.
-    function writeBlockBool(bytes memory dst, uint i, bytes4 key, bool value) internal pure returns (uint next) {
-        return writeBlock32(dst, i, key, value ? bytes32(uint(1)) : bytes32(0), 32);
-    }
-
     // -------------------------------------------------------------------------
     // Append helpers
     // -------------------------------------------------------------------------
@@ -733,13 +729,11 @@ library Writers {
         commit(writer, writeBlockHead64(writer.dst, writer.i, key, a, b, tail));
     }
 
-    /// @notice Append an ABI-style boolean as a 32-byte scalar payload block.
-    /// Encodes `false` as `bytes32(0)` and `true` as `bytes32(uint(1))`.
+    /// @notice Append a STATUS form block.
     /// @param writer Destination writer; `i` is advanced by `Sizes.B32`.
-    /// @param key Block type key.
-    /// @param value Boolean value to encode.
-    function appendBlockBool(Writer memory writer, bytes4 key, bool value) internal pure {
-        commit(writer, writeBlockBool(writer.dst, writer.i, key, value));
+    /// @param ok Status value to encode.
+    function appendStatus(Writer memory writer, bool ok) internal pure {
+        commit(writer, writeBlock32(writer.dst, writer.i, Keys.Status, ok ? bytes32(uint(1)) : bytes32(0), 32));
     }
 
     /// @notice Append a BALANCE block using separate field values.
@@ -755,7 +749,10 @@ library Writers {
     /// @param writer Destination writer; `i` is advanced by `Sizes.Balance`.
     /// @param value Balance fields to encode.
     function appendBalance(Writer memory writer, AssetAmount memory value) internal pure {
-        commit(writer, writeBlock96(writer.dst, writer.i, Keys.Balance, value.asset, value.meta, bytes32(value.amount), 32));
+        commit(
+            writer,
+            writeBlock96(writer.dst, writer.i, Keys.Balance, value.asset, value.meta, bytes32(value.amount), 32)
+        );
     }
 
     /// @notice Append an AMOUNT block using separate field values.
@@ -771,7 +768,10 @@ library Writers {
     /// @param writer Destination writer; `i` is advanced by `Sizes.Balance`.
     /// @param value Amount fields to encode.
     function appendAmount(Writer memory writer, AssetAmount memory value) internal pure {
-        commit(writer, writeBlock96(writer.dst, writer.i, Keys.Amount, value.asset, value.meta, bytes32(value.amount), 32));
+        commit(
+            writer,
+            writeBlock96(writer.dst, writer.i, Keys.Amount, value.asset, value.meta, bytes32(value.amount), 32)
+        );
     }
 
     /// @notice Append an ACCOUNT_AMOUNT form block using separate field values.
@@ -787,23 +787,29 @@ library Writers {
         bytes32 meta,
         uint amount
     ) internal pure {
-        commit(writer, writeBlock128(writer.dst, writer.i, Keys.AccountAmount, account, asset, meta, bytes32(amount), 32));
+        commit(
+            writer,
+            writeBlock128(writer.dst, writer.i, Keys.AccountAmount, account, asset, meta, bytes32(amount), 32)
+        );
     }
 
     /// @notice Append an ACCOUNT_AMOUNT form block from a struct.
     /// @param writer Destination writer; `i` is advanced by `Sizes.B128`.
     /// @param value Account amount fields to encode.
     function appendAccountAmount(Writer memory writer, AccountAmount memory value) internal pure {
-        commit(writer, writeBlock128(
-            writer.dst,
-            writer.i,
-            Keys.AccountAmount,
-            value.account,
-            value.asset,
-            value.meta,
-            bytes32(value.amount),
-            32
-        ));
+        commit(
+            writer,
+            writeBlock128(
+                writer.dst,
+                writer.i,
+                Keys.AccountAmount,
+                value.account,
+                value.asset,
+                value.meta,
+                bytes32(value.amount),
+                32
+            )
+        );
     }
 
     /// @notice Append an ASSET block.
@@ -828,23 +834,11 @@ library Writers {
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Token amount.
-    function appendCustody(
-        Writer memory writer,
-        uint host,
-        bytes32 asset,
-        bytes32 meta,
-        uint amount
-    ) internal pure {
-        commit(writer, writeBlock128(
-            writer.dst,
-            writer.i,
-            Keys.Custody,
-            bytes32(host),
-            asset,
-            meta,
-            bytes32(amount),
-            32
-        ));
+    function appendCustody(Writer memory writer, uint host, bytes32 asset, bytes32 meta, uint amount) internal pure {
+        commit(
+            writer,
+            writeBlock128(writer.dst, writer.i, Keys.Custody, bytes32(host), asset, meta, bytes32(amount), 32)
+        );
     }
 
     /// @notice Append a CUSTODY block from a host and asset amount.
@@ -852,49 +846,58 @@ library Writers {
     /// @param host Host node ID.
     /// @param value Custody fields to encode.
     function appendCustody(Writer memory writer, uint host, AssetAmount memory value) internal pure {
-        commit(writer, writeBlock128(
-            writer.dst,
-            writer.i,
-            Keys.Custody,
-            bytes32(host),
-            value.asset,
-            value.meta,
-            bytes32(value.amount),
-            32
-        ));
+        commit(
+            writer,
+            writeBlock128(
+                writer.dst,
+                writer.i,
+                Keys.Custody,
+                bytes32(host),
+                value.asset,
+                value.meta,
+                bytes32(value.amount),
+                32
+            )
+        );
     }
 
     /// @notice Append a CUSTODY block from a host amount struct.
     /// @param writer Destination writer; `i` is advanced by `Sizes.HostAmount`.
     /// @param value Custody fields to encode.
     function appendCustody(Writer memory writer, HostAmount memory value) internal pure {
-        commit(writer, writeBlock128(
-            writer.dst,
-            writer.i,
-            Keys.Custody,
-            bytes32(value.host),
-            value.asset,
-            value.meta,
-            bytes32(value.amount),
-            32
-        ));
+        commit(
+            writer,
+            writeBlock128(
+                writer.dst,
+                writer.i,
+                Keys.Custody,
+                bytes32(value.host),
+                value.asset,
+                value.meta,
+                bytes32(value.amount),
+                32
+            )
+        );
     }
 
     /// @notice Append a TRANSACTION block from a struct.
     /// @param writer Destination writer; `i` is advanced by `Sizes.Transaction`.
     /// @param value Transfer record fields to encode.
     function appendTransaction(Writer memory writer, Tx memory value) internal pure {
-        commit(writer, writeBlock160(
-            writer.dst,
-            writer.i,
-            Keys.Transaction,
-            bytes32(value.from),
-            bytes32(value.to),
-            value.asset,
-            value.meta,
-            bytes32(value.amount),
-            32
-        ));
+        commit(
+            writer,
+            writeBlock160(
+                writer.dst,
+                writer.i,
+                Keys.Transaction,
+                bytes32(value.from),
+                bytes32(value.to),
+                value.asset,
+                value.meta,
+                bytes32(value.amount),
+                32
+            )
+        );
     }
 
     // -------------------------------------------------------------------------

@@ -135,6 +135,7 @@ library Schemas {
 /// @notice Reusable structural block schemas for core tuple shapes.
 /// These describe payload form without assigning command or query semantics.
 library Forms {
+    string constant Status = "status(bool ok)";
     string constant AssetAmount = "assetAmount(bytes32 asset, bytes32 meta, uint amount)";
     string constant AccountAsset = "accountAsset(bytes32 account, bytes32 asset, bytes32 meta)";
     string constant AccountAmount = "accountAmount(bytes32 account, bytes32 asset, bytes32 meta, uint amount)";

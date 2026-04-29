@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-import {OperationBase} from "../core/Operation.sol";
+import {NodeCalls} from "../core/Calls.sol";
 import {Cur} from "../Cursors.sol";
 import {CommandEvent} from "../events/Command.sol";
 import {Keys} from "../blocks/Keys.sol";
@@ -41,7 +41,7 @@ function encodeCommandCall(
 /// @notice Abstract base for all rootzero command contracts.
 /// Provides access control modifiers, event emission, and the `commandId`
 /// helper used to derive stable identifiers for named commands.
-abstract contract CommandBase is OperationBase, CommandEvent {
+abstract contract CommandBase is NodeCalls, CommandEvent {
     /// @dev Thrown when `onlyActive` finds that `deadline` has already passed.
     error Expired();
     /// @dev Thrown when the raw active account word in calldata does not match the decoded context account.

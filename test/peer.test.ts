@@ -22,6 +22,21 @@ describe("Peer Commands", () => {
     await host.authorize({ account: adminAccount, meta: ethers.ZeroHash, state: "0x", request: encodeNodeBlock(trustedPeer) });
   });
 
+  it("emits Peer discovery events with id as the second argument", async () => {
+    const tx = host.deploymentTransaction();
+    expect(tx).to.not.equal(null);
+
+    await expect(tx!)
+      .to.emit(host, "Peer")
+      .withArgs(
+        await host.host(),
+        await host.getPeerAllowanceId(),
+        "peerAllowance",
+        "amount(bytes32 asset, bytes32 meta, uint amount)",
+        false,
+      );
+  });
+
   async function callAs(
     signerIndex: number,
     method: "peerAllowance(bytes)" | "peerAssetPull(bytes)" | "peerSettle(bytes)",
