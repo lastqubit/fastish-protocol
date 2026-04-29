@@ -21,7 +21,7 @@ struct AccountAsset {
     bytes32 meta;
 }
 
-/// @notice Account-scoped amount shape used by payout and holding blocks.
+/// @notice Account-scoped amount shape used by payout blocks and query responses.
 struct AccountAmount {
     /// @dev Account identifier.
     bytes32 account;
@@ -71,7 +71,7 @@ struct HostAccountAmount {
     uint amount;
 }
 
-/// @notice Transfer payload used across the pipeline and later consumed by settlement.
+/// @notice Transfer payload used by transaction blocks and peer settlement.
 struct Tx {
     /// @dev Sender account identifier.
     bytes32 from;

@@ -5,7 +5,7 @@ import "./helpers/matchers.js";
 import {
   encodeAmountBlock,
   encodeBalanceBlock, encodeAllocationBlock, encodeCustodyBlock,
-  encodeAccountBlock, encodePayoutBlock, encodeNodeBlock, encodeTxBlock, encodeStepBlock, encodeUserAccount,
+  encodeAccountBlock, encodePayoutBlock, encodeNodeBlock, encodeStepBlock, encodeUserAccount,
   encodeBundleBlock, concat
 } from "./helpers/blocks.js";
 
@@ -317,44 +317,6 @@ describe("Commands", () => {
         encodeBalanceBlock(asset1, meta, 100n),
         encodeBalanceBlock(asset2, meta, 200n),
       ));
-    });
-  });
-
-  // ── Settle ────────────────────────────────────────────────────────────────
-
-  describe("settle", () => {
-    it("emits SettleCalled for each TX block in state", async () => {
-      const from_ = encodeUserAccount("0xaa");
-      const to_   = encodeUserAccount("0xbb");
-      const asset = ethers.zeroPadValue("0x50", 32);
-      const meta  = ethers.ZeroHash;
-      const state = encodeTxBlock(from_, to_, asset, meta, 500n);
-      const tx = await callAs(0, "settle", ctx({ state }));
-      await expect(tx).to.emit(host, "SettleCalled")
-        .withArgs(from_, to_, asset, meta, 500n);
-    });
-
-    it("reverts ZeroCursor for empty state", async () => {
-      await expect(callAs(0, "settle", ctx()))
-        .to.be.revertedWithCustomError(host, "ZeroCursor");
-    });
-
-    it("emits SettleCalled for each TX block in a batch state", async () => {
-      const from1 = encodeUserAccount("0xa1");
-      const from2 = encodeUserAccount("0xa2");
-      const from3 = encodeUserAccount("0xa3");
-      const to_   = encodeUserAccount("0xbb");
-      const asset = ethers.zeroPadValue("0x50", 32);
-      const meta  = ethers.ZeroHash;
-      const state = concat(
-        encodeTxBlock(from1, to_, asset, meta, 100n),
-        encodeTxBlock(from2, to_, asset, meta, 200n),
-        encodeTxBlock(from3, to_, asset, meta, 300n),
-      );
-      const tx = await callAs(0, "settle", ctx({ state }));
-      await expect(tx).to.emit(host, "SettleCalled").withArgs(from1, to_, asset, meta, 100n);
-      await expect(tx).to.emit(host, "SettleCalled").withArgs(from2, to_, asset, meta, 200n);
-      await expect(tx).to.emit(host, "SettleCalled").withArgs(from3, to_, asset, meta, 300n);
     });
   });
 

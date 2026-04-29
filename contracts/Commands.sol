@@ -12,7 +12,6 @@ import { DebitAccount, DebitAccountHook } from "./commands/Debit.sol";
 import { Deposit, DepositHook, DepositPayable, DepositPayableHook } from "./commands/Deposit.sol";
 import { PipePayable, PipePayableHook } from "./commands/Pipe.sol";
 import { Provision, ProvisionHook, ProvisionPayable, ProvisionPayableHook } from "./commands/Provision.sol";
-import { Settle } from "./commands/Settle.sol";
 import { Transfer, TransferHook } from "./commands/Transfer.sol";
 import { Withdraw, WithdrawHook } from "./commands/Withdraw.sol";
 import { AllowAssets, AllowAssetsHook } from "./commands/admin/AllowAssets.sol";

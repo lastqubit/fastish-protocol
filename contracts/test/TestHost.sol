@@ -8,7 +8,6 @@ import { Transfer } from "../commands/Transfer.sol";
 import { CommandContext } from "../commands/Base.sol";
 import { CreditAccount } from "../commands/Credit.sol";
 import { DebitAccount } from "../commands/Debit.sol";
-import { Settle } from "../commands/Settle.sol";
 import { Provision, ProvisionPayable } from "../commands/Provision.sol";
 import { PipePayable } from "../commands/Pipe.sol";
 import { AllowAssets } from "../commands/admin/AllowAssets.sol";
@@ -30,7 +29,6 @@ contract TestHost is
     Transfer,
     CreditAccount,
     DebitAccount,
-    Settle,
     Provision,
     ProvisionPayable,
     PipePayable,
@@ -46,7 +44,6 @@ contract TestHost is
     event TransferCalled(bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount);
     event CreditToCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint returned);
     event DebitFromCalled(bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint returned);
-    event SettleCalled(bytes32 from_, bytes32 to_, bytes32 asset, bytes32 meta, uint amount);
     event ProvisionCalled(uint host_, bytes32 account, bytes32 asset, bytes32 meta, uint amount);
     event ProvisionPayableCalled(uint host_, bytes32 account, bytes32 asset, bytes32 meta, uint amount, uint remaining);
     event InitCalled(bytes inputData);
@@ -80,7 +77,6 @@ contract TestHost is
 
     function transfer(Tx memory value) internal override {
         emit TransferCalled(value.from, value.to, value.asset, value.meta, value.amount);
-        emit SettleCalled(value.from, value.to, value.asset, value.meta, value.amount);
     }
 
     function creditAccount(bytes32 account, bytes32 asset, bytes32 meta, uint amount) internal override {
@@ -179,10 +175,6 @@ contract TestHost is
 
     function getDebitAccountId() external view returns (uint) {
         return debitAccountId;
-    }
-
-    function getSettleId() external view returns (uint) {
-        return settleId;
     }
 
     function getProvisionId() external view returns (uint) {

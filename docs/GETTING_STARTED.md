@@ -24,7 +24,7 @@ In practice:
 
 - `account` is the user account the command is acting for.
 - `request` is the new input for this command.
-- `state` is data produced by an earlier command in a pipeline.
+- `state` is live pipeline state produced by an earlier command.
 
 Most built-in commands follow a simple pattern:
 
@@ -112,12 +112,12 @@ The built-in commands are easiest to use when you know which blocks they expect.
 
 - `withdraw`: reads `BALANCE`, optionally reads `ACCOUNT` from `request`
 - `creditAccount`: reads `BALANCE`, optionally reads `ACCOUNT` from `request`
-- `settle`: reads `TRANSACTION`
 
 This is the main pattern to keep in mind:
 
 - use `request` for the command's direct input
-- use `state` when a previous command already produced the input
+- use `state` for live value threaded through a pipeline, currently `BALANCE` and `CUSTODY`
+- use peer commands such as `peerSettle` for settlement messages such as `TRANSACTION`
 
 ## Step 4: Send A Simple Request
 
@@ -156,8 +156,8 @@ When the built-in modules are not enough, add your own command entrypoint.
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {CommandBase, CommandContext, State} from "@rootzero/contracts/Commands.sol";
-import {Cursors, Cur, Keys, Schemas} from "@rootzero/contracts/Cursors.sol";
+import {CommandBase, CommandContext, Keys} from "@rootzero/contracts/Commands.sol";
+import {Cursors, Cur, Schemas} from "@rootzero/contracts/Cursors.sol";
 
 using Cursors for Cur;
 
@@ -169,7 +169,7 @@ abstract contract MyCommand is CommandBase {
     uint internal immutable myCommandId = commandId(NAME);
 
     constructor() {
-        emit Command(host, NAME, INPUT, myCommandId, State.Empty, State.Balances, false);
+        emit Command(host, NAME, INPUT, myCommandId, Keys.Empty, Keys.Balance, false);
     }
 
     function myCommand(
@@ -238,10 +238,19 @@ function buildBalances() internal pure returns (bytes memory) {
 Use this when your command needs to return:
 
 - balances
-- hosted-balance custody state
-- transactions
+- custody state
 
 If you are only consuming built-in commands, you often will not need to touch writers directly.
+
+## Query Forms
+
+Queries use reusable `Forms` as their input and output schema vocabulary. For example, `getBalances` accepts `Forms.AccountAsset` blocks and returns `Forms.AccountAmount` blocks:
+
+```solidity
+emit Query(host, NAME, Forms.AccountAsset, Forms.AccountAmount, getBalancesId);
+```
+
+This keeps query payloads structural: the query name describes what is being asked, while the form describes the fields carried by each block.
 
 ## A Tiny End-To-End Example
 
