@@ -3,8 +3,7 @@ pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Keys } from "../Base.sol";
 import { Cursors, Cur } from "../../Cursors.sol";
-
-string constant NAME = "destroy";
+import { ControlEvent } from "../../events/Control.sol";
 
 using Cursors for Cur;
 
@@ -15,13 +14,15 @@ abstract contract DestroyHook {
 }
 
 /// @title Destroy
-/// @notice Admin command that runs host teardown logic via a virtual hook.
+/// @notice Control command that runs host teardown logic via a virtual hook.
 /// The full request is passed to `destroy` as a cursor. Only callable by the admin account.
-abstract contract Destroy is CommandBase, DestroyHook {
+abstract contract Destroy is CommandBase, ControlEvent, DestroyHook {
+    string private constant NAME = "destroy";
+
     uint internal immutable destroyId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Command(host, destroyId, NAME, input, Keys.Empty, Keys.Empty, false);
+        emit Control(host, destroyId, NAME, input, Keys.Empty, Keys.Empty, false);
     }
 
     function destroy(

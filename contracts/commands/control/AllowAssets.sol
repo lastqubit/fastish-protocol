@@ -3,24 +3,25 @@ pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Keys } from "../Base.sol";
 import { Cursors, Cur, Schemas } from "../../Cursors.sol";
+import { ControlEvent } from "../../events/Control.sol";
 using Cursors for Cur;
-
-string constant NAME = "allowAssets";
 
 abstract contract AllowAssetsHook {
     /// @dev Override to allow a single asset/meta pair.
     /// Called once per ASSET block in the request.
-    function allowAsset(bytes32 asset, bytes32 meta) internal virtual returns (bool);
+    function allowAsset(bytes32 asset, bytes32 meta) internal virtual;
 }
 
 /// @title AllowAssets
-/// @notice Admin command that permits a list of (asset, meta) pairs via a virtual hook.
+/// @notice Control command that permits a list of (asset, meta) pairs via a virtual hook.
 /// Each ASSET block in the request calls `allowAsset`. Only callable by the admin account.
-abstract contract AllowAssets is CommandBase, AllowAssetsHook {
+abstract contract AllowAssets is CommandBase, ControlEvent, AllowAssetsHook {
+    string private constant NAME = "allowAssets";
+
     uint internal immutable allowAssetsId = commandId(NAME);
 
     constructor() {
-        emit Command(host, allowAssetsId, NAME, Schemas.Asset, Keys.Empty, Keys.Empty, false);
+        emit Control(host, allowAssetsId, NAME, Schemas.Asset, Keys.Empty, Keys.Empty, false);
     }
 
     function allowAssets(

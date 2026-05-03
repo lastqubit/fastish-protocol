@@ -10,11 +10,11 @@ import { CreditAccount } from "../commands/Credit.sol";
 import { DebitAccount } from "../commands/Debit.sol";
 import { Provision, ProvisionPayable } from "../commands/Provision.sol";
 import { PipePayable } from "../commands/Pipe.sol";
-import { AllowAssets } from "../commands/admin/AllowAssets.sol";
-import { DenyAssets } from "../commands/admin/DenyAssets.sol";
-import { Destroy } from "../commands/admin/Destroy.sol";
-import { Init } from "../commands/admin/Init.sol";
-import { Allowance } from "../commands/admin/Allowance.sol";
+import { AllowAssets } from "../commands/control/AllowAssets.sol";
+import { DenyAssets } from "../commands/control/DenyAssets.sol";
+import { Destroy } from "../commands/control/Destroy.sol";
+import { Init } from "../commands/control/Init.sol";
+import { Allowance } from "../commands/control/Allowance.sol";
 import { HostAmount, Tx } from "../core/Types.sol";
 import { Cursors, Cur, Keys } from "../Cursors.sol";
 import { Budget, Values } from "../utils/Value.sol";
@@ -127,18 +127,16 @@ contract TestHost is
         emit DestroyCalled(inputData);
     }
 
-    function allowAsset(bytes32 asset, bytes32 meta) internal override returns (bool) {
+    function allowAsset(bytes32 asset, bytes32 meta) internal override {
         emit AllowAssetCalled(asset, meta);
-        return true;
     }
 
-    function denyAsset(bytes32 asset, bytes32 meta) internal override returns (bool) {
+    function denyAsset(bytes32 asset, bytes32 meta) internal override {
         emit DenyAssetCalled(asset, meta);
-        return true;
     }
 
-    function allowance(uint peer, bytes32 asset, bytes32 meta, uint amount) internal override {
-        emit AllowanceCalled(peer, asset, meta, amount);
+    function allowance(uint remote, bytes32 asset, bytes32 meta, uint amount) internal override {
+        emit AllowanceCalled(remote, asset, meta, amount);
     }
 
     function dispatchStep(
@@ -203,10 +201,6 @@ contract TestHost is
 
     function getUnauthorizeId() external view returns (uint) {
         return unauthorizeId;
-    }
-
-    function getRelocatePayableId() external view returns (uint) {
-        return relocatePayableId;
     }
 
     function getExecutePayableId() external view returns (uint) {
