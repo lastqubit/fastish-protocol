@@ -31,7 +31,7 @@ string constant NAME = "myCommand";
 string constant INPUT = string.concat("payment = ", Schemas.Amount, "+", Schemas.Fee);
 
 function unpackPayment(Cur memory input) pure returns (bytes32 asset, bytes32 meta, uint amount, uint fee) {
-    (bytes32 a, bytes32 b, bytes32 c, bytes32 d) = input.unpack128(Keys.Frame, 32);
+    (bytes32 a, bytes32 b, bytes32 c, bytes32 d) = input.unpack128(Keys.Frame);
     return (a, b, uint(c), uint(d));
 }
 

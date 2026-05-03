@@ -68,8 +68,6 @@ library Keys {
     bytes4 constant Asset = bytes4(keccak256("asset(bytes32 asset, bytes32 meta)"));
     /// @dev Node identifier - (uint id)
     bytes4 constant Node = bytes4(keccak256("node(uint id)"));
-    /// @dev Native value relocation entry - (uint host, uint amount)
-    bytes4 constant Relocation = bytes4(keccak256("relocation(uint host, uint amount)"));
     /// @dev Relayer bounty - (uint amount, bytes32 relayer)
     bytes4 constant Bounty = bytes4(keccak256("bounty(uint amount, bytes32 relayer)"));
 

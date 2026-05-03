@@ -18,7 +18,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Amount, 32);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Amount);
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
@@ -41,7 +41,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance, 32);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance);
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
@@ -64,7 +64,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Minimum, 32);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Minimum);
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
@@ -87,7 +87,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Maximum, 32);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Maximum);
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();
     }
@@ -112,7 +112,7 @@ contract TestErc1155CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody, 32);
+        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         amount = uint(rawAmount);
         if (foundAsset != asset.erc1155()) revert Cursors.UnexpectedValue();

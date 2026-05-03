@@ -114,7 +114,6 @@ library Schemas {
     string constant Allocation = "allocation(uint host, bytes32 asset, bytes32 meta, uint amount)";
     string constant Allowance = "allowance(uint host, bytes32 asset, bytes32 meta, uint amount)";
     string constant Transaction = "transaction(bytes32 from, bytes32 to, bytes32 asset, bytes32 meta, uint amount)";
-    string constant Relocation = "relocation(uint host, uint amount)";
     string constant Call = "call(uint target, uint value, bytes data)";
     string constant Step = "step(uint target, uint value, bytes request)";
     string constant Bounty = "bounty(uint amount, bytes32 relayer)";
