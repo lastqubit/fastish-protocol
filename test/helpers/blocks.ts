@@ -17,7 +17,6 @@ export const Keys = {
   Account: blockKey("account(bytes32 account)"),
   Payout: blockKey("payout(bytes32 account, bytes32 asset, bytes32 meta, uint amount)"),
   Node: blockKey("node(uint id)"),
-  Relocation: blockKey("relocation(uint host, uint amount)"),
   Asset: blockKey("asset(bytes32 asset, bytes32 meta)"),
   Quantity: blockKey("quantity(uint amount)"),
   Step: blockKey("step(uint target, uint value, bytes request)"),
@@ -131,10 +130,6 @@ export function encodeAccountBlock(account: string): string {
 
 export function encodeNodeBlock(id: bigint): string {
   return block(Keys.Node, pad32(id));
-}
-
-export function encodeRelocationBlock(host: bigint, amount: bigint): string {
-  return block(Keys.Relocation, ethers.concat([pad32(host), pad32(amount)]));
 }
 
 export function encodeAssetBlock(asset: string, meta: string): string {

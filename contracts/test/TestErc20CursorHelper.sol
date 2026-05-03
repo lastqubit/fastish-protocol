@@ -13,7 +13,7 @@ contract TestErc20CursorHelper {
         bytes32 meta;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Amount, 32);
+        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Amount);
         amount = uint(rawAmount);
         token = Assets.erc20Addr(asset);
         meta;
@@ -24,7 +24,7 @@ contract TestErc20CursorHelper {
         bytes32 meta;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance, 32);
+        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance);
         amount = uint(rawAmount);
         token = Assets.erc20Addr(asset);
         meta;
@@ -35,7 +35,7 @@ contract TestErc20CursorHelper {
         bytes32 meta;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Minimum, 32);
+        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Minimum);
         amount = uint(rawAmount);
         token = Assets.erc20Addr(asset);
         meta;
@@ -46,7 +46,7 @@ contract TestErc20CursorHelper {
         bytes32 meta;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Maximum, 32);
+        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Maximum);
         amount = uint(rawAmount);
         token = Assets.erc20Addr(asset);
         meta;
@@ -58,7 +58,7 @@ contract TestErc20CursorHelper {
         bytes32 meta;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (rawHost, asset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody, 32);
+        (rawHost, asset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         amount = uint(rawAmount);
         token = Assets.erc20Addr(asset);
@@ -75,7 +75,7 @@ contract TestErc20CursorHelper {
         bytes32 asset;
         bytes32 meta;
         bytes32 rawAmount;
-        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Amount, 32);
+        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Amount);
         token = Assets.erc20Addr(asset);
         amount = uint(rawAmount);
         meta;
@@ -92,7 +92,7 @@ contract TestErc20CursorHelper {
         bytes32 asset;
         bytes32 meta;
         bytes32 rawAmount;
-        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance, 32);
+        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance);
         token = Assets.erc20Addr(asset);
         amount = uint(rawAmount);
         meta;
@@ -117,7 +117,7 @@ contract TestErc20CursorHelper {
         bytes32 asset;
         bytes32 meta;
         bytes32 rawAmount;
-        (rawHost, asset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody, 32);
+        (rawHost, asset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         token = Assets.erc20Addr(asset);
         amount = uint(rawAmount);
@@ -135,7 +135,7 @@ contract TestErc20CursorHelper {
         bytes32 asset;
         bytes32 meta;
         bytes32 rawAmount;
-        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Minimum, 32);
+        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Minimum);
         token = Assets.erc20Addr(asset);
         amount = uint(rawAmount);
         meta;
@@ -152,7 +152,7 @@ contract TestErc20CursorHelper {
         bytes32 asset;
         bytes32 meta;
         bytes32 rawAmount;
-        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Maximum, 32);
+        (asset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Maximum);
         token = Assets.erc20Addr(asset);
         amount = uint(rawAmount);
         meta;

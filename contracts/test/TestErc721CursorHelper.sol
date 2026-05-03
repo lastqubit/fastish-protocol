@@ -18,7 +18,7 @@ contract TestErc721CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance, 32);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance);
         if (foundAsset.erc721() != asset) revert Cursors.UnexpectedValue();
         if (uint(rawAmount) != 1) revert Cursors.UnexpectedValue();
     }
@@ -34,7 +34,7 @@ contract TestErc721CursorHelper {
         bytes32 foundAsset;
         bytes32 rawAmount;
         cur = cur.seek(i);
-        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody, 32);
+        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         if (foundAsset.erc721() != asset) revert Cursors.UnexpectedValue();
         if (uint(rawAmount) != 1) revert Cursors.UnexpectedValue();
@@ -57,7 +57,7 @@ contract TestErc721CursorHelper {
         bytes32 asset = Assets.toErc721(collection);
         bytes32 foundAsset;
         bytes32 rawAmount;
-        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance, 32);
+        (foundAsset, meta, rawAmount) = Cursors.unpack96(cur, Keys.Balance);
         if (foundAsset.erc721() != asset) revert Cursors.UnexpectedValue();
         if (uint(rawAmount) != 1) revert Cursors.UnexpectedValue();
         return (meta, cur.i);
@@ -83,7 +83,7 @@ contract TestErc721CursorHelper {
         bytes32 rawHost;
         bytes32 foundAsset;
         bytes32 rawAmount;
-        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody, 32);
+        (rawHost, foundAsset, meta, rawAmount) = Cursors.unpack128(cur, Keys.Custody);
         if (uint(rawHost) != host) revert Cursors.UnexpectedValue();
         if (foundAsset.erc721() != asset) revert Cursors.UnexpectedValue();
         if (uint(rawAmount) != 1) revert Cursors.UnexpectedValue();

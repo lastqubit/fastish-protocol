@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.33;
 
-// Aggregator: re-exports command, admin, and peer abstractions.
+// Aggregator: re-exports command, control, and remote abstractions.
 // Import this file to inherit from the full rootzero command surface without managing individual paths.
 
 import { CommandBase, CommandContext, CommandPayable, encodeCommandCall } from "./commands/Base.sol";
@@ -14,21 +14,20 @@ import { PipePayable, PipePayableHook } from "./commands/Pipe.sol";
 import { Provision, ProvisionHook, ProvisionPayable, ProvisionPayableHook } from "./commands/Provision.sol";
 import { Transfer, TransferHook } from "./commands/Transfer.sol";
 import { Withdraw, WithdrawHook } from "./commands/Withdraw.sol";
-import { AllowAssets, AllowAssetsHook } from "./commands/admin/AllowAssets.sol";
-import { Destroy, DestroyHook } from "./commands/admin/Destroy.sol";
-import { ExecutePayable } from "./commands/admin/Execute.sol";
-import { Authorize } from "./commands/admin/Authorize.sol";
-import { DenyAssets, DenyAssetsHook } from "./commands/admin/DenyAssets.sol";
-import { Init, InitHook } from "./commands/admin/Init.sol";
-import { RelocatePayable } from "./commands/admin/Relocate.sol";
-import { Allowance, AllowanceHook } from "./commands/admin/Allowance.sol";
-import { Unauthorize } from "./commands/admin/Unauthorize.sol";
-import { PeerBase, encodePeerCall } from "./peer/Base.sol";
-import { PeerAllowance } from "./peer/Allowance.sol";
-import { PeerAssetPull, PeerAssetPullHook } from "./peer/AssetPull.sol";
-import { PeerAllowAssets } from "./peer/AllowAssets.sol";
-import { PeerDenyAssets } from "./peer/DenyAssets.sol";
-import { PeerSettle } from "./peer/Settle.sol";
+import { AllowAssets, AllowAssetsHook } from "./commands/control/AllowAssets.sol";
+import { Destroy, DestroyHook } from "./commands/control/Destroy.sol";
+import { ExecutePayable } from "./commands/control/Execute.sol";
+import { Authorize } from "./commands/control/Authorize.sol";
+import { DenyAssets, DenyAssetsHook } from "./commands/control/DenyAssets.sol";
+import { Init, InitHook } from "./commands/control/Init.sol";
+import { Allowance, AllowanceHook } from "./commands/control/Allowance.sol";
+import { Unauthorize } from "./commands/control/Unauthorize.sol";
+import { RemoteBase, encodeRemoteCall } from "./remote/Base.sol";
+import { RemoteAllowance } from "./remote/Allowance.sol";
+import { RemoteAssetPull, AssetPullHook } from "./remote/AssetPull.sol";
+import { RemoteAllowAssets } from "./remote/AllowAssets.sol";
+import { RemoteDenyAssets } from "./remote/DenyAssets.sol";
+import { RemoteSettle } from "./remote/Settle.sol";
 
 
 

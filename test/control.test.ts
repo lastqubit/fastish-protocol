@@ -3,10 +3,10 @@ import { ethers } from "ethers";
 import { deploy, getSigner, getProvider } from "./helpers/setup.js";
 import {
   encodeNodeBlock, encodeAssetBlock, encodeAllowanceBlock,
-  encodeRelocationBlock, encodeRouteBlock, encodeCallBlock, concat
+  encodeRouteBlock, encodeCallBlock, concat
 } from "./helpers/blocks.js";
 
-describe("Admin Commands", () => {
+describe("Control Commands", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let commander: string;
   let adminAccount: string;
@@ -203,66 +203,6 @@ describe("Admin Commands", () => {
     });
   });
 
-  // ── Relocate ──────────────────────────────────────────────────────────────
-
-  describe("relocatePayable", () => {
-    it("reverts NotAdmin for non-admin account", async () => {
-      const fakeAdmin = ethers.zeroPadValue("0x06", 32);
-      const request = encodeRelocationBlock(1n, 0n);
-      await expect(callAs(0, "relocatePayable", userCtx(fakeAdmin, request)))
-        .to.be.revertedWithCustomError(host, "NotAdmin");
-    });
-
-    it("calls target host with ETH when authorized", async () => {
-      // Deploy a second host as the relocation target
-      const target = await deploy("TestHost", commander);
-      const targetAddr = await target.getAddress();
-
-      // Compute host ID for target
-      const CHAIN_ID = 31337n; // Hardhat default
-      const HOST_PREFIX = 0x20010201n;
-      const targetHostId = (HOST_PREFIX << 224n) | (CHAIN_ID << 192n) | BigInt(targetAddr);
-
-      // Authorize the target
-      await callAs(0, "authorize", adminCtx(encodeNodeBlock(targetHostId)));
-
-      const amount = ethers.parseEther("0.001");
-      const request = encodeRelocationBlock(targetHostId, amount);
-
-      const provider = await getProvider();
-      const tx = await callAs(0, "relocatePayable", adminCtx(request), { value: amount });
-      const receipt = await tx.wait();
-      if (!receipt || receipt.status === 0) throw new Error("relocatePayable tx reverted");
-      const blockNum = receipt.blockNumber;
-      const before = await provider.getBalance(targetAddr, blockNum - 1);
-      const after = await provider.getBalance(targetAddr, blockNum);
-      expect(after - before).to.equal(amount);
-    });
-
-    it("reverts UnauthorizedNode when target node not authorized", async () => {
-      const unauthorizedNode = 0xdeaddeadn;
-      const request = encodeRelocationBlock(unauthorizedNode, 0n);
-      await expect(callAs(0, "relocatePayable", adminCtx(request)))
-        .to.be.revertedWithCustomError(host, "UnauthorizedNode");
-    });
-
-    it("reverts FailedCall when the authorized target rejects ETH", async () => {
-      const rejector = await deploy("TestRejectEther");
-      const rejectorAddr = await rejector.getAddress();
-      const provider = await getProvider();
-      const network = await provider.getNetwork();
-      const HOST_PREFIX = 0x20010201n;
-      const rejectorHostId = (HOST_PREFIX << 224n) | (network.chainId << 192n) | BigInt(rejectorAddr);
-
-      await callAs(0, "authorize", adminCtx(encodeNodeBlock(rejectorHostId)));
-
-      const amount = 1n;
-      await expect(
-        callAs(0, "relocatePayable", adminCtx(encodeRelocationBlock(rejectorHostId, amount)), { value: amount })
-      ).to.be.revertedWithCustomError(host, "FailedCall");
-    });
-  });
-
   describe("executePayable", () => {
     it("reverts NotAdmin for non-admin account", async () => {
       const fakeAdmin = ethers.zeroPadValue("0x07", 32);
@@ -341,6 +281,23 @@ describe("Admin Commands", () => {
       await expect(callAs(0, "executePayable", adminCtx(request), { value: amount }))
         .to.emit(target, "Ping")
         .withArgs(await host.getAddress(), amount, 1n, "0xab");
+    });
+
+    it("can replace relocate by sending native value with empty calldata to a host", async () => {
+      const target = await deploy("TestHost", commander);
+      const targetAddr = await target.getAddress();
+      const targetId = await hostIdFor(targetAddr);
+      const amount = ethers.parseEther("0.001");
+      const request = encodeCallBlock(targetId, amount, "0x");
+
+      const provider = await getProvider();
+      const tx = await callAs(0, "executePayable", adminCtx(request), { value: amount });
+      const receipt = await tx.wait();
+      if (!receipt || receipt.status === 0) throw new Error("executePayable tx reverted");
+      const before = await provider.getBalance(targetAddr, receipt.blockNumber - 1);
+      const after = await provider.getBalance(targetAddr, receipt.blockNumber);
+
+      expect(after - before).to.equal(amount);
     });
 
     it("reverts FailedCall when the raw target call reverts", async () => {

@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 // Example 1: Minimal Host
 //
 // A Host is your application contract. Extending Host gives you:
-//   - admin command support (Authorize, Unauthorize, Relocate)
+//   - control command support (Authorize, Unauthorize, Execute)
 //   - trusted caller enforcement for command entrypoints
 //   - optional auto-registration with a rootzero discovery contract
 //

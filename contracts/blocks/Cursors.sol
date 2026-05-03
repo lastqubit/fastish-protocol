@@ -47,9 +47,6 @@ library Cursors {
     error UnexpectedValue();
     /// @dev Input and output block counts are not proportional to their declared group sizes.
     error BadRatio();
-    /// @dev A fixed-width low-level unpacker received an invalid final-word keep length.
-    error InvalidKeep();
-
     // -------------------------------------------------------------------------
     // Cursor construction and navigation
     // -------------------------------------------------------------------------
@@ -216,17 +213,6 @@ library Cursors {
         uint next;
         (abs, next) = expect(cur, cur.i, key, min, max);
         cur.i = next;
-    }
-
-    /// @notice Load a payload word and mask away any omitted tail bytes on the right.
-    /// @param abs Absolute calldata offset of the word start.
-    /// @param tail Number of trailing bytes omitted from the logical payload (0..31).
-    /// @return value Decoded word with omitted tail bytes zeroed.
-    function mask(uint abs, uint tail) internal pure returns (bytes32 value) {
-        assembly ("memory-safe") {
-            value := calldataload(abs)
-        }
-        if (tail != 0) value &= bytes32(type(uint256).max << (tail * 8));
     }
 
     /// @notice Enter a Bundle block at the current position and return the next offset.
@@ -561,12 +547,9 @@ library Cursors {
     /// @param cur Cursor; advanced past the block.
     /// @param key Expected dynamic block key.
     /// @return value Decoded bytes32.
-    /// @param keep Number of bytes to keep from the final payload word (1..32).
-    function unpack32(Cur memory cur, bytes4 key, uint keep) internal pure returns (bytes32 value) {
-        if (keep == 0 || keep > 32) revert InvalidKeep();
-        uint len = keep;
-        uint abs = consume(cur, key, len, len);
-        value = mask(abs, 32 - keep);
+    function unpack32(Cur memory cur, bytes4 key) internal pure returns (bytes32 value) {
+        uint abs = consume(cur, key, 32, 32);
+        value = bytes32(msg.data[abs:abs + 32]);
     }
 
     /// @notice Consume a dynamic block with two bytes32 payload words.
@@ -574,13 +557,10 @@ library Cursors {
     /// @param key Expected dynamic block key.
     /// @return a First decoded bytes32.
     /// @return b Second decoded bytes32.
-    /// @param keep Number of bytes to keep from the final payload word (1..32).
-    function unpack64(Cur memory cur, bytes4 key, uint keep) internal pure returns (bytes32 a, bytes32 b) {
-        if (keep == 0 || keep > 32) revert InvalidKeep();
-        uint len = 32 + keep;
-        uint abs = consume(cur, key, len, len);
+    function unpack64(Cur memory cur, bytes4 key) internal pure returns (bytes32 a, bytes32 b) {
+        uint abs = consume(cur, key, 64, 64);
         a = bytes32(msg.data[abs:abs + 32]);
-        b = mask(abs + 32, 32 - keep);
+        b = bytes32(msg.data[abs + 32:abs + 64]);
     }
 
     /// @notice Consume a dynamic block with three bytes32 payload words.
@@ -589,14 +569,11 @@ library Cursors {
     /// @return a First decoded bytes32.
     /// @return b Second decoded bytes32.
     /// @return c Third decoded bytes32.
-    /// @param keep Number of bytes to keep from the final payload word (1..32).
-    function unpack96(Cur memory cur, bytes4 key, uint keep) internal pure returns (bytes32 a, bytes32 b, bytes32 c) {
-        if (keep == 0 || keep > 32) revert InvalidKeep();
-        uint len = 64 + keep;
-        uint abs = consume(cur, key, len, len);
+    function unpack96(Cur memory cur, bytes4 key) internal pure returns (bytes32 a, bytes32 b, bytes32 c) {
+        uint abs = consume(cur, key, 96, 96);
         a = bytes32(msg.data[abs:abs + 32]);
         b = bytes32(msg.data[abs + 32:abs + 64]);
-        c = mask(abs + 64, 32 - keep);
+        c = bytes32(msg.data[abs + 64:abs + 96]);
     }
 
     /// @notice Consume a dynamic block with a 128-byte payload (four 32-byte words).
@@ -606,19 +583,15 @@ library Cursors {
     /// @return b Second decoded bytes32.
     /// @return c Third decoded bytes32.
     /// @return d Fourth decoded bytes32.
-    /// @param keep Number of bytes to keep from the final payload word (1..32).
     function unpack128(
         Cur memory cur,
-        bytes4 key,
-        uint keep
+        bytes4 key
     ) internal pure returns (bytes32 a, bytes32 b, bytes32 c, bytes32 d) {
-        if (keep == 0 || keep > 32) revert InvalidKeep();
-        uint len = 96 + keep;
-        uint abs = consume(cur, key, len, len);
+        uint abs = consume(cur, key, 128, 128);
         a = bytes32(msg.data[abs:abs + 32]);
         b = bytes32(msg.data[abs + 32:abs + 64]);
         c = bytes32(msg.data[abs + 64:abs + 96]);
-        d = mask(abs + 96, 32 - keep);
+        d = bytes32(msg.data[abs + 96:abs + 128]);
     }
 
     /// @notice Consume a dynamic block with a 160-byte payload (five 32-byte words).
@@ -629,20 +602,16 @@ library Cursors {
     /// @return c Third decoded bytes32.
     /// @return d Fourth decoded bytes32.
     /// @return e Fifth decoded bytes32.
-    /// @param keep Number of bytes to keep from the final payload word (1..32).
     function unpack160(
         Cur memory cur,
-        bytes4 key,
-        uint keep
+        bytes4 key
     ) internal pure returns (bytes32 a, bytes32 b, bytes32 c, bytes32 d, bytes32 e) {
-        if (keep == 0 || keep > 32) revert InvalidKeep();
-        uint len = 128 + keep;
-        uint abs = consume(cur, key, len, len);
+        uint abs = consume(cur, key, 160, 160);
         a = bytes32(msg.data[abs:abs + 32]);
         b = bytes32(msg.data[abs + 32:abs + 64]);
         c = bytes32(msg.data[abs + 64:abs + 96]);
         d = bytes32(msg.data[abs + 96:abs + 128]);
-        e = mask(abs + 128, 32 - keep);
+        e = bytes32(msg.data[abs + 128:abs + 160]);
     }
 
     /// @notice Consume a dynamic block with a single uint payload.
@@ -650,7 +619,7 @@ library Cursors {
     /// @param key Expected dynamic block key.
     /// @return value Decoded uint value.
     function unpackUint(Cur memory cur, bytes4 key) internal pure returns (uint value) {
-        value = uint(unpack32(cur, key, 32));
+        value = uint(unpack32(cur, key));
     }
 
     /// @notice Consume a dynamic block with two uint payload words.
@@ -659,7 +628,7 @@ library Cursors {
     /// @return a First decoded uint.
     /// @return b Second decoded uint.
     function unpack2Uint(Cur memory cur, bytes4 key) internal pure returns (uint a, uint b) {
-        (bytes32 x, bytes32 y) = unpack64(cur, key, 32);
+        (bytes32 x, bytes32 y) = unpack64(cur, key);
         return (uint(x), uint(y));
     }
 
@@ -670,7 +639,7 @@ library Cursors {
     /// @return b Second decoded uint.
     /// @return c Third decoded uint.
     function unpack3Uint(Cur memory cur, bytes4 key) internal pure returns (uint a, uint b, uint c) {
-        (bytes32 x, bytes32 y, bytes32 z) = unpack96(cur, key, 32);
+        (bytes32 x, bytes32 y, bytes32 z) = unpack96(cur, key);
         return (uint(x), uint(y), uint(z));
     }
 
@@ -839,35 +808,35 @@ library Cursors {
     /// @param cur Cursor; advanced past the block.
     /// @return account Account identifier.
     function unpackAccount(Cur memory cur) internal pure returns (bytes32 account) {
-        account = unpack32(cur, Keys.Account, 32);
+        account = unpack32(cur, Keys.Account);
     }
 
     /// @notice Consume a NODE block and return the node ID.
     /// @param cur Cursor; advanced past the block.
     /// @return node Node identifier.
     function unpackNode(Cur memory cur) internal pure returns (uint node) {
-        node = uint(unpack32(cur, Keys.Node, 32));
+        node = uint(unpack32(cur, Keys.Node));
     }
 
     /// @notice Consume a RATE block and return the value.
     /// @param cur Cursor; advanced past the block.
     /// @return value Encoded ratio or rate.
     function unpackRate(Cur memory cur) internal pure returns (uint value) {
-        value = uint(unpack32(cur, Keys.Rate, 32));
+        value = uint(unpack32(cur, Keys.Rate));
     }
 
     /// @notice Consume a QUANTITY block and return the amount.
     /// @param cur Cursor; advanced past the block.
     /// @return amount Scalar quantity value.
     function unpackQuantity(Cur memory cur) internal pure returns (uint amount) {
-        amount = uint(unpack32(cur, Keys.Quantity, 32));
+        amount = uint(unpack32(cur, Keys.Quantity));
     }
 
     /// @notice Consume a FEE block and return the amount.
     /// @param cur Cursor; advanced past the block.
     /// @return amount Fee amount.
     function unpackFee(Cur memory cur) internal pure returns (uint amount) {
-        amount = uint(unpack32(cur, Keys.Fee, 32));
+        amount = uint(unpack32(cur, Keys.Fee));
     }
 
     /// @notice Consume an ASSET block and return the asset descriptor fields.
@@ -875,7 +844,7 @@ library Cursors {
     /// @return asset Asset identifier.
     /// @return meta Asset metadata slot.
     function unpackAsset(Cur memory cur) internal pure returns (bytes32 asset, bytes32 meta) {
-        (asset, meta) = unpack64(cur, Keys.Asset, 32);
+        (asset, meta) = unpack64(cur, Keys.Asset);
     }
 
     /// @notice Consume an ACCOUNT_ASSET form block and return its fields as separate values.
@@ -897,20 +866,12 @@ library Cursors {
         (value.account, value.asset, value.meta) = unpackAccountAsset(cur);
     }
 
-    /// @notice Consume a RELOCATION block and return the host and amount.
-    /// @param cur Cursor; advanced past the block.
-    /// @return host Host node ID receiving the funding.
-    /// @return amount Funding amount.
-    function unpackRelocation(Cur memory cur) internal pure returns (uint host, uint amount) {
-        (host, amount) = unpack2Uint(cur, Keys.Relocation);
-    }
-
     /// @notice Consume a BOUNTY block and return the reward amount and relayer.
     /// @param cur Cursor; advanced past the block.
     /// @return amount Relayer reward amount.
     /// @return relayer Relayer account identifier.
     function unpackBounty(Cur memory cur) internal pure returns (uint amount, bytes32 relayer) {
-        (bytes32 x, bytes32 y) = unpack64(cur, Keys.Bounty, 32);
+        (bytes32 x, bytes32 y) = unpack64(cur, Keys.Bounty);
         amount = uint(x);
         relayer = y;
     }

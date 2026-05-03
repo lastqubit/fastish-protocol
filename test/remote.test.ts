@@ -10,28 +10,28 @@ import {
 import { ethers } from "ethers";
 import "./helpers/matchers.js";
 
-describe("Peer Commands", () => {
+describe("Remote Entrypoints", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
 
   before(async () => {
     const signer = await getSigner(0);
     const commander = await signer.getAddress();
-    host = await deploy("TestPeerHost", commander);
-    const trustedPeer = await callerHost(1);
+    host = await deploy("TestRemoteHost", commander);
+    const trustedRemote = await callerHost(1);
     const adminAccount: string = await host.getAdminAccount();
-    await host.authorize({ account: adminAccount, meta: ethers.ZeroHash, state: "0x", request: encodeNodeBlock(trustedPeer) });
+    await host.authorize({ account: adminAccount, meta: ethers.ZeroHash, state: "0x", request: encodeNodeBlock(trustedRemote) });
   });
 
-  it("emits Peer discovery events with id as the second argument", async () => {
+  it("emits Remote discovery events with id as the second argument", async () => {
     const tx = host.deploymentTransaction();
     expect(tx).to.not.equal(null);
 
     await expect(tx!)
-      .to.emit(host, "Peer")
+      .to.emit(host, "Remote")
       .withArgs(
         await host.host(),
-        await host.getPeerAllowanceId(),
-        "peerAllowance",
+        await host.getRemoteAllowanceId(),
+        "remoteAllowance",
         "amount(bytes32 asset, bytes32 meta, uint amount)",
         false,
       );
@@ -39,7 +39,7 @@ describe("Peer Commands", () => {
 
   async function callAs(
     signerIndex: number,
-    method: "peerAllowance(bytes)" | "peerAssetPull(bytes)" | "peerSettle(bytes)",
+    method: "remoteAllowance(bytes)" | "remoteAssetPull(bytes)" | "remoteSettle(bytes)",
     request = "0x"
   ) {
     const signer = await getSigner(signerIndex);
@@ -55,19 +55,19 @@ describe("Peer Commands", () => {
     return (HOST_PREFIX << 224n) | (network.chainId << 192n) | BigInt(addr);
   }
 
-  describe("peerAllowance", () => {
-    const method = "peerAllowance(bytes)";
+  describe("remoteAllowance", () => {
+    const method = "remoteAllowance(bytes)";
     const asset = ethers.zeroPadValue("0xa0", 32);
     const meta = ethers.zeroPadValue("0xb0", 32);
 
-    it("emits PeerAllowanceCalled for a single AMOUNT block scoped to the caller host", async () => {
-      const peer = await callerHost(1);
+    it("emits RemoteAllowanceCalled for a single AMOUNT block scoped to the caller host", async () => {
+      const remote = await callerHost(1);
       const tx = await callAs(1, method, encodeAmountBlock(asset, meta, 123n));
-      await expect(tx).to.emit(host, "PeerAllowanceCalled").withArgs(peer, asset, meta, 123n);
+      await expect(tx).to.emit(host, "RemoteAllowanceCalled").withArgs(remote, asset, meta, 123n);
     });
 
-    it("emits PeerAllowanceCalled for each AMOUNT block when multiple are present", async () => {
-      const peer = await callerHost(1);
+    it("emits RemoteAllowanceCalled for each AMOUNT block when multiple are present", async () => {
+      const remote = await callerHost(1);
       const asset2 = ethers.zeroPadValue("0xc0", 32);
       const tx = await callAs(
         1,
@@ -77,8 +77,8 @@ describe("Peer Commands", () => {
           encodeAmountBlock(asset2, meta, 456n),
         )
       );
-      await expect(tx).to.emit(host, "PeerAllowanceCalled").withArgs(peer, asset, meta, 123n);
-      await expect(tx).to.emit(host, "PeerAllowanceCalled").withArgs(peer, asset2, meta, 456n);
+      await expect(tx).to.emit(host, "RemoteAllowanceCalled").withArgs(remote, asset, meta, 123n);
+      await expect(tx).to.emit(host, "RemoteAllowanceCalled").withArgs(remote, asset2, meta, 456n);
     });
 
     it("returns empty bytes after processing amount blocks", async () => {
@@ -103,19 +103,19 @@ describe("Peer Commands", () => {
     });
   });
 
-  describe("peerAssetPull", () => {
-    const method = "peerAssetPull(bytes)";
+  describe("remoteAssetPull", () => {
+    const method = "remoteAssetPull(bytes)";
     const asset = ethers.zeroPadValue("0xaa", 32);
     const meta = ethers.zeroPadValue("0xbb", 32);
 
-    it("emits PeerAssetPullCalled for a single AMOUNT block", async () => {
-      const peer = await callerHost(1);
+    it("emits RemoteAssetPullCalled for a single AMOUNT block", async () => {
+      const remote = await callerHost(1);
       const tx = await callAs(1, method, encodeAmountBlock(asset, meta, 123n));
-      await expect(tx).to.emit(host, "PeerAssetPullCalled").withArgs(peer, asset, meta, 123n);
+      await expect(tx).to.emit(host, "RemoteAssetPullCalled").withArgs(remote, asset, meta, 123n);
     });
 
-    it("emits PeerAssetPullCalled for each AMOUNT block when multiple are present", async () => {
-      const peer = await callerHost(1);
+    it("emits RemoteAssetPullCalled for each AMOUNT block when multiple are present", async () => {
+      const remote = await callerHost(1);
       const asset2 = ethers.zeroPadValue("0xcc", 32);
       const tx = await callAs(
         1,
@@ -125,8 +125,8 @@ describe("Peer Commands", () => {
           encodeAmountBlock(asset2, meta, 456n),
         )
       );
-      await expect(tx).to.emit(host, "PeerAssetPullCalled").withArgs(peer, asset, meta, 123n);
-      await expect(tx).to.emit(host, "PeerAssetPullCalled").withArgs(peer, asset2, meta, 456n);
+      await expect(tx).to.emit(host, "RemoteAssetPullCalled").withArgs(remote, asset, meta, 123n);
+      await expect(tx).to.emit(host, "RemoteAssetPullCalled").withArgs(remote, asset2, meta, 456n);
     });
 
     it("returns empty bytes after processing amount blocks", async () => {
@@ -151,19 +151,19 @@ describe("Peer Commands", () => {
     });
   });
 
-  describe("peerSettle", () => {
-    const method = "peerSettle(bytes)";
+  describe("remoteSettle", () => {
+    const method = "remoteSettle(bytes)";
     const from_ = encodeUserAccount("0x11");
     const to_ = encodeUserAccount("0x22");
     const asset = ethers.zeroPadValue("0xaa", 32);
     const meta = ethers.zeroPadValue("0xbb", 32);
 
-    it("emits PeerSettleCalled for a single TX block", async () => {
+    it("emits RemoteSettleCalled for a single TX block", async () => {
       const tx = await callAs(1, method, encodeTxBlock(from_, to_, asset, meta, 123n));
-      await expect(tx).to.emit(host, "PeerSettleCalled").withArgs(from_, to_, asset, meta, 123n);
+      await expect(tx).to.emit(host, "RemoteSettleCalled").withArgs(from_, to_, asset, meta, 123n);
     });
 
-    it("emits PeerSettleCalled for each TX block when multiple are present", async () => {
+    it("emits RemoteSettleCalled for each TX block when multiple are present", async () => {
       const from2 = encodeUserAccount("0x33");
       const tx = await callAs(
         1,
@@ -173,8 +173,8 @@ describe("Peer Commands", () => {
           encodeTxBlock(from2, to_, asset, meta, 456n),
         )
       );
-      await expect(tx).to.emit(host, "PeerSettleCalled").withArgs(from_, to_, asset, meta, 123n);
-      await expect(tx).to.emit(host, "PeerSettleCalled").withArgs(from2, to_, asset, meta, 456n);
+      await expect(tx).to.emit(host, "RemoteSettleCalled").withArgs(from_, to_, asset, meta, 123n);
+      await expect(tx).to.emit(host, "RemoteSettleCalled").withArgs(from2, to_, asset, meta, 456n);
     });
 
     it("returns empty bytes after processing tx blocks", async () => {
