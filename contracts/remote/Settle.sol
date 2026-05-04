@@ -7,12 +7,11 @@ import { Cursors, Cur, Schemas } from "../Cursors.sol";
 
 using Cursors for Cur;
 
-string constant NAME = "remoteSettle";
-
 /// @title RemoteSettle
 /// @notice Remote that consumes remote-supplied TRANSACTION blocks through the shared transfer hook.
 /// Each TRANSACTION block in the request calls `transfer(value)`. Restricted to trusted remotes.
 abstract contract RemoteSettle is RemoteBase, TransferHook {
+    string private constant NAME = "remoteSettle";
     uint internal immutable remoteSettleId = remoteId(NAME);
 
     constructor() {

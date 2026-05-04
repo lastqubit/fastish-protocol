@@ -92,6 +92,14 @@ library Accounts {
         return account;
     }
 
+    /// @notice Assert that `account` is not an admin account and return it unchanged.
+    /// @param account Account ID to validate.
+    /// @return The same `account` value if valid.
+    function ensureNotAdmin(bytes32 account) internal pure returns (bytes32) {
+        if (isAdmin(account)) revert InvalidAccount();
+        return account;
+    }
+
     /// @notice Extract the EVM address embedded in an EVM-family account ID.
     /// Reverts if `account` is not an EVM-family account.
     /// @param account EVM-family account ID.

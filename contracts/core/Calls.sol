@@ -2,6 +2,7 @@
 pragma solidity ^0.8.33;
 
 import {AccessControl} from "./Access.sol";
+import {CommandContext} from "../commands/Base.sol";
 import {Ids} from "../utils/Ids.sol";
 
 /// @dev Emitted when a trusted inter-node call fails.
@@ -53,7 +54,8 @@ abstract contract NodeCalls is AccessControl {
     /// @param data Encoded calldata to send.
     /// @return out Return data from the successful call.
     function callTo(uint node, uint value, bytes memory data) internal returns (bytes memory out) {
-        address addr = Ids.nodeAddr(ensureTrusted(node));
+        ensureTrusted(node);
+        address addr = Ids.nodeAddr(node);
         return callAddr(addr, value, data);
     }
 
@@ -64,7 +66,19 @@ abstract contract NodeCalls is AccessControl {
     /// @param data Encoded calldata to send.
     /// @return out Return data from the successful query.
     function queryTo(uint node, bytes memory data) internal view returns (bytes memory out) {
-        address addr = Ids.nodeAddr(ensureTrusted(node));
+        ensureTrusted(node);
+        address addr = Ids.nodeAddr(node);
         return queryAddr(addr, data);
+    }
+
+    /// @notice Encode and call a trusted command node.
+    /// @param ctx Command execution context.
+    /// @param cid Command node ID embedding the target selector.
+    /// @param value Native value to forward in wei.
+    /// @return Decoded command output block stream.
+    function callCommand(CommandContext memory ctx, uint cid, uint value) internal returns (bytes memory) {
+        bytes4 selector = Ids.commandSelector(cid);
+        bytes memory data = abi.encodeWithSelector(selector, ctx);
+        return abi.decode(callTo(cid, value, data), (bytes));
     }
 }

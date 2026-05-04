@@ -7,12 +7,11 @@ import { Cursors, Cur, Schemas } from "../Cursors.sol";
 
 using Cursors for Cur;
 
-string constant NAME = "remoteAllowAssets";
-
 /// @title RemoteAllowAssets
 /// @notice Remote that permits a list of (asset, meta) pairs on behalf of a remote host.
 /// Each ASSET block in the request calls `allowAsset`. Restricted to trusted remotes.
 abstract contract RemoteAllowAssets is RemoteBase, AllowAssetsHook {
+    string private constant NAME = "remoteAllowAssets";
     uint internal immutable remoteAllowAssetsId = remoteId(NAME);
 
     constructor() {

@@ -4,8 +4,6 @@ pragma solidity ^0.8.33;
 import {RemoteBase} from "./Base.sol";
 import {Cursors, Cur, Schemas} from "../Cursors.sol";
 
-string constant NAME = "remoteAssetPull";
-
 using Cursors for Cur;
 
 abstract contract AssetPullHook {
@@ -22,6 +20,7 @@ abstract contract AssetPullHook {
 /// Each AMOUNT block in the request calls `assetPull(remote, asset, meta, amount)`.
 /// Restricted to trusted remotes.
 abstract contract RemoteAssetPull is RemoteBase, AssetPullHook {
+    string private constant NAME = "remoteAssetPull";
     uint internal immutable remoteAssetPullId = remoteId(NAME);
 
     constructor() {

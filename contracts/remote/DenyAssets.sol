@@ -7,12 +7,11 @@ import {Cursors, Cur, Schemas} from "../Cursors.sol";
 
 using Cursors for Cur;
 
-string constant NAME = "remoteDenyAssets";
-
 /// @title RemoteDenyAssets
 /// @notice Remote that blocks a list of (asset, meta) pairs on behalf of a remote host.
 /// Each ASSET block in the request calls `denyAsset`. Restricted to trusted remotes.
 abstract contract RemoteDenyAssets is RemoteBase, DenyAssetsHook {
+    string private constant NAME = "remoteDenyAssets";
     uint internal immutable remoteDenyAssetsId = remoteId(NAME);
 
     constructor() {

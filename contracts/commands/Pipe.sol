@@ -9,8 +9,17 @@ import {Budget, Values} from "../utils/Value.sol";
 using Cursors for Cur;
 
 abstract contract PipePayableHook {
-    function dispatchStep(
-        uint target,
+    /// @notice Override to dispatch one piped command step.
+    /// Called once per STEP block. The returned bytes become the state passed to
+    /// the next step.
+    /// @param id Command node ID to invoke or handle.
+    /// @param account Account identifier for the piped command context.
+    /// @param state Current threaded state block stream.
+    /// @param request Step request block stream.
+    /// @param value Native value assigned to this step.
+    /// @return Updated state block stream for the next step.
+    function dispatchCommand(
+        uint id,
         bytes32 account,
         bytes memory state,
         bytes calldata request,
@@ -20,7 +29,7 @@ abstract contract PipePayableHook {
 
 /// @title PipePayable
 /// @notice Command that sequences multiple sub-command STEP invocations in a single transaction.
-/// Each STEP block carries a target node, native value to forward, and an embedded request.
+/// Each STEP block carries a command node, native value to forward, and an embedded request.
 /// State threads through the steps: each step's output becomes the next step's state.
 /// Admin accounts are not permitted to use `pipePayable`.
 abstract contract PipePayable is CommandPayable, PipePayableHook {
@@ -43,7 +52,7 @@ abstract contract PipePayable is CommandPayable, PipePayableHook {
         while (input.i < input.bound) {
             (uint target, uint value, bytes calldata request) = input.unpackStep();
             uint spend = Values.use(budget, value);
-            state = dispatchStep(target, account, state, request, spend);
+            state = dispatchCommand(target, account, state, request, spend);
         }
 
         settleValue(account, budget);
@@ -52,11 +61,7 @@ abstract contract PipePayable is CommandPayable, PipePayableHook {
     }
 
     /// @notice Execute the pipePayable command.
-    function pipePayable(
-        CommandContext calldata c
-    ) external payable onlyCommand(c.account) returns (bytes memory) {
-        if (Accounts.isAdmin(c.account)) revert Accounts.InvalidAccount();
-        Budget memory budget = Values.fromMsg();
-        return pipe(c.account, c.state, c.request, budget);
+    function pipePayable(CommandContext calldata c) external payable onlyCommand(c.account) returns (bytes memory) {
+        return pipe(Accounts.ensureNotAdmin(c.account), c.state, c.request, Values.fromMsg());
     }
 }

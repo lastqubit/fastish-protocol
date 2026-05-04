@@ -4,7 +4,7 @@ pragma solidity ^0.8.33;
 import { Accounts } from "../utils/Accounts.sol";
 import { Amounts, Assets } from "../utils/Assets.sol";
 import { Ids, Selectors } from "../utils/Ids.sol";
-import { addrOr, applyBps, beforeBps, bytes32ToString, isFamily, isLocal, isLocalFamily, matchesBase, toLocalBase, toUnspecifiedBase, max8, max16, max32, max64, max128, max160 } from "../utils/Utils.sol";
+import { addrOr, applyBps, beforeBps, bytes32ToString, isFamily, isLocalChain, isLocalFamily, matchesBase, toLocalBase, toUnspecifiedBase, max8, max16, max32, max64, max128, max160 } from "../utils/Utils.sol";
 import { Budget, Values } from "../utils/Value.sol";
 
 contract TestUtils {
@@ -164,8 +164,8 @@ contract TestUtils {
         return isFamily(value, family);
     }
 
-    function testIsLocal(uint value) external view returns (bool) {
-        return isLocal(value);
+    function testIsLocalChain(uint value) external view returns (bool) {
+        return isLocalChain(value);
     }
 
     function testMatchesBase(bytes32 value, uint base) external pure returns (bool) {

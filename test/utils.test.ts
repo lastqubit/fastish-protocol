@@ -445,14 +445,14 @@ describe("Utils", () => {
       expect(await utils.testIsFamily(value, 0x200101)).to.be.true;
     });
 
-    it("isLocal returns true for current chainId", async () => {
+    it("isLocalChain returns true for current chainId", async () => {
       const base = await utils.testToLocalBase(0x12345678);
-      expect(await utils.testIsLocal(base)).to.be.true;
+      expect(await utils.testIsLocalChain(base)).to.be.true;
     });
 
-    it("isLocal returns false for a foreign-chain value", async () => {
+    it("isLocalChain returns false for a foreign-chain value", async () => {
       const foreign = (0x12345678n << 224n) | (999n << 192n);
-      expect(await utils.testIsLocal(foreign)).to.be.false;
+      expect(await utils.testIsLocalChain(foreign)).to.be.false;
     });
 
     it("max16/max32/max64/max128 accept boundary values", async () => {

@@ -18,25 +18,6 @@ struct CommandContext {
     bytes request;
 }
 
-/// @notice ABI-encode a command call from a command ID and execution context.
-/// @dev Derives the function selector from `cid` via `Ids.commandSelector(cid)`.
-/// Reverts if `cid` is not a valid command ID.
-/// @param cid Command node ID embedding the target selector.
-/// @param account Caller account identifier for the command context.
-/// @param state Current state block stream passed to the command.
-/// @param request Input block stream for the command invocation.
-/// @return ABI-encoded calldata for the command entry point.
-function encodeCommandCall(
-    uint cid,
-    bytes32 account,
-    bytes memory state,
-    bytes calldata request
-) pure returns (bytes memory) {
-    bytes4 selector = Ids.commandSelector(cid);
-    CommandContext memory ctx = CommandContext(account, state, request);
-    return abi.encodeWithSelector(selector, ctx);
-}
-
 /// @title CommandBase
 /// @notice Abstract base for all rootzero command contracts.
 /// Provides access control modifiers, event emission, and the `commandId`

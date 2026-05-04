@@ -51,7 +51,7 @@ contract TestHost is
     event AllowAssetCalled(bytes32 asset, bytes32 meta);
     event DenyAssetCalled(bytes32 asset, bytes32 meta);
     event AllowanceCalled(uint host_, bytes32 asset, bytes32 meta, uint amount);
-    event StepDispatched(uint target, uint stepIndex, uint value);
+    event StepDispatched(uint cid, uint stepIndex, uint value);
 
     uint public stepCount;
 
@@ -139,14 +139,14 @@ contract TestHost is
         emit AllowanceCalled(remote, asset, meta, amount);
     }
 
-    function dispatchStep(
-        uint target,
+    function dispatchCommand(
+        uint cid,
         bytes32,
         bytes memory state,
         bytes calldata,
         uint value
     ) internal override returns (bytes memory) {
-        emit StepDispatched(target, stepCount++, value);
+        emit StepDispatched(cid, stepCount++, value);
         return state;
     }
 

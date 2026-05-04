@@ -47,6 +47,11 @@ library Ids {
         return uint32(id >> 224) == Query;
     }
 
+    /// @notice Return true if `id` is a local node ID for this contract.
+    function isLocalNode(uint id) internal view returns (bool) {
+        return isLocalFamily(id, Node) && address(uint160(id)) == address(this);
+    }
+
     /// @notice Assert that `id` is a command ID and return it unchanged.
     /// @param id Node ID to validate.
     /// @return cid The same `id` value if it is a command.

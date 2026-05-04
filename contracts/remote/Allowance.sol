@@ -7,13 +7,12 @@ import {Cursors, Cur, Schemas} from "../Cursors.sol";
 
 using Cursors for Cur;
 
-string constant NAME = "remoteAllowance";
-
 /// @title RemoteAllowance
 /// @notice Remote that lets a trusted remote host request or refresh its own allowance.
 /// Each AMOUNT block in the request is scoped to the remote host and passed to the
 /// shared allowance hook as a host-scoped allowance. Restricted to trusted remotes.
 abstract contract RemoteAllowance is RemoteBase, AllowanceHook {
+    string private constant NAME = "remoteAllowance";
     uint internal immutable remoteAllowanceId = remoteId(NAME);
 
     constructor() {

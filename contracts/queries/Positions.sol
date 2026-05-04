@@ -7,8 +7,6 @@ import {QueryBase} from "./Base.sol";
 
 using Cursors for Cur;
 
-string constant NAME = "getPosition";
-
 abstract contract GetPositionHook {
     /// @notice Resolve the position payload for one requested position.
     /// Concrete implementations must append exactly one `RESPONSE` block whose payload
@@ -30,6 +28,7 @@ abstract contract GetPositionHook {
 /// The request is a run of `ACCOUNT_ASSET` form blocks.
 /// The response returns one dynamic `RESPONSE` block per position entry, preserving request order.
 abstract contract GetPosition is QueryBase, GetPositionHook {
+    string private constant NAME = "getPosition";
     uint public immutable getPositionId = queryId(NAME);
     uint internal immutable positionResponseSize;
 
