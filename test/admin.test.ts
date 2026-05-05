@@ -6,7 +6,7 @@ import {
   encodeRouteBlock, encodeCallBlock, concat
 } from "./helpers/blocks.js";
 
-describe("Control Commands", () => {
+describe("Admin Commands", () => {
   let host: Awaited<ReturnType<typeof deploy>>;
   let commander: string;
   let adminAccount: string;

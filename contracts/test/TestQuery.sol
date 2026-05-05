@@ -7,11 +7,11 @@ import {QueryBase} from "../queries/Base.sol";
 using Cursors for Cur;
 using Writers for Writer;
 
-string constant NAME = "incrementQuery";
 string constant INPUT = "query(uint foo)";
 string constant OUTPUT = "response(uint bar)";
 
 contract TestQuery is QueryBase {
+    string private constant NAME = "incrementQuery";
     uint public immutable incrementQueryId = queryId(NAME);
 
     constructor() {

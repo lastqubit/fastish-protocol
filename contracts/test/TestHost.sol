@@ -10,11 +10,11 @@ import { CreditAccount } from "../commands/Credit.sol";
 import { DebitAccount } from "../commands/Debit.sol";
 import { Provision, ProvisionPayable } from "../commands/Provision.sol";
 import { PipePayable } from "../commands/Pipe.sol";
-import { AllowAssets } from "../commands/control/AllowAssets.sol";
-import { DenyAssets } from "../commands/control/DenyAssets.sol";
-import { Destroy } from "../commands/control/Destroy.sol";
-import { Init } from "../commands/control/Init.sol";
-import { Allowance } from "../commands/control/Allowance.sol";
+import { AllowAssets } from "../commands/admin/AllowAssets.sol";
+import { DenyAssets } from "../commands/admin/DenyAssets.sol";
+import { Destroy } from "../commands/admin/Destroy.sol";
+import { Init } from "../commands/admin/Init.sol";
+import { Allowance } from "../commands/admin/Allowance.sol";
 import { HostAmount, Tx } from "../core/Types.sol";
 import { Cursors, Cur, Keys } from "../Cursors.sol";
 import { Budget, Values } from "../utils/Value.sol";
@@ -51,7 +51,7 @@ contract TestHost is
     event AllowAssetCalled(bytes32 asset, bytes32 meta);
     event DenyAssetCalled(bytes32 asset, bytes32 meta);
     event AllowanceCalled(uint host_, bytes32 asset, bytes32 meta, uint amount);
-    event StepDispatched(uint target, uint stepIndex, uint value);
+    event StepDispatched(uint cid, uint stepIndex, uint value);
 
     uint public stepCount;
 
@@ -135,18 +135,18 @@ contract TestHost is
         emit DenyAssetCalled(asset, meta);
     }
 
-    function allowance(uint remote, bytes32 asset, bytes32 meta, uint amount) internal override {
-        emit AllowanceCalled(remote, asset, meta, amount);
+    function allowance(uint peer, bytes32 asset, bytes32 meta, uint amount) internal override {
+        emit AllowanceCalled(peer, asset, meta, amount);
     }
 
-    function dispatchStep(
-        uint target,
+    function dispatchCommand(
+        uint cid,
         bytes32,
         bytes memory state,
         bytes calldata,
         uint value
     ) internal override returns (bytes memory) {
-        emit StepDispatched(target, stepCount++, value);
+        emit StepDispatched(cid, stepCount++, value);
         return state;
     }
 

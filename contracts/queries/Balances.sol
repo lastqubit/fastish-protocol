@@ -7,8 +7,6 @@ import {QueryBase} from "./Base.sol";
 using Cursors for Cur;
 using Writers for Writer;
 
-string constant NAME = "getBalances";
-
 abstract contract GetBalancesHook {
     /// @notice Resolve one account's balance for one supported asset.
     /// Concrete implementations define how assets are resolved.
@@ -24,6 +22,7 @@ abstract contract GetBalancesHook {
 /// The request is a run of `ACCOUNT_ASSET` form blocks.
 /// The response returns one `ACCOUNT_AMOUNT` form block per requested position, preserving request order.
 abstract contract GetBalances is QueryBase, GetBalancesHook {
+    string private constant NAME = "getBalances";
     uint public immutable getBalancesId = queryId(NAME);
 
     constructor() {

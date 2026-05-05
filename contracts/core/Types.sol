@@ -71,7 +71,7 @@ struct HostAccountAmount {
     uint amount;
 }
 
-/// @notice Transfer payload used by transaction blocks and remote settlement.
+/// @notice Transfer payload used by transaction blocks and peer settlement.
 struct Tx {
     /// @dev Sender account identifier.
     bytes32 from;

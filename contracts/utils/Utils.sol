@@ -170,7 +170,7 @@ function isFamily(uint value, uint24 family) pure returns (bool) {
 /// @notice Check whether `value` was created on the current chain.
 /// @param value ID to test.
 /// @return True if bits [223:192] of `value` equal `block.chainid`.
-function isLocal(uint value) view returns (bool) {
+function isLocalChain(uint value) view returns (bool) {
     return uint32(value >> 192) == block.chainid;
 }
 
@@ -179,7 +179,7 @@ function isLocal(uint value) view returns (bool) {
 /// @param family Expected 24-bit family tag.
 /// @return True if both the family and chainid fields match.
 function isLocalFamily(uint value, uint24 family) view returns (bool) {
-    return isFamily(value, family) && isLocal(value);
+    return isFamily(value, family) && isLocalChain(value);
 }
 
 /// @notice Check whether two IDs share the same 64-bit base (type tag + chainid).

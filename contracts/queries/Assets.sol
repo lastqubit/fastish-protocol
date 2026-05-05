@@ -8,8 +8,6 @@ import {QueryBase} from "./Base.sol";
 using Cursors for Cur;
 using Writers for Writer;
 
-string constant NAME = "isAllowedAsset";
-
 abstract contract IsAllowedAssetHook {
     /// @notice Resolve whether one asset tuple is allowed.
     /// Concrete implementations define the allowlist policy.
@@ -24,6 +22,7 @@ abstract contract IsAllowedAssetHook {
 /// The request is a run of `ASSET` blocks.
 /// The response returns one `STATUS` form block per query entry, preserving request order.
 abstract contract IsAllowedAsset is QueryBase, IsAllowedAssetHook {
+    string private constant NAME = "isAllowedAsset";
     uint public immutable isAllowedAssetId = queryId(NAME);
 
     constructor() {
