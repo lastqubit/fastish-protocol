@@ -29,7 +29,7 @@ abstract contract ProvisionPayableHook {
 }
 
 /// @title Provision
-/// @notice Command that provisions assets to remote hosts from ALLOCATION request blocks.
+/// @notice Command that provisions assets to peer hosts from ALLOCATION request blocks.
 /// Each request block supplies the target host plus an asset amount; the output is a CUSTODY state stream.
 abstract contract Provision is CommandBase, ProvisionHook {
     string private constant NAME = "provision";
@@ -55,7 +55,7 @@ abstract contract Provision is CommandBase, ProvisionHook {
 }
 
 /// @title ProvisionPayable
-/// @notice Command that provisions assets to remote hosts from ALLOCATION request blocks.
+/// @notice Command that provisions assets to peer hosts from ALLOCATION request blocks.
 /// Each request block supplies the target host plus an asset amount; the output is a CUSTODY state stream.
 /// The hook receives a mutable native-value budget drawn from `msg.value`.
 abstract contract ProvisionPayable is CommandPayable, ProvisionPayableHook {

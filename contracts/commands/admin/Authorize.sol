@@ -3,30 +3,30 @@ pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Keys } from "../Base.sol";
 import { Cursors, Cur, Schemas } from "../../Cursors.sol";
-import { ControlEvent } from "../../events/Control.sol";
+import { AdminEvent } from "../../events/Admin.sol";
 using Cursors for Cur;
 
-/// @title Unauthorize
-/// @notice Control command that revokes authorization from a list of node IDs.
-/// Each NODE block in the request is deauthorized on the host.
+/// @title Authorize
+/// @notice Admin command that grants authorization to a list of node IDs.
+/// Each NODE block in the request is authorized on the host.
 /// Only callable by the admin account.
-abstract contract Unauthorize is CommandBase, ControlEvent {
-    string private constant NAME = "unauthorize";
+abstract contract Authorize is CommandBase, AdminEvent {
+    string private constant NAME = "authorize";
 
-    uint internal immutable unauthorizeId = commandId(NAME);
+    uint internal immutable authorizeId = commandId(NAME);
 
     constructor() {
-        emit Control(host, unauthorizeId, NAME, Schemas.Node, Keys.Empty, Keys.Empty, false);
+        emit Admin(host, authorizeId, NAME, Schemas.Node, Keys.Empty, Keys.Empty, false);
     }
 
-    function unauthorize(
+    function authorize(
         CommandContext calldata c
     ) external onlyAdmin(c.account) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {
             uint node = request.unpackNode();
-            unauthorize(node);
+            authorize(node);
         }
 
         request.complete();

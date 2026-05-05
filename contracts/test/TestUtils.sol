@@ -124,8 +124,16 @@ contract TestUtils {
         return Ids.toCommand(Selectors.command(bytes32ToString(name)), addr);
     }
 
+    function testToPeerId(bytes32 name, address addr) external view returns (uint) {
+        return Ids.toPeer(Selectors.peer(bytes32ToString(name)), addr);
+    }
+
     function testToCommandSelector(bytes32 name) external pure returns (bytes4) {
         return Selectors.command(bytes32ToString(name));
+    }
+
+    function testToPeerSelector(bytes32 name) external pure returns (bytes4) {
+        return Selectors.peer(bytes32ToString(name));
     }
 
     function testIsHost(uint id) external pure returns (bool) {
@@ -134,6 +142,10 @@ contract TestUtils {
 
     function testIsCommand(uint id) external pure returns (bool) {
         return Ids.isCommand(id);
+    }
+
+    function testIsPeer(uint id) external pure returns (bool) {
+        return Ids.isPeer(id);
     }
 
     function testLocalNodeAddr(uint node) external view returns (address) {
@@ -150,6 +162,10 @@ contract TestUtils {
 
     function testEnsureCommand(uint id) external pure returns (uint) {
         return Ids.command(id);
+    }
+
+    function testEnsurePeer(uint id) external pure returns (uint) {
+        return Ids.peer(id);
     }
 
     function testApplyBps(uint amount, uint16 bps) external pure returns (uint) {

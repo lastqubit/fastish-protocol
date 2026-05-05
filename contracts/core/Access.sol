@@ -12,7 +12,7 @@ import {addrOr} from "../utils/Utils.sol";
 /// Tracks an immutable trusted commander, the host's own node ID, and a
 /// mapping of externally trusted node IDs. Inbound trust is host-based:
 /// trusted hosts, the commander, and this contract itself may interact
-/// with the host through the guarded command and remote entrypoints.
+/// with the host through the guarded command and peer entrypoints.
 abstract contract AccessControl is RootZeroContext, AccessEvent {
     /// @dev Trusted commander address. All calls from this address are implicitly trusted.
     /// Defaults to `address(this)` when no external commander is provided.
@@ -69,7 +69,7 @@ abstract contract AccessControl is RootZeroContext, AccessEvent {
     }
 
     /// @notice Assert that `caller` is trusted and return it.
-    /// Used by command and remote modifiers to gate execution to authorized senders.
+    /// Used by command and peer modifiers to gate execution to authorized senders.
     /// @param caller Address to validate.
     /// @return The same `caller` value if trusted.
     function enforceCaller(address caller) internal view returns (address) {

@@ -3,7 +3,7 @@ pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Keys } from "../Base.sol";
 import { Cursors, Cur } from "../../Cursors.sol";
-import { ControlEvent } from "../../events/Control.sol";
+import { AdminEvent } from "../../events/Admin.sol";
 
 using Cursors for Cur;
 
@@ -14,15 +14,15 @@ abstract contract InitHook {
 }
 
 /// @title Init
-/// @notice Control command that runs host initialization logic via a virtual hook.
+/// @notice Admin command that runs host initialization logic via a virtual hook.
 /// The full request is passed to `init` as a cursor. Only callable by the admin account.
-abstract contract Init is CommandBase, ControlEvent, InitHook {
+abstract contract Init is CommandBase, AdminEvent, InitHook {
     string private constant NAME = "init";
 
     uint internal immutable initId = commandId(NAME);
 
     constructor(string memory input) {
-        emit Control(host, initId, NAME, input, Keys.Empty, Keys.Empty, false);
+        emit Admin(host, initId, NAME, input, Keys.Empty, Keys.Empty, false);
     }
 
     function init(

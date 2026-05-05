@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "ethers";
 import { deploy, getSigner, getProvider } from "./helpers/setup.js";
-import { commandSelector } from "./helpers/blocks.js";
+import { commandSelector, peerSelector } from "./helpers/blocks.js";
 
 async function expectCustomError(promise: Promise<unknown>, name: string) {
   try {
@@ -356,6 +356,17 @@ describe("Utils", () => {
       expect(await utils.testIsCommand(hid)).to.be.false;
     });
 
+    it("isPeer returns true for peer ID", async () => {
+      const name = ethers.encodeBytes32String("peerAllowance");
+      const pid: bigint = await utils.testToPeerId(name, signerAddress);
+      expect(await utils.testIsPeer(pid)).to.be.true;
+    });
+
+    it("isPeer returns false for host ID", async () => {
+      const hid: bigint = await utils.testToHostId(signerAddress);
+      expect(await utils.testIsPeer(hid)).to.be.false;
+    });
+
     it("localNodeAddr extracts address from host ID", async () => {
       const id: bigint = await utils.testToHostId(signerAddress);
       const addr = await utils.testLocalNodeAddr(id);
@@ -386,9 +397,21 @@ describe("Utils", () => {
       expect(result).to.equal(cid);
     });
 
+    it("ensurePeer succeeds for peer ID", async () => {
+      const name = ethers.encodeBytes32String("peerAllowance");
+      const pid: bigint = await utils.testToPeerId(name, signerAddress);
+      const result: bigint = await utils.testEnsurePeer(pid);
+      expect(result).to.equal(pid);
+    });
+
     it("toCommandSelector matches the TypeScript helper", async () => {
       const name = ethers.encodeBytes32String("deposit");
       expect(await utils.testToCommandSelector(name)).to.equal(commandSelector("deposit"));
+    });
+
+    it("toPeerSelector matches the TypeScript helper", async () => {
+      const name = ethers.encodeBytes32String("peerAllowance");
+      expect(await utils.testToPeerSelector(name)).to.equal(peerSelector("peerAllowance"));
     });
 
     it("localHostAddr reverts for a foreign-chain host id", async () => {

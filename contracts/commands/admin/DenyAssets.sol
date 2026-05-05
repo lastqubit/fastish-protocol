@@ -3,7 +3,7 @@ pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Keys } from "../Base.sol";
 import { Cursors, Cur, Schemas } from "../../Cursors.sol";
-import { ControlEvent } from "../../events/Control.sol";
+import { AdminEvent } from "../../events/Admin.sol";
 using Cursors for Cur;
 
 abstract contract DenyAssetsHook {
@@ -13,15 +13,15 @@ abstract contract DenyAssetsHook {
 }
 
 /// @title DenyAssets
-/// @notice Control command that blocks a list of (asset, meta) pairs via a virtual hook.
+/// @notice Admin command that blocks a list of (asset, meta) pairs via a virtual hook.
 /// Each ASSET block in the request calls `denyAsset`. Only callable by the admin account.
-abstract contract DenyAssets is CommandBase, ControlEvent, DenyAssetsHook {
+abstract contract DenyAssets is CommandBase, AdminEvent, DenyAssetsHook {
     string private constant NAME = "denyAssets";
 
     uint internal immutable denyAssetsId = commandId(NAME);
 
     constructor() {
-        emit Control(host, denyAssetsId, NAME, Schemas.Asset, Keys.Empty, Keys.Empty, false);
+        emit Admin(host, denyAssetsId, NAME, Schemas.Asset, Keys.Empty, Keys.Empty, false);
     }
 
     function denyAssets(

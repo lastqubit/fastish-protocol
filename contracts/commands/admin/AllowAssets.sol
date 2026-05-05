@@ -3,7 +3,7 @@ pragma solidity ^0.8.33;
 
 import { CommandBase, CommandContext, Keys } from "../Base.sol";
 import { Cursors, Cur, Schemas } from "../../Cursors.sol";
-import { ControlEvent } from "../../events/Control.sol";
+import { AdminEvent } from "../../events/Admin.sol";
 using Cursors for Cur;
 
 abstract contract AllowAssetsHook {
@@ -13,15 +13,15 @@ abstract contract AllowAssetsHook {
 }
 
 /// @title AllowAssets
-/// @notice Control command that permits a list of (asset, meta) pairs via a virtual hook.
+/// @notice Admin command that permits a list of (asset, meta) pairs via a virtual hook.
 /// Each ASSET block in the request calls `allowAsset`. Only callable by the admin account.
-abstract contract AllowAssets is CommandBase, ControlEvent, AllowAssetsHook {
+abstract contract AllowAssets is CommandBase, AdminEvent, AllowAssetsHook {
     string private constant NAME = "allowAssets";
 
     uint internal immutable allowAssetsId = commandId(NAME);
 
     constructor() {
-        emit Control(host, allowAssetsId, NAME, Schemas.Asset, Keys.Empty, Keys.Empty, false);
+        emit Admin(host, allowAssetsId, NAME, Schemas.Asset, Keys.Empty, Keys.Empty, false);
     }
 
     function allowAssets(

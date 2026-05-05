@@ -3,7 +3,7 @@ pragma solidity ^0.8.33;
 
 import {CommandBase, CommandContext, Keys} from "../Base.sol";
 import {Cursors, Cur, Schemas} from "../../Cursors.sol";
-import {ControlEvent} from "../../events/Control.sol";
+import {AdminEvent} from "../../events/Admin.sol";
 using Cursors for Cur;
 
 abstract contract AllowanceHook {
@@ -11,30 +11,30 @@ abstract contract AllowanceHook {
     /// Called once per ALLOWANCE block in the request. Implementations decide
     /// how the allowance is represented, e.g. ERC-20 approval, an internal cap,
     /// or another host-specific authorization record.
-    /// @param remote Host node receiving the allowed cap.
+    /// @param peer Host node receiving the allowed cap.
     /// @param asset Asset identifier.
     /// @param meta Asset metadata slot.
     /// @param amount Allowed cap amount.
-    function allowance(uint remote, bytes32 asset, bytes32 meta, uint amount) internal virtual;
+    function allowance(uint peer, bytes32 asset, bytes32 meta, uint amount) internal virtual;
 }
 
 /// @title Allowance
-/// @notice Control command that applies cross-host allowance entries via a virtual hook.
+/// @notice Admin command that applies cross-host allowance entries via a virtual hook.
 /// Each ALLOWANCE block grants or updates a host-scoped asset cap. Only callable by the admin account.
-abstract contract Allowance is CommandBase, ControlEvent, AllowanceHook {
+abstract contract Allowance is CommandBase, AdminEvent, AllowanceHook {
     string private constant NAME = "allowance";
     uint internal immutable allowanceId = commandId(NAME);
 
     constructor() {
-        emit Control(host, allowanceId, NAME, Schemas.Allowance, Keys.Empty, Keys.Empty, false);
+        emit Admin(host, allowanceId, NAME, Schemas.Allowance, Keys.Empty, Keys.Empty, false);
     }
 
     function allowance(CommandContext calldata c) external onlyAdmin(c.account) returns (bytes memory) {
         (Cur memory request, , ) = cursor(c.request, 1);
 
         while (request.i < request.bound) {
-            (uint remote, bytes32 asset, bytes32 meta, uint amount) = request.unpackAllowance();
-            allowance(remote, asset, meta, amount);
+            (uint peer, bytes32 asset, bytes32 meta, uint amount) = request.unpackAllowance();
+            allowance(peer, asset, meta, amount);
         }
 
         request.complete();
